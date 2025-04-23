@@ -3,18 +3,20 @@ from db import db  # import from your db folder
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 import os
 
+# Absolute path to templates folder
 template_dir = os.path.abspath('templates')
 
-# Flask App Setup
+# Flask app setup
 app = Flask(__name__, template_folder=template_dir)
 
 # Database setup
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'  # this will create site.db in root
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize db
 db.init_app(app)
 
-
+# Routes
 @app.route('/')
 def home():
     print("Rendering index.html from:", template_dir)
