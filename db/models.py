@@ -2,8 +2,7 @@
 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
-db = SQLAlchemy()
+from . import db
 
 # User Table
 class User(db.Model):
