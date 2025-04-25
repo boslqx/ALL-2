@@ -1,6 +1,7 @@
 from flask import Flask, render_template
-from db import db  # import from your db folder
+from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
+from routes.login import login_bp  # Only this import
 import os
 
 # Absolute path to templates folder
@@ -8,22 +9,23 @@ template_dir = os.path.abspath('templates')
 
 # Flask app setup
 app = Flask(__name__, template_folder=template_dir)
+app.secret_key = 'your_secret_key'  # Needed for session/flash messages
 
-# Database setup
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'  # this will create site.db in root
+# Database config
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize db
 db.init_app(app)
 
-# Routes
+# ✅ Register only the login blueprint for now
+app.register_blueprint(login_bp)
+
 @app.route('/')
 def home():
-    print("Rendering index.html from:", template_dir)
     return render_template("index.html")
 
-# Only run create_all if this script is being run directly
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # This will create all tables in site.db if they don't exist
+        db.create_all()
     app.run(debug=True)
