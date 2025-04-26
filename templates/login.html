@@ -1,26 +1,80 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-image: url('/static/Login.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .login-container {
+        position: fixed; /* <--- FIXED position */
+        top: 20%;
+        left: 70%;
+        transform: translate(-50%, 0);
+        background: rgb(255, 255, 255);
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        width: 500px;
+        height: 400px;
+        box-sizing: border-box;
+    }
+
+    .login-container h2 {
+        margin-bottom: 20px;
+    }
+
+    .login-container input[type="text"],
+    .login-container input[type="password"] {
+        width: 90%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+    }
+
+    .login-container button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+
+    .login-container button:hover {
+        background-color: #45a049;
+    }
+    </style>
 </head>
 <body>
-    <h2>Login</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul>
-        {% for category, message in messages %}
-          <li style="color: red;">{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
 
+<div class="login-container">
+    <h2>Login</h2>
     <form method="POST" action="/login">
-        <label>Username:</label><br>
-        <input type="text" name="username" required><br><br>
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
-        <input type="submit" value="Login">
+        <input type="text" name="username" placeholder="Username" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
     </form>
+</div>
+
 </body>
 </html>
