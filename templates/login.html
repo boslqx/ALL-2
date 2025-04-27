@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page</title>
+
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
+        background-image: url('/static/Login.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .login-container {
+        position: fixed;
+        top: 20%;
+        left: 70%;
+        transform: translate(-50%, 0);
+        background: rgb(255, 255, 255);
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        width: 500px;
+        height: 400px;
+        box-sizing: border-box;
+        
+    }
+
+    .login-container h2 {
+        margin-bottom: 20px;
+    }
+
+    .login-container input[type="text"],
+    .login-container input[type="password"] {
+        width: 90%;
+        padding: 10px;
+        margin: 8px 0;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+        background-color:#E0E0E0;
+
+    }
+
+    .login-container button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        box-sizing: border-box;
+    }
+    .forgot-password {
+            display: block;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+    }
+    .login-container button:hover {
+        background-color: #45a049;
+    }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Login</h2>
+    <form method="POST" action="/login">
+        <input type="text" name="username" placeholder="Username" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+     <a href="/forgot-password" class="forgot-password">Forgot Password?</a>
+</div>
+
+</body>
+</html>

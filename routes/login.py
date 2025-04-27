@@ -6,6 +6,7 @@ from db import db
 
 login_bp = Blueprint('login', __name__, template_folder='../templates')
 
+
 class LoginView(MethodView):
     def get(self):
         return render_template('login.html')
@@ -13,19 +14,19 @@ class LoginView(MethodView):
     def post(self):
         username = request.form.get('username')
         password = request.form.get('password')
-        
+
         user = User.query.filter_by(Username=username).first()
 
-        if user and check_password_hash(user.Password, password):
+        if user and user.Password == password:
             session['user_id'] = user.UserID
             session['role'] = user.Role
-            
+
             if user.Role == 'admin':
-                return redirect(url_for('admin.dashboard'))
+                return f"Welcome Admin {user.Name}"
             elif user.Role == 'manager':
-                return redirect(url_for('manager.dashboard'))
+                return f"Welcome Manager {user.Name}"
             elif user.Role == 'cashier':
-                return redirect(url_for('cashier.dashboard'))
+                return f"Welcome Cashier {user.Name}"
             else:
                 flash('Unknown role!', 'danger')
                 return redirect(url_for('login.login'))
@@ -33,5 +34,6 @@ class LoginView(MethodView):
             flash('Invalid username or password.', 'danger')
             return redirect(url_for('login.login'))
 
-# Register the class-based view
-login_bp.add_url_rule('/login', view_func=LoginView.as_view('login'))
+
+# Register the view
+login_bp.add_url_rule('/login', view_func=LoginView.as_view('login'), methods=['GET', 'POST'])
