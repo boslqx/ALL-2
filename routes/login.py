@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask.views import MethodView
-from werkzeug.security import check_password_hash
 from db.models import User
 from db import db
 
@@ -22,11 +21,11 @@ class LoginView(MethodView):
             session['role'] = user.Role
 
             if user.Role == 'admin':
-                return f"Welcome Admin {user.Name}"
+                return redirect(url_for('admin.dashboard'))
             elif user.Role == 'manager':
-                return f"Welcome Manager {user.Name}"
+                return redirect(url_for('manager.dashboard'))
             elif user.Role == 'cashier':
-                return f"Welcome Cashier {user.Name}"
+                return redirect(url_for('cashier.dashboard'))
             else:
                 flash('Unknown role!', 'danger')
                 return redirect(url_for('login.login'))
@@ -35,5 +34,5 @@ class LoginView(MethodView):
             return redirect(url_for('login.login'))
 
 
-# Register the view
 login_bp.add_url_rule('/login', view_func=LoginView.as_view('login'), methods=['GET', 'POST'])
+

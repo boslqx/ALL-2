@@ -2,6 +2,9 @@ from flask import Flask, render_template
 from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 from routes.login import login_bp  # Only this import
+from routes.admin import admin_bp
+from routes.manager import manager_bp
+from routes.cashier import cashier_bp
 import os
 
 # Absolute path to templates folder
@@ -20,6 +23,9 @@ db.init_app(app)
 
 # ✅ Register only the login blueprint for now
 app.register_blueprint(login_bp)
+app.register_blueprint(admin_bp)
+app.register_blueprint(manager_bp)
+app.register_blueprint(cashier_bp)
 
 @app.route('/')
 def home():
