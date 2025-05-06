@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template, session, current_app
 import sqlite3
+import os
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 
@@ -9,13 +10,22 @@ def dashboard():
     admin_name = 'Admin'
 
     if user_id:
-        conn = sqlite3.connect('C:/Users/user/Documents/GitHub/ALL-2/instance/site.db')  # Correct this!
-        cursor = conn.cursor()
-        cursor.execute("SELECT Name FROM User WHERE UserID = ?", (user_id,))
-        result = cursor.fetchone()
-        conn.close()
-
-        if result:
-            admin_name = f"Admin {result[0]}"
+        try:
+            # This will automatically point to your instance folder
+            db_path = os.path.join(current_app.instance_path, 'site.db')
+            
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT Name FROM User WHERE UserID = ?", (user_id,))
+            result = cursor.fetchone()
+            
+            if result:
+                admin_name = f"Admin {result[0]}"
+                
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        finally:
+            if 'conn' in locals():
+                conn.close()
 
     return render_template('admin.html', admin_name=admin_name)
