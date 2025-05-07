@@ -21,7 +21,7 @@ class LoginView(MethodView):
             session['role'] = user.Role
 
             if user.Role == 'admin':
-                return redirect(url_for('admin.dashboard'))
+                return redirect(url_for('admin.admin_dashboard'))
             elif user.Role == 'manager':
                 return redirect(url_for('manager.dashboard'))
             elif user.Role == 'cashier':
