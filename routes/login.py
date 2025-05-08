@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask.views import MethodView
 from db.models import User
 from db import db
+from flask import redirect, url_for
 
 login_bp = Blueprint('login', __name__, template_folder='../templates')
 
