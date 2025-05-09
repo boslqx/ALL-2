@@ -11,7 +11,7 @@ import os
 template_dir = os.path.abspath('templates')
 
 # Flask app setup
-app = Flask(__name__, template_folder=template_dir, instance_relative_config=True)
+app = Flask(__name__, template_folder=template_dir)
 app.secret_key = 'your_secret_key'  # Needed for session/flash messages
 
 # Database config
