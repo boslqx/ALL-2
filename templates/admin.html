@@ -34,7 +34,7 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Activity</span>
             </li>
-            <li class="nav-item logout">
+            <li class="nav-item logout" onclick="showLogoutModal()">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </li>
@@ -49,6 +49,21 @@
         <div id="activity" class="section" style="display:none;">Sales and Inventory Activity</div>
     </div>
 
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+    <div class="modal-content">
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-buttons">
+        <button id="cancelLogout" class="cancel-btn">No</button>
+        <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        </div>
+    </div>
+    </div>
+
+
+
+
     <script>
     function showSection(sectionId) {
         // Hide all sections
@@ -61,7 +76,24 @@
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         event.currentTarget.classList.add('active');
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const logoutBtn = document.querySelector('.logout');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogout = document.getElementById('cancelLogout');
+
+        if (logoutBtn && logoutModal && cancelLogout) {
+            logoutBtn.addEventListener('click', () => {
+                logoutModal.style.display = 'flex';
+            });
+
+            cancelLogout.addEventListener('click', () => {
+                logoutModal.style.display = 'none';
+            });
+        }
+    });
     </script>
+
 
 </body>
 </html>

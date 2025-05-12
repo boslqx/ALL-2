@@ -33,6 +33,14 @@ class LoginView(MethodView):
         else:
             flash('Invalid username or password.', 'danger')
             return redirect(url_for('login.login'))
+    
+    
+@login_bp.route('/logout')
+def logout():
+    session.clear()
+    flash("You have been logged out.")
+    return redirect(url_for('login.login'))
+
 
 
 login_bp.add_url_rule('/login', view_func=LoginView.as_view('login'), methods=['GET', 'POST'])
