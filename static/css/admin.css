@@ -135,3 +135,127 @@ body {
 .confirm-btn:hover {
     background-color: #c0392b;
 }
+
+/* === Register Product Styles === */
+.form-grid {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    max-width: 1000px;
+    margin: 0 auto;
+    
+}
+
+.upload-section, .qr-section {
+    flex: 0 0 200px;
+    text-align: center;
+}
+
+.image-preview {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 10px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-btn {
+    display: inline-block;
+    background-color: #f39c12;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #e67e22;
+}
+
+.form-fields {
+    flex: 1;
+}
+
+.field-group {
+    margin-bottom: 15px;
+}
+
+.field-group label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.field-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.qr-preview {
+    width: 180px;
+    height: 180px;
+    background-color: #e1e1e1;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.qr-btn {
+    padding: 10px 15px;
+    background-color: #f39c12;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.qr-btn:hover {
+    background-color: #e67e22;
+}
+
+.save-btn {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.save-btn button {
+    padding: 15px 25px;
+    font-size: 1.1rem;
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.save-btn button:hover {
+    background-color: #1a252f;
+}
+
