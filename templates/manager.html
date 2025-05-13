@@ -1,64 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Manager Page</title>
-    <style>
-        /* ---- Reset & body background ------------------------------------ */
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{
-            height:100vh;
-            font-family:Arial, sans-serif;
-            color:#fff;
-            background:url('/static/Manager Home Page.jpg') center/100% 100% no-repeat;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard</title>
 
-        /* ---- Sidebar ---------------------------------------------------- */
-        .sidebar{
-            position:fixed;top:0;left:0;
-            width:340px;height:100%;
-            background:rgba(0,0,0,.7);
-            display:flex;flex-direction:column;
-            align-items:center;padding-top:60px;
-        }
-        .sidebar h2{margin-bottom:40px}
+    <!-- External CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
 
-        /* ---- Navigation buttons ---------------------------------------- */
-        .nav-btn{
-            width:80%;padding:12px;margin:10px 0;
-            font-size:16px;
-            color:#fff;background:#4caf50;
-            border:none;border-radius:8px;
-            cursor:pointer;transition:background .3s;
-        }
-        .nav-btn:hover{background:#45a049}
-    </style>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-
+    <!-- Sidebar -->
     <div class="sidebar">
-        <h2>Manager</h2>
-
-        <!-- Swap PLACEHOLDER_URL with your real endpoints -->
-        <button class="nav-btn" onclick="window.location.href='Manage Inventory Reports.png'">
-            All Products
-        </button>
-
-        <button class="nav-btn" onclick="window.location.href='PLACEHOLDER_URL'">
-            Inventory Report
-        </button>
-
-        <button class="nav-btn" onclick="window.location.href='PLACEHOLDER_URL'">
-            Sales Report
-        </button>
-
-        <button class="nav-btn" onclick="window.location.href='PLACEHOLDER_URL'">
-            Employee
-        </button>
-
-        <button class="nav-btn" onclick="window.location.href='PLACEHOLDER_URL'">
-            Logout
-        </button>
+        <div class="logo">
+    <h2>{{ manager_name }}</h2>
+     </div>
+        <ul class="nav-menu">
+            <li class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}" onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'products' %}active{% endif %}" onclick="showSection('products')">
+                <i class="fas fa-box-open"></i>
+                <span>All Products</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'register' %}active{% endif %}" onclick="showSection('register')">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Register Product</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'activity' %}active{% endif %}" onclick="showSection('activity')">
+                <i class="fas fa-chart-line"></i>
+                <span>Activity</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
     </div>
+
+    <!-- Main Content (Placeholder) -->
+    <div class="main-content">
+        <div id="dashboard" class="section">Welcome to the Manager Dashboard</div>
+        <div id="products" class="section" style="display:none;">Product List will be shown here.</div>
+        <div id="register" class="section" style="display:none;">Register New Product Form</div>
+        <div id="activity" class="section" style="display:none;">Sales and Inventory Activity</div>
+    </div>
+
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+    <div class="modal-content">
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-buttons">
+        <button id="cancelLogout" class="cancel-btn">No</button>
+        <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        </div>
+    </div>
+    </div>
+
+
+
+
+    <script>
+    function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+
+        // Show selected section
+        document.getElementById(sectionId).style.display = 'block';
+
+        // Update active class on sidebar
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const logoutBtn = document.querySelector('.logout');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogout = document.getElementById('cancelLogout');
+
+        if (logoutBtn && logoutModal && cancelLogout) {
+            logoutBtn.addEventListener('click', () => {
+                logoutModal.style.display = 'flex';
+            });
+
+            cancelLogout.addEventListener('click', () => {
+                logoutModal.style.display = 'none';
+            });
+        }
+    });
+    </script>
+
 
 </body>
 </html>

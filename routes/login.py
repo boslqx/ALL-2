@@ -33,6 +33,8 @@ class LoginView(MethodView):
         else:
             flash('Invalid username or password.', 'danger')
             return redirect(url_for('login.login'))
+
+
     
     
 @login_bp.route('/logout')
