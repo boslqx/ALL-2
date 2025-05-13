@@ -18,23 +18,23 @@
     <h2>{{ admin_name }}</h2>
      </div>
         <ul class="nav-menu">
-            <li class="nav-item">
+            <li class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}" onclick="showSection('dashboard')">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if active_tab == 'products' %}active{% endif %}" onclick="showSection('products')">
                 <i class="fas fa-box-open"></i>
                 <span>All Products</span>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if active_tab == 'register' %}active{% endif %}" onclick="showSection('register')">
                 <i class="fas fa-clipboard-list"></i>
                 <span>Register Product</span>
             </li>
-            <li class="nav-item">
+            <li class="nav-item {% if active_tab == 'activity' %}active{% endif %}" onclick="showSection('activity')">
                 <i class="fas fa-chart-line"></i>
                 <span>Activity</span>
             </li>
-            <li class="nav-item logout">
+            <li class="nav-item logout" onclick="showLogoutModal()">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </li>
@@ -43,7 +43,57 @@
 
     <!-- Main Content (Placeholder) -->
     <div class="main-content">
-        <!-- Your existing dashboard content goes here -->
+        <div id="dashboard" class="section">Welcome to the Admin Dashboard</div>
+        <div id="products" class="section" style="display:none;">Product List will be shown here.</div>
+        <div id="register" class="section" style="display:none;">Register New Product Form</div>
+        <div id="activity" class="section" style="display:none;">Sales and Inventory Activity</div>
     </div>
+
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+    <div class="modal-content">
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-buttons">
+        <button id="cancelLogout" class="cancel-btn">No</button>
+        <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        </div>
+    </div>
+    </div>
+
+
+
+
+    <script>
+    function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+
+        // Show selected section
+        document.getElementById(sectionId).style.display = 'block';
+
+        // Update active class on sidebar
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const logoutBtn = document.querySelector('.logout');
+        const logoutModal = document.getElementById('logoutModal');
+        const cancelLogout = document.getElementById('cancelLogout');
+
+        if (logoutBtn && logoutModal && cancelLogout) {
+            logoutBtn.addEventListener('click', () => {
+                logoutModal.style.display = 'flex';
+            });
+
+            cancelLogout.addEventListener('click', () => {
+                logoutModal.style.display = 'none';
+            });
+        }
+    });
+    </script>
+
+
 </body>
 </html>
