@@ -48,51 +48,110 @@
         <div id="activity" class="section" style="display:none;">Sales and Inventory Activity</div>
         
         <div id="register" class="section" style="display:none;">
-        <h1 style="text-align:center; margin-bottom: 20px;">Register New Product</h1>
-        <div class="form-wrapper">
-            <div class="form-grid">
-                <!-- Image Upload -->
-                <div class="upload-section">
-                    <div class="image-preview">
-                        <img src="{{ url_for('static', filename='images/placeholder.png') }}" id="preview-img" alt="Product Image">
+            <div class="register-container">
+                <h1 class="register-title">Register New Product</h1>
+                
+                <div class="register-card">
+                    <!-- Left Column - Image Upload -->
+                    <div class="register-column image-column">
+                        <div class="upload-container">
+                            <div class="image-preview-container">
+                                <img src="{{ url_for('static', filename='images/placeholder.png') }}" id="preview-img" class="preview-image" alt="Product Preview">
+                                <div class="upload-overlay">
+                                    <i class="fas fa-camera"></i>
+                                    <span>Click to upload</span>
+                                </div>
+                            </div>
+                            <input type="file" id="image-upload" accept="image/*" hidden>
+                        </div>
+                        <div class="image-actions">
+                            <button class="action-button remove-image" disabled>
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
                     </div>
-                    <label for="image-upload" class="upload-btn">Upload Image</label>
-                    <input type="file" id="image-upload" accept="image/*" hidden>
+                    
+                    <!-- Middle Column - Product Details -->
+                    <div class="register-column form-column">
+                        <div class="form-header">
+                            <h3>Product Information</h3>
+                            <div class="form-divider"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" class="category-select">
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="Food & Beverages">Food & Beverages</option>
+                                <option value="Health & Personal">Health & Personal</option>
+                                <option value="Home & Living">Home & Living</option>
+                                <option value="Clothing & Accessories">Clothing & Accessories</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="other-category-container" style="display: none; margin-top: 10px;">
+                                <input type="text" id="other-category" placeholder="Please specify category" class="other-category-input">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="brand">Brand Name</label>
+                            <input type="text" id="brand" placeholder="e.g. NESTLE, EMBORG">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="product">Product Name</label>
+                            <input type="text" id="product" placeholder="e.g. Baby Powder, Cheese">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="price">Price (RM)</label>
+                                <div class="input-with-icon">
+                                    <span class="currency">RM</span>
+                                    <input type="number" id="price" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group half-width">
+                                <label for="quantity">Stock Quantity</label>
+                                <input type="number" id="quantity" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column - QR Code -->
+                    <div class="register-column qr-column">
+                        <div class="qr-header">
+                            <h3>QR Code</h3>
+                            <div class="form-divider"></div>
+                        </div>
+                        
+                        <div class="qr-preview-container">
+                            <div class="qr-placeholder">
+                                <i class="fas fa-qrcode"></i>
+                                <p>QR Code will generate after saving</p>
+                            </div>
+                        </div>
+                        
+                        <div class="qr-actions">
+                            <button class="action-button generate-qr" disabled>
+                                <i class="fas fa-qrcode"></i> Generate QR
+                            </button>
+                            <button class="action-button print-qr" disabled>
+                                <i class="fas fa-print"></i> Print QR
+                            </button>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- Product Details -->
-                <div class="form-fields">
-                    <div class="field-group">
-                        <label>Category</label>
-                        <input type="text" placeholder="Enter product category">
-                    </div>
-                    <div class="field-group">
-                        <label>Brand Name</label>
-                        <input type="text" placeholder="Eg. NESTLE, EMBORG">
-                    </div>
-                    <div class="field-group">
-                        <label>Product Name</label>
-                        <input type="text" placeholder="Eg. Baby Powder, Cheese">
-                    </div>
-                    <div class="field-group">
-                        <label>Price (RM)</label>
-                        <input type="number" step="0.01" placeholder="Eg. 1.80">
-                    </div>
-                    <div class="field-group">
-                        <label>Stock Quantity</label>
-                        <input type="number" placeholder="Eg. 25">
-                    </div>
+                
+                <div class="form-actions">
+                    <button class="save-button">
+                        <i class="fas fa-save"></i> Save Product
+                    </button>
+                    <button class="cancel-button">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
                 </div>
-
-                <!-- QR Code Preview -->
-                <div class="qr-section">
-                    <div class="qr-preview" id="qr-code-box">QR Code Preview</div>
-                    <button class="qr-btn">Print QR Code</button>
-                </div>
-            </div>
-
-            <div class="save-btn">
-                <button>Save Product & Generate QR Code</button>
             </div>
         </div>
     </div>
