@@ -10,6 +10,10 @@
 
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <!-- Sidebar -->
@@ -200,6 +204,253 @@
                 logoutModal.style.display = 'none';
             });
         }
+    });
+
+    // Image Upload with Preview & Remove Button
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all necessary elements
+        const uploadContainer = document.querySelector('.image-preview-container');
+        const fileInput = document.getElementById('image-upload');
+        const previewImg = document.getElementById('preview-img');
+        const removeBtn = document.querySelector('.remove-image');
+        const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
+
+        // Make the entire preview area clickable
+        uploadContainer.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    previewImg.src = event.target.result;
+                    removeBtn.disabled = false;
+                }
+                
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // Handle remove image
+        removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent triggering the upload container click
+            fileInput.value = '';
+            previewImg.src = placeholderImg;
+            this.disabled = true;
+        });
+    });
+
+    // Input Validation
+    document.getElementById('price').addEventListener('input', function(e) {
+        // Simple validation - just check if valid number when submitting
+        validateForm();
+    });
+
+    // Update your validateForm() function:
+    function validateForm() {
+        // ... (your existing validation code)
+        
+        // Price validation (simple version)
+        const priceInput = document.getElementById('price');
+        if (isNaN(parseFloat(priceInput.value))) {
+            priceInput.style.borderColor = 'red';
+            isValid = false;
+        } else {
+            priceInput.style.borderColor = '#ddd';
+        }
+        
+        return isValid;
+    }
+
+    document.getElementById('quantity').addEventListener('input', function(e) {
+        this.value = this.value.replace(/\D/g, '');
+        validateForm();
+    });
+
+    // Category selection
+    document.getElementById('category').addEventListener('change', function() {
+        const otherContainer = document.querySelector('.other-category-container');
+        otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
+        validateForm();
+    });
+
+    document.getElementById('other-category').addEventListener('input', validateForm);
+
+    // Form validation function
+    function validateForm() {
+        const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
+        let isValid = true;
+        
+        requiredFields.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field.value.trim()) {
+                isValid = false;
+                field.style.borderColor = 'red';
+            } else {
+                field.style.borderColor = '#ddd';
+            }
+            
+            // Special case for "Other" category
+            if (id === 'category' && field.value === 'Other') {
+                const otherCategory = document.getElementById('other-category');
+                if (!otherCategory.value.trim()) {
+                    isValid = false;
+                    otherCategory.style.borderColor = 'red';
+                } else {
+                    otherCategory.style.borderColor = '#ddd';
+                }
+            }
+        });
+        
+        return isValid;
+    }
+
+    // Save Button
+    document.querySelector('.save-button').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            alert('Please fill all required fields');
+            return;
+        }
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('category', document.getElementById('category').value);
+        if (document.getElementById('category').value === 'Other') {
+            formData.append('other-category', document.getElementById('other-category').value);
+        }
+        formData.append('brand', document.getElementById('brand').value);
+        formData.append('product', document.getElementById('product').value);
+        formData.append('price', document.getElementById('price').value);
+        formData.append('quantity', document.getElementById('quantity').value);
+        
+        const imageInput = document.getElementById('image-upload');
+        if (imageInput.files[0]) {
+            formData.append('image', imageInput.files[0]);
+        }
+        
+        // Submit to server
+        fetch('/register-product', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Enable QR code buttons after successful save
+                document.querySelector('.generate-qr').disabled = false;
+                document.querySelector('.print-qr').disabled = false;
+                alert('Product saved successfully!');
+            } else {
+                alert('Error saving product');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving product');
+        });
+    });
+
+    // Cancel Button
+    document.querySelector('.cancel-button').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (confirm('Discard all changes?')) {
+            // Reset all form fields
+            document.getElementById('category').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('product').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('quantity').value = '';
+            document.getElementById('other-category').value = '';
+            document.querySelector('.other-category-container').style.display = 'none';
+            
+            // Reset image
+            document.getElementById('image-upload').value = '';
+            document.getElementById('preview-img').src = '{{ url_for("static", filename="images/placeholder.png") }}';
+            document.querySelector('.remove-image').disabled = true;
+            
+            // Reset QR buttons
+            document.querySelector('.generate-qr').disabled = true;
+            document.querySelector('.print-qr').disabled = true;
+            
+            // Remove error highlights
+            document.querySelectorAll('input, select').forEach(el => {
+                el.style.borderColor = '#ddd';
+            });
+        }
+    });
+
+    // QR Code Buttons
+    function displayQRCode(base64Data) {
+        const qrContainer = document.querySelector('.qr-preview-container');
+        qrContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="QR Code" style="width:100%; height:auto;">`;
+    }
+
+    // Modify your save button success handler:
+    fetch('/register-product', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Display QR code
+            const qrContainer = document.querySelector('.qr-preview-container');
+            qrContainer.innerHTML = `
+                <img src="${data.qr_image_url}" 
+                    alt="Product QR Code" 
+                    style="max-width:100%;height:auto;">
+                <p>Scan this QR code</p>
+            `;
+            
+            // Enable QR code buttons
+            document.querySelectorAll('.generate-qr, .print-qr').forEach(btn => {
+                btn.disabled = false;
+            });
+            
+            // Show success message
+            Swal.fire({
+                title: 'Success!',
+                text: data.message,
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            // Show error message
+            Swal.fire({
+                title: 'Error!',
+                text: data.message,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: 'Failed to save product',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    });
+
+    document.querySelector('.generate-qr').addEventListener('click', function() {
+        // In a real implementation, this would show the generated QR code
+        alert('QR code generated!');
+    });
+
+    document.querySelector('.print-qr').addEventListener('click', function() {
+        // In a real implementation, this would print the QR code
+        alert('Printing QR code...');
     });
     </script>
 

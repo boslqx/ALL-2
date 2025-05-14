@@ -1,7 +1,17 @@
-from flask import Blueprint, render_template, session, current_app
+from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify
 import sqlite3, os
+from werkzeug.utils import secure_filename
+import qrcode
+from io import BytesIO
+import base64
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
+
+# Allowed image extensions
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @admin_bp.route('/admin')
 def dashboard():
@@ -27,3 +37,75 @@ def dashboard():
                 conn.close()
 
     return render_template('admin.html', admin_name=admin_name, active_tab='dashboard')
+
+@admin_bp.route('/register-product', methods=['POST'])
+def register_product():
+    if request.method == 'POST':
+        # Get form data
+        category = request.form.get('category')
+        if category == 'Other':
+            category = request.form.get('other-category')
+        brand = request.form.get('brand')
+        product_name = request.form.get('product')
+        price = request.form.get('price')
+        quantity = request.form.get('quantity')
+        
+        # Handle image upload
+        image = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                image = filename
+                # Save file (in production you'd save to filesystem or cloud storage)
+                # For demo, we'll just store the filename
+        
+        # Generate QR code
+        qr_data = f"Product: {product_name}\nBrand: {brand}\nPrice: RM{price}"
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill='black', back_color='white')
+        
+        # Convert QR code to base64 for storage
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        qr_code = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        
+        # Save to database
+        try:
+            db_path = os.path.join(current_app.instance_path, 'site.db')
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                INSERT INTO Product 
+                (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (product_name, category, price, quantity, qr_code, image, brand))
+            
+            conn.commit()
+            flash('Product registered successfully!', 'success')
+
+            # Return success with QR code data
+            return jsonify({
+                'success': True,
+                'qr_code': qr_code, 
+                'qr_image_url': f"data:image/png;base64,{qr_code}",
+                'message': 'Product registered successfully!'
+            })
+        
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': str(e)
+            }), 400
+            
+        except sqlite3.Error as e:
+            conn.rollback()
+            flash(f'Error saving product: {e}', 'error')
+        finally:
+            if 'conn' in locals():
+                conn.close()
+        
+        return redirect(url_for('admin.dashboard'))
