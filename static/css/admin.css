@@ -394,6 +394,7 @@ body {
 .print-qr {
     background-color: #2ecc71;
     color: white;
+    width: 100%;
 }
 
 .print-qr:hover {

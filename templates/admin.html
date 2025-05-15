@@ -138,9 +138,6 @@
                         </div>
                         
                         <div class="qr-actions">
-                            <button class="action-button generate-qr" disabled>
-                                <i class="fas fa-qrcode"></i> Generate QR
-                            </button>
                             <button class="action-button print-qr" disabled>
                                 <i class="fas fa-print"></i> Print QR
                             </button>
@@ -352,13 +349,10 @@
                     <img src="${data.qr_image_url}" 
                         alt="Product QR Code"
                         style="max-width:100%; height:auto;">
-                    <p style="text-align:center; margin-top:8px;">Scan this QR code</p>
                 `;
 
                 // Enable QR code buttons
-                document.querySelectorAll('.generate-qr, .print-qr').forEach(btn => {
-                    btn.disabled = false;
-                });
+                document.querySelector('.print-qr').disabled = false;
 
                 alert('Product saved successfully! QR code generated.');
             } else {
