@@ -61,16 +61,20 @@ def register_product():
                 # For demo, we'll just store the filename
         
         # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
         qr_data = f"Product: {product_name}\nBrand: {brand}\nPrice: RM{price}"
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(qr_data)
         qr.make(fit=True)
-        img = qr.make_image(fill='black', back_color='white')
+        img = qr.make_image(fill_color="black", back_color="white")
         
-        # Convert QR code to base64 for storage
         buffered = BytesIO()
         img.save(buffered, format="PNG")
-        qr_code = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         # Save to database
         try:
@@ -82,30 +86,29 @@ def register_product():
                 INSERT INTO Product 
                 (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (product_name, category, price, quantity, qr_code, image, brand))
+            """, (product_name, category, price, quantity, qr_code_base64, image, brand))  # Changed qr_code to qr_code_base64
             
             conn.commit()
-            flash('Product registered successfully!', 'success')
-
+            
             # Return success with QR code data
             return jsonify({
                 'success': True,
-                'qr_code': qr_code, 
-                'qr_image_url': f"data:image/png;base64,{qr_code}",
-                'message': 'Product registered successfully!'
+                'qr_code': qr_code_base64,
+                'qr_image_url': f"data:image/png;base64,{qr_code_base64}",
+                'message': 'Product saved successfully!'
             })
-        
+            
+        except sqlite3.Error as e:
+            conn.rollback()
+            return jsonify({
+                'success': False,
+                'message': f'Database error: {e}'
+            }), 500
         except Exception as e:
             return jsonify({
                 'success': False,
                 'message': str(e)
-            }), 400
-            
-        except sqlite3.Error as e:
-            conn.rollback()
-            flash(f'Error saving product: {e}', 'error')
+            }), 500
         finally:
             if 'conn' in locals():
                 conn.close()
-        
-        return redirect(url_for('admin.dashboard'))

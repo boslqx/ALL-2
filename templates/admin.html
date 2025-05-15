@@ -308,15 +308,15 @@
         return isValid;
     }
 
-    // Save Button
-    document.querySelector('.save-button').addEventListener('click', function(e) {
+   // Save Button
+    document.querySelector('.save-button').addEventListener('click', async function(e) {
         e.preventDefault();
-        
+
         if (!validateForm()) {
-            alert('Please fill all required fields');
+            alert('Please fill all required fields correctly');
             return;
         }
-        
+
         // Prepare form data
         const formData = new FormData();
         formData.append('category', document.getElementById('category').value);
@@ -327,32 +327,49 @@
         formData.append('product', document.getElementById('product').value);
         formData.append('price', document.getElementById('price').value);
         formData.append('quantity', document.getElementById('quantity').value);
-        
+
         const imageInput = document.getElementById('image-upload');
         if (imageInput.files[0]) {
             formData.append('image', imageInput.files[0]);
         }
-        
-        // Submit to server
-        fetch('/register-product', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (response.ok) {
-                // Enable QR code buttons after successful save
-                document.querySelector('.generate-qr').disabled = false;
-                document.querySelector('.print-qr').disabled = false;
-                alert('Product saved successfully!');
-            } else {
-                alert('Error saving product');
+
+        try {
+            const response = await fetch('/register-product', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        })
-        .catch(error => {
+
+            const data = await response.json();
+
+            if (data.success && data.qr_image_url) {  // Changed to check qr_image_url
+                // Clear and update QR preview
+                const qrContainer = document.querySelector('.qr-preview-container');
+                qrContainer.innerHTML = `
+                    <img src="${data.qr_image_url}" 
+                        alt="Product QR Code"
+                        style="max-width:100%; height:auto;">
+                    <p style="text-align:center; margin-top:8px;">Scan this QR code</p>
+                `;
+
+                // Enable QR code buttons
+                document.querySelectorAll('.generate-qr, .print-qr').forEach(btn => {
+                    btn.disabled = false;
+                });
+
+                alert('Product saved successfully! QR code generated.');
+            } else {
+                alert('Error: ' + (data.message || 'QR code not generated'));
+            }
+        } catch (error) {
             console.error('Error:', error);
-            alert('Error saving product');
-        });
+            alert('Failed to save product: ' + error.message);
+        }
     });
+
 
     // Cancel Button
     document.querySelector('.cancel-button').addEventListener('click', function(e) {
