@@ -135,3 +135,73 @@ body {
 .confirm-btn:hover {
     background-color: #c0392b;
 }
+
+
+.activity-logs-container {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.log-filters {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#log-filter {
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background: white;
+}
+
+#refresh-logs {
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#refresh-logs:hover {
+    background-color: #45a049;
+}
+
+#log-status {
+    margin-left: 10px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.log-table-container {
+    overflow-x: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+#activity-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#activity-logs-table th,
+#activity-logs-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+#activity-logs-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    color: #333;
+}
+
+#activity-logs-table tr:hover {
+    background-color: #f9f9f9;
+}
