@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+        }
+        .qr-container { text-align: center; margin-top: 50px; }
+        .product-name { font-size: 18pt; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <img src="data:image/png;base64,{{ product.qr_code }}" width="200">
+        <div class="product-name">{{ product.name }}</div>
+    </div>
+    <button class="no-print" onclick="window.print()">Print</button>
+</body>
+</html>
