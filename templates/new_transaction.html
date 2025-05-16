@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Transaction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>{{ cashier_name }}</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item active">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </li>
+            <li class="nav-item" onclick="window.location.href='#'">
+                <i class="fas fa-history"></i>
+                <span>Recent Sales</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content transaction-content">
+        <div class="transaction-header">
+            <h1><i class="fas fa-arrow-left back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'"></i> New Transaction</h1>
+            <div class="search-container">
+                <input type="text" id="product-search" placeholder="Search products...">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+
+        <div class="transaction-body">
+            <!-- Left Side - Product Selection -->
+            <div class="product-selection">
+                <div class="category-sidebar">
+                    <h3>Categories</h3>
+                    <ul class="category-list">
+                        <li class="category-item active" data-category="">All Products</li>
+                        {% for category in categories %}
+                        <li class="category-item" data-category="{{ category }}">{{ category }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="product-filters">
+                    <div class="filter-group">
+                        <label for="stock-filter">Stock:</label>
+                        <select id="stock-filter">
+                            <option value="all">All</option>
+                            <option value="low">Low Stock (<10)</option>
+                            <option value="out">Out of Stock</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort-by">Sort by:</label>
+                        <select id="sort-by">
+                            <option value="name">Name (A-Z)</option>
+                            <option value="price_low">Price (Low to High)</option>
+                            <option value="price_high">Price (High to Low)</option>
+                            <option value="stock_low">Stock (Low to High)</option>
+                            <option value="stock_high">Stock (High to Low)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="product-list" id="product-list">
+                    {% for product in products %}
+                    <div class="product-card" data-id="{{ product.ProductID }}">
+                        <div class="product-info">
+                            <h3>{{ product.ProductName }}</h3>
+                            <p class="product-brand">{{ product.ProductBrand }}</p>
+                            <div class="product-details">
+                                <span>RM{{ "%.2f"|format(product.Price) }}</span>
+                                <span class="stock {{ 'low-stock' if product.StockQuantity < 10 else '' }}">
+                                    {{ product.StockQuantity }} left
+                                </span>
+                            </div>
+                        </div>
+                        <button class="select-button" onclick="addToCart({{ product.ProductID }}, '{{ product.ProductName }}', {{ product.Price }}, {{ product.StockQuantity }})">
+                            <i class="fas fa-cart-plus"></i> Select
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Right Side - Cart and Scanner -->
+            <div class="transaction-cart">
+                <div class="cart-header">
+                    <h2>Current Order</h2>
+                    <div class="scan-toggle">
+                        <button id="toggle-scan" class="scan-button" onclick="toggleScanner()">
+                            <i class="fas fa-qrcode"></i> Scan QR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- QR Scanner Section -->
+                <div id="qr-scanner" style="display: none;">
+                    <div class="scanner-container">
+                        <video id="scanner-video" width="100%" playsinline></video>
+                        <div class="scanner-overlay">
+                            <div class="scanner-frame"></div>
+                            <p>Align QR code within the frame</p>
+                        </div>
+                    </div>
+                    <div class="scanner-controls">
+                        <button class="action-button cancel" onclick="stopScanner()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="action-button confirm" onclick="completeScanning()">
+                            <i class="fas fa-check"></i> Done Scanning
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cart Items -->
+                <div class="cart-items" id="cart-items">
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>No items selected yet</p>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">RM0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax (6%):</span>
+                        <span id="tax">RM0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span id="total">RM0.00</span>
+                    </div>
+                    <button class="checkout-button" id="checkout-button" disabled onclick="processPayment()">
+                        <i class="fas fa-credit-card"></i> Process Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button id="cancelLogout" class="cancel-btn">No</button>
+                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cart management
+        let cart = [];
+        let scannerActive = false;
+        let stream = null;
+        
+        // Add product to cart
+        function addToCart(productId, productName, price, stock) {
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                if (existingItem.quantity < stock) {
+                    existingItem.quantity += 1;
+                    showToast(`${productName} quantity increased`);
+                } else {
+                    showToast(`No more ${productName} available`, 'error');
+                    return;
+                }
+            } else {
+                cart.push({
+                    id: productId,
+                    name: productName,
+                    price: price,
+                    quantity: 1,
+                    stock: stock
+                });
+                showToast(`${productName} added to cart`);
+            }
+            
+            updateCartDisplay();
+        }
+        
+        // Update cart display
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cart-items');
+            const subtotalElement = document.getElementById('subtotal');
+            const taxElement = document.getElementById('tax');
+            const totalElement = document.getElementById('total');
+            const checkoutButton = document.getElementById('checkout-button');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>No items selected yet</p>
+                    </div>
+                `;
+                subtotalElement.textContent = 'RM0.00';
+                taxElement.textContent = 'RM0.00';
+                totalElement.textContent = 'RM0.00';
+                checkoutButton.disabled = true;
+                return;
+            }
+            
+            // Calculate totals
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.06;
+            const total = subtotal + tax;
+            
+            // Update totals display
+            subtotalElement.textContent = `RM${subtotal.toFixed(2)}`;
+            taxElement.textContent = `RM${tax.toFixed(2)}`;
+            totalElement.textContent = `RM${total.toFixed(2)}`;
+            checkoutButton.disabled = false;
+            
+            // Update cart items display
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.name}</h4>
+                        <div class="item-controls">
+                            <button class="quantity-btn minus" onclick="updateQuantity(${item.id}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" value="${item.quantity}" min="1" max="${item.stock}" 
+                                   onchange="updateQuantityInput(${item.id}, this)">
+                            <button class="quantity-btn plus" onclick="updateQuantity(${item.id}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <span class="item-price">RM${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <button class="remove-item" onclick="removeFromCart(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                cartItems.appendChild(itemElement);
+            });
+        }
+        
+        // Update product quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            
+            const newQuantity = item.quantity + change;
+            
+            if (newQuantity < 1) {
+                removeFromCart(productId);
+                return;
+            }
+            
+            if (newQuantity > item.stock) {
+                showToast(`Only ${item.stock} ${item.name} available`, 'error');
+                return;
+            }
+            
+            item.quantity = newQuantity;
+            updateCartDisplay();
+        }
+        
+        // Update quantity via input
+        function updateQuantityInput(productId, input) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            
+            let newQuantity = parseInt(input.value);
+            
+            if (isNaN(newQuantity) {
+                newQuantity = 1;
+            } else if (newQuantity < 1) {
+                newQuantity = 1;
+            }
+            
+            if (newQuantity > item.stock) {
+                showToast(`Only ${item.stock} ${item.name} available`, 'error');
+                newQuantity = item.stock;
+            }
+            
+            input.value = newQuantity;
+            item.quantity = newQuantity;
+            updateCartDisplay();
+        }
+        
+        // Remove item from cart
+        function removeFromCart(productId) {
+            const itemIndex = cart.findIndex(item => item.id === productId);
+            if (itemIndex !== -1) {
+                const removedItem = cart.splice(itemIndex, 1)[0];
+                showToast(`${removedItem.name} removed from cart`);
+                updateCartDisplay();
+            }
+        }
+        
+        // Product filtering and sorting
+        function loadProducts() {
+            const query = document.getElementById('product-search').value;
+            const category = document.querySelector('.category-item.active').dataset.category;
+            const stockFilter = document.getElementById('stock-filter').value;
+            const sortBy = document.getElementById('sort-by').value;
+            
+            fetch(`{{ url_for('cashier.search_products') }}?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&stock_filter=${stockFilter}&sort_by=${sortBy}`)
+                .then(response => response.json())
+                .then(products => {
+                    const productList = document.getElementById('product-list');
+                    productList.innerHTML = '';
+                    
+                    if (products.length === 0) {
+                        productList.innerHTML = '<div class="no-products">No products found matching your criteria</div>';
+                        return;
+                    }
+                    
+                    products.forEach(product => {
+                        const productCard = document.createElement('div');
+                        productCard.className = 'product-card';
+                        productCard.dataset.id = product.id;
+                        productCard.innerHTML = `
+                            <div class="product-info">
+                                <h3>${product.name}</h3>
+                                ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
+                                <div class="product-details">
+                                    <span>RM${product.price.toFixed(2)}</span>
+                                    <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
+                                        ${product.stock} left
+                                    </span>
+                                </div>
+                            </div>
+                            <button class="select-button" onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
+                                <i class="fas fa-cart-plus"></i> Select
+                            </button>
+                        `;
+                        productList.appendChild(productCard);
+                    });
+                });
+        }
+        
+        // Category selection
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                loadProducts();
+            });
+        });
+        
+        // Search and filter events
+        document.getElementById('product-search').addEventListener('input', loadProducts);
+        document.getElementById('stock-filter').addEventListener('change', loadProducts);
+        document.getElementById('sort-by').addEventListener('change', loadProducts);
+        
+        // QR Scanner functionality
+        function toggleScanner() {
+            const scanner = document.getElementById('qr-scanner');
+            const toggleBtn = document.getElementById('toggle-scan');
+            
+            if (scannerActive) {
+                stopScanner();
+                scanner.style.display = 'none';
+                toggleBtn.innerHTML = '<i class="fas fa-qrcode"></i> Scan QR';
+            } else {
+                startScanner();
+                scanner.style.display = 'block';
+                toggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Scan';
+            }
+            
+            scannerActive = !scannerActive;
+        }
+        
+        function startScanner() {
+            const video = document.getElementById('scanner-video');
+            
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(function(s) {
+                    stream = s;
+                    video.srcObject = stream;
+                    video.play();
+                    scanQRCode(video);
+                })
+                .catch(function(err) {
+                    console.error("Camera error: ", err);
+                    showToast('Could not access camera', 'error');
+                    toggleScanner();
+                });
+        }
+        
+        function stopScanner() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            const video = document.getElementById('scanner-video');
+            video.srcObject = null;
+        }
+        
+        function scanQRCode(video) {
+            if (!scannerActive) return;
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            try {
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    const productId = parseInt(code.data);
+                    if (!isNaN(productId)) {
+                        fetch(`/product/${productId}`)
+                            .then(response => {
+                                if (!response.ok) throw new Error('Product not found');
+                                return response.json();
+                            })
+                            .then(product => {
+                                addToCart(product.id, product.name, product.price, product.stock);
+                                showToast(`Scanned: ${product.name}`);
+                            })
+                            .catch(error => {
+                                showToast('Invalid product QR code', 'error');
+                            });
+                    }
+                }
+            } catch (e) {
+                console.error("QR scan error:", e);
+            }
+            
+            requestAnimationFrame(() => scanQRCode(video));
+        }
+        
+        function completeScanning() {
+            toggleScanner();
+        }
+        
+        // Process payment
+        function processPayment() {
+            if (cart.length === 0) return;
+            
+            const total = document.getElementById('total').textContent;
+            
+            // In a real app, you would integrate with a payment processor here
+            // For demo purposes, we'll just show a success message
+            showToast(`Payment processed for ${total}`, 'success');
+            
+            // Clear cart after payment
+            cart = [];
+            updateCartDisplay();
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Logout modal
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+        
+        document.getElementById('cancelLogout').addEventListener('click', function() {
+            document.getElementById('logoutModal').style.display = 'none';
+        });
+    </script>
+    
+    <!-- Include jsQR library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+</body>
+</html>
