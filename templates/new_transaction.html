@@ -8,43 +8,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <!-- Sidebar -->
+    <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="logo">
             <h2>{{ cashier_name }}</h2>
         </div>
         <ul class="nav-menu">
             <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
+                <i class="fas fa-tachometer-alt"></i> Dashboard
             </li>
             <li class="nav-item active">
-                <i class="fas fa-cash-register"></i>
-                <span>New Transaction</span>
+                <i class="fas fa-cash-register"></i> New Transaction
             </li>
             <li class="nav-item" onclick="window.location.href='#'">
-                <i class="fas fa-history"></i>
-                <span>Recent Sales</span>
+                <i class="fas fa-history"></i> Recent Sales
             </li>
             <li class="nav-item logout" onclick="showLogoutModal()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
+                <i class="fas fa-sign-out-alt"></i> Logout
             </li>
         </ul>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Transaction Interface -->
     <div class="main-content transaction-content">
         <div class="transaction-header">
-            <h1><i class="fas fa-arrow-left back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'"></i> New Transaction</h1>
+            <button class="back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1>New Transaction</h1>
             <div class="search-container">
-                <input type="text" id="product-search" placeholder="Search products...">
+                <input type="text" id="product-search" placeholder="Search products..." autocomplete="off">
                 <i class="fas fa-search"></i>
             </div>
         </div>
 
         <div class="transaction-body">
-            <!-- Left Side - Product Selection -->
+            <!-- Product Selection Panel -->
             <div class="product-selection">
                 <div class="category-sidebar">
                     <h3>Categories</h3>
@@ -58,21 +57,19 @@
 
                 <div class="product-filters">
                     <div class="filter-group">
-                        <label for="stock-filter">Stock:</label>
-                        <select id="stock-filter">
-                            <option value="all">All</option>
+                        <select id="stock-filter" class="filter-select">
+                            <option value="all">All Stock</option>
                             <option value="low">Low Stock (<10)</option>
                             <option value="out">Out of Stock</option>
                         </select>
                     </div>
                     <div class="filter-group">
-                        <label for="sort-by">Sort by:</label>
-                        <select id="sort-by">
-                            <option value="name">Name (A-Z)</option>
-                            <option value="price_low">Price (Low to High)</option>
-                            <option value="price_high">Price (High to Low)</option>
-                            <option value="stock_low">Stock (Low to High)</option>
-                            <option value="stock_high">Stock (High to Low)</option>
+                        <select id="sort-by" class="filter-select">
+                            <option value="name">Sort by Name</option>
+                            <option value="price_low">Price Low to High</option>
+                            <option value="price_high">Price High to Low</option>
+                            <option value="stock_low">Stock Low to High</option>
+                            <option value="stock_high">Stock High to Low</option>
                         </select>
                     </div>
                 </div>
@@ -82,37 +79,39 @@
                     <div class="product-card" data-id="{{ product.ProductID }}">
                         <div class="product-info">
                             <h3>{{ product.ProductName }}</h3>
+                            {% if product.ProductBrand %}
                             <p class="product-brand">{{ product.ProductBrand }}</p>
+                            {% endif %}
                             <div class="product-details">
-                                <span>RM{{ "%.2f"|format(product.Price) }}</span>
+                                <span class="price">RM{{ "%.2f"|format(product.Price) }}</span>
                                 <span class="stock {{ 'low-stock' if product.StockQuantity < 10 else '' }}">
-                                    {{ product.StockQuantity }} left
+                                    {{ product.StockQuantity }} in stock
                                 </span>
                             </div>
                         </div>
-                        <button class="select-button" onclick="addToCart({{ product.ProductID }}, '{{ product.ProductName }}', {{ product.Price }}, {{ product.StockQuantity }})">
-                            <i class="fas fa-cart-plus"></i> Select
+                        <button class="select-button" 
+                                onclick="addToCart({{ product.ProductID }}, '{{ product.ProductName|replace("'", "\\'") }}', {{ product.Price }}, {{ product.StockQuantity }})">
+                            <i class="fas fa-cart-plus"></i> Add
                         </button>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Right Side - Cart and Scanner -->
+            <!-- Transaction Cart Panel -->
             <div class="transaction-cart">
                 <div class="cart-header">
                     <h2>Current Order</h2>
-                    <div class="scan-toggle">
-                        <button id="toggle-scan" class="scan-button" onclick="toggleScanner()">
-                            <i class="fas fa-qrcode"></i> Scan QR
-                        </button>
-                    </div>
+                    <button id="toggle-scan" class="scan-button" onclick="toggleScanner()">
+                        <i class="fas fa-qrcode"></i> 
+                        <span id="scan-button-text">Scan QR</span>
+                    </button>
                 </div>
 
                 <!-- QR Scanner Section -->
-                <div id="qr-scanner" style="display: none;">
+                <div id="qr-scanner">
                     <div class="scanner-container">
-                        <video id="scanner-video" width="100%" playsinline></video>
+                        <video id="scanner-video" playsinline></video>
                         <div class="scanner-overlay">
                             <div class="scanner-frame"></div>
                             <p>Align QR code within the frame</p>
@@ -123,7 +122,7 @@
                             <i class="fas fa-times"></i> Cancel
                         </button>
                         <button class="action-button confirm" onclick="completeScanning()">
-                            <i class="fas fa-check"></i> Done Scanning
+                            <i class="fas fa-check"></i> Done
                         </button>
                     </div>
                 </div>
@@ -150,7 +149,7 @@
                         <span>Total:</span>
                         <span id="total">RM0.00</span>
                     </div>
-                    <button class="checkout-button" id="checkout-button" disabled onclick="processPayment()">
+                    <button class="checkout-button" id="checkout-button" onclick="processPayment()">
                         <i class="fas fa-credit-card"></i> Process Payment
                     </button>
                 </div>
@@ -158,31 +157,162 @@
         </div>
     </div>
 
-    <!-- Logout Modal -->
+    <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="modal">
         <div class="modal-content">
             <p>Are you sure you want to log out?</p>
             <div class="modal-buttons">
-                <button id="cancelLogout" class="cancel-btn">No</button>
+                <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
                 <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
             </div>
         </div>
     </div>
 
+    <!-- Payment Processing Modal -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <h3>Confirm Payment</h3>
+            <p>Total Amount: <strong id="payment-amount">RM0.00</strong></p>
+            <div class="payment-methods">
+                <button class="payment-method active" onclick="selectPaymentMethod('cash')">
+                    <i class="fas fa-money-bill-wave"></i> Cash
+                </button>
+                <button class="payment-method" onclick="selectPaymentMethod('card')">
+                    <i class="fas fa-credit-card"></i> Card
+                </button>
+                <button class="payment-method" onclick="selectPaymentMethod('ewallet')">
+                    <i class="fas fa-mobile-alt"></i> E-Wallet
+                </button>
+            </div>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="document.getElementById('paymentModal').style.display='none'">Cancel</button>
+                <button class="confirm-btn" onclick="completePayment()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Complete Modal -->
+    <div id="completeModal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Payment Successful!</h3>
+            <p>Transaction ID: <strong id="transaction-id">T000000</strong></p>
+            <p>Total: <strong id="transaction-total">RM0.00</strong></p>
+            <div class="modal-buttons">
+                <button class="confirm-btn" onclick="closeTransaction()">Done</button>
+                <button class="print-btn" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include jsQR library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
     <script>
-        // Cart management
+        // Global variables
         let cart = [];
         let scannerActive = false;
-        let stream = null;
+        let videoStream = null;
+        let selectedPaymentMethod = 'cash';
+        let currentTransaction = null;
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initialize scanner (hidden by default)
+            document.getElementById('qr-scanner').style.display = 'none';
+            document.getElementById('checkout-button').disabled = true;
+        });
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Category selection
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    loadProducts();
+                });
+            });
+            
+            // Search and filter events
+            document.getElementById('product-search').addEventListener('input', 
+                debounce(loadProducts, 300));
+            
+            document.getElementById('stock-filter').addEventListener('change', loadProducts);
+            document.getElementById('sort-by').addEventListener('change', loadProducts);
+            
+            // Cart quantity controls are added dynamically in updateCartDisplay()
+        }
+        
+        // Load products with current filters
+        function loadProducts() {
+            const query = document.getElementById('product-search').value;
+            const category = document.querySelector('.category-item.active').dataset.category;
+            const stockFilter = document.getElementById('stock-filter').value;
+            const sortBy = document.getElementById('sort-by').value;
+            
+            fetch(`{{ url_for('cashier.search_products') }}?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&stock_filter=${stockFilter}&sort_by=${sortBy}`)
+                .then(response => response.json())
+                .then(products => {
+                    renderProducts(products);
+                })
+                .catch(error => {
+                    console.error('Error loading products:', error);
+                    showToast('Error loading products', 'error');
+                });
+        }
+        
+        // Render products to the product list
+        function renderProducts(products) {
+            const productList = document.getElementById('product-list');
+            
+            if (products.length === 0) {
+                productList.innerHTML = '<div class="no-products">No products found matching your criteria</div>';
+                return;
+            }
+            
+            productList.innerHTML = '';
+            
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                productCard.dataset.id = product.id;
+                productCard.innerHTML = `
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
+                        <div class="product-details">
+                            <span class="price">RM${product.price.toFixed(2)}</span>
+                            <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
+                                ${product.stock} in stock
+                            </span>
+                        </div>
+                    </div>
+                    <button class="select-button" 
+                            onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
+                        <i class="fas fa-cart-plus"></i> Add
+                    </button>
+                `;
+                productList.appendChild(productCard);
+            });
+        }
         
         // Add product to cart
         function addToCart(productId, productName, price, stock) {
+            // Check if product already in cart
             const existingItem = cart.find(item => item.id === productId);
             
             if (existingItem) {
                 if (existingItem.quantity < stock) {
                     existingItem.quantity += 1;
-                    showToast(`${productName} quantity increased`);
+                    showToast(`Added another ${productName}`, 'success');
                 } else {
                     showToast(`No more ${productName} available`, 'error');
                     return;
@@ -195,7 +325,7 @@
                     quantity: 1,
                     stock: stock
                 });
-                showToast(`${productName} added to cart`);
+                showToast(`Added ${productName} to cart`, 'success');
             }
             
             updateCartDisplay();
@@ -225,7 +355,7 @@
             
             // Calculate totals
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.06;
+            const tax = subtotal * 0.06; // 6% tax
             const total = subtotal + tax;
             
             // Update totals display
@@ -311,112 +441,65 @@
             const itemIndex = cart.findIndex(item => item.id === productId);
             if (itemIndex !== -1) {
                 const removedItem = cart.splice(itemIndex, 1)[0];
-                showToast(`${removedItem.name} removed from cart`);
+                showToast(`Removed ${removedItem.name} from cart`, 'success');
                 updateCartDisplay();
             }
         }
         
-        // Product filtering and sorting
-        function loadProducts() {
-            const query = document.getElementById('product-search').value;
-            const category = document.querySelector('.category-item.active').dataset.category;
-            const stockFilter = document.getElementById('stock-filter').value;
-            const sortBy = document.getElementById('sort-by').value;
-            
-            fetch(`{{ url_for('cashier.search_products') }}?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&stock_filter=${stockFilter}&sort_by=${sortBy}`)
-                .then(response => response.json())
-                .then(products => {
-                    const productList = document.getElementById('product-list');
-                    productList.innerHTML = '';
-                    
-                    if (products.length === 0) {
-                        productList.innerHTML = '<div class="no-products">No products found matching your criteria</div>';
-                        return;
-                    }
-                    
-                    products.forEach(product => {
-                        const productCard = document.createElement('div');
-                        productCard.className = 'product-card';
-                        productCard.dataset.id = product.id;
-                        productCard.innerHTML = `
-                            <div class="product-info">
-                                <h3>${product.name}</h3>
-                                ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
-                                <div class="product-details">
-                                    <span>RM${product.price.toFixed(2)}</span>
-                                    <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
-                                        ${product.stock} left
-                                    </span>
-                                </div>
-                            </div>
-                            <button class="select-button" onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
-                                <i class="fas fa-cart-plus"></i> Select
-                            </button>
-                        `;
-                        productList.appendChild(productCard);
-                    });
-                });
-        }
-        
-        // Category selection
-        document.querySelectorAll('.category-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
-                loadProducts();
-            });
-        });
-        
-        // Search and filter events
-        document.getElementById('product-search').addEventListener('input', loadProducts);
-        document.getElementById('stock-filter').addEventListener('change', loadProducts);
-        document.getElementById('sort-by').addEventListener('change', loadProducts);
-        
-        // QR Scanner functionality
+        // Toggle QR scanner
         function toggleScanner() {
             const scanner = document.getElementById('qr-scanner');
-            const toggleBtn = document.getElementById('toggle-scan');
+            const scanButton = document.getElementById('toggle-scan');
             
             if (scannerActive) {
                 stopScanner();
                 scanner.style.display = 'none';
-                toggleBtn.innerHTML = '<i class="fas fa-qrcode"></i> Scan QR';
+                scanButton.innerHTML = '<i class="fas fa-qrcode"></i> <span id="scan-button-text">Scan QR</span>';
             } else {
                 startScanner();
                 scanner.style.display = 'block';
-                toggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Scan';
+                scanButton.innerHTML = '<i class="fas fa-times"></i> <span id="scan-button-text">Cancel Scan</span>';
             }
             
             scannerActive = !scannerActive;
         }
         
+        // Start QR scanner
         function startScanner() {
             const video = document.getElementById('scanner-video');
             
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(function(s) {
-                    stream = s;
-                    video.srcObject = stream;
-                    video.play();
-                    scanQRCode(video);
-                })
-                .catch(function(err) {
-                    console.error("Camera error: ", err);
-                    showToast('Could not access camera', 'error');
-                    toggleScanner();
-                });
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            })
+            .then(function(stream) {
+                videoStream = stream;
+                video.srcObject = stream;
+                video.play();
+                scanQRCode(video);
+            })
+            .catch(function(err) {
+                console.error("Camera error: ", err);
+                showToast('Could not access camera', 'error');
+                toggleScanner();
+            });
         }
         
+        // Stop QR scanner
         function stopScanner() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
             }
             
             const video = document.getElementById('scanner-video');
             video.srcObject = null;
         }
         
+        // Scan for QR codes
         function scanQRCode(video) {
             if (!scannerActive) return;
             
@@ -425,27 +508,17 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
             try {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert',
+                });
                 
                 if (code) {
                     const productId = parseInt(code.data);
                     if (!isNaN(productId)) {
-                        fetch(`/product/${productId}`)
-                            .then(response => {
-                                if (!response.ok) throw new Error('Product not found');
-                                return response.json();
-                            })
-                            .then(product => {
-                                addToCart(product.id, product.name, product.price, product.stock);
-                                showToast(`Scanned: ${product.name}`);
-                            })
-                            .catch(error => {
-                                showToast('Invalid product QR code', 'error');
-                            });
+                        fetchProductAndAddToCart(productId);
                     }
                 }
             } catch (e) {
@@ -455,6 +528,23 @@
             requestAnimationFrame(() => scanQRCode(video));
         }
         
+        // Fetch product by ID and add to cart
+        function fetchProductAndAddToCart(productId) {
+            fetch(`/product/${productId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Product not found');
+                    return response.json();
+                })
+                .then(product => {
+                    addToCart(product.id, product.name, product.price, product.stock);
+                })
+                .catch(error => {
+                    console.error('Error scanning product:', error);
+                    showToast('Invalid product QR code', 'error');
+                });
+        }
+        
+        // Complete scanning
         function completeScanning() {
             toggleScanner();
         }
@@ -464,14 +554,79 @@
             if (cart.length === 0) return;
             
             const total = document.getElementById('total').textContent;
+            document.getElementById('payment-amount').textContent = total;
+            document.getElementById('paymentModal').style.display = 'flex';
+        }
+        
+        // Select payment method
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-method').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('onclick').includes(method));
+            });
+        }
+        
+        // Complete payment
+        function completePayment() {
+            const total = parseFloat(document.getElementById('total').textContent.replace('RM', ''));
             
-            // In a real app, you would integrate with a payment processor here
-            // For demo purposes, we'll just show a success message
-            showToast(`Payment processed for ${total}`, 'success');
-            
-            // Clear cart after payment
+            fetch('{{ url_for("cashier.checkout") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    items: cart.map(item => ({
+                        id: item.id,
+                        quantity: item.quantity
+                    })),
+                    total: total,
+                    payment_method: selectedPaymentMethod
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentTransaction = {
+                        id: data.transaction_id,
+                        total: total,
+                        items: [...cart],
+                        payment_method: selectedPaymentMethod,
+                        timestamp: new Date()
+                    };
+                    showTransactionComplete(data.transaction_id, total);
+                } else {
+                    throw new Error(data.error || 'Payment failed');
+                }
+            })
+            .catch(error => {
+                console.error('Payment error:', error);
+                showToast('Payment failed: ' + error.message, 'error');
+            })
+            .finally(() => {
+                document.getElementById('paymentModal').style.display = 'none';
+            });
+        }
+        
+        // Show transaction complete
+        function showTransactionComplete(transactionId, total) {
+            document.getElementById('transaction-id').textContent = 'T' + transactionId.toString().padStart(6, '0');
+            document.getElementById('transaction-total').textContent = 'RM' + total.toFixed(2);
+            document.getElementById('completeModal').style.display = 'flex';
+        }
+        
+        // Close transaction
+        function closeTransaction() {
             cart = [];
             updateCartDisplay();
+            document.getElementById('completeModal').style.display = 'none';
+        }
+        
+        // Print receipt
+        function printReceipt() {
+            // In a real implementation, this would print a formatted receipt
+            alert('Receipt printing would be implemented here');
+            closeTransaction();
         }
         
         // Show toast notification
@@ -487,17 +642,15 @@
             }, 3000);
         }
         
-        // Logout modal
-        function showLogoutModal() {
-            document.getElementById('logoutModal').style.display = 'flex';
+        // Debounce function for search input
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
         }
-        
-        document.getElementById('cancelLogout').addEventListener('click', function() {
-            document.getElementById('logoutModal').style.display = 'none';
-        });
     </script>
-    
-    <!-- Include jsQR library -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </body>
 </html>

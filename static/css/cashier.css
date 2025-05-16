@@ -1,215 +1,308 @@
-/* Add these styles to your existing cashier.css */
-
-/* Toast notifications */
-.toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 24px;
-    background-color: #2a3f54;
-    color: white;
-    border-radius: 4px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-.toast-success {
-    background-color: #27ae60;
-}
-
-.toast-error {
-    background-color: #e74c3c;
-}
-
-.fade-out {
-    animation: fadeOut 0.3s ease-in;
-}
-
-@keyframes slideIn {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 20px; opacity: 1; }
-}
-
-@keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-
-/* Product cards */
-.product-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid #e0e0e0;
-}
-
-.product-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.product-info h3 {
-    font-size: 0.95rem;
-    margin-bottom: 5px;
-    color: #2c3e50;
-}
-
-.product-brand {
-    font-size: 0.8rem;
-    color: #7f8c8d;
-    margin-bottom: 8px;
-}
-
-.product-details {
+body {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-}
-
-.product-details span:first-child {
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.stock {
-    color: #27ae60;
-    font-weight: 500;
-}
-
-.low-stock {
-    color: #e74c3c;
-}
-
-/* Cart items */
-.cart-item {
-    transition: all 0.2s ease;
-}
-
-.cart-item:hover {
-    background-color: #f0f0f0;
-}
-
-.item-info h4 {
-    font-size: 0.9rem;
-    margin-bottom: 6px;
-}
-
-.item-controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.quantity-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-}
-
-.quantity-btn:hover {
+    min-height: 100vh;
     background-color: #f5f5f5;
 }
 
-.quantity-btn i {
-    font-size: 0.6rem;
-    color: #555;
-}
-
-.item-controls input {
-    width: 36px;
-    text-align: center;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 4px;
-}
-
-.item-price {
-    font-weight: 600;
-    margin-left: 10px;
-    color: #2c3e50;
-}
-
-.remove-item {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 5px;
-}
-
-.remove-item:hover {
-    color: #c0392b;
-}
-
-/* Scanner styles */
-.scanner-container {
+/* Sidebar Styles */
+.sidebar {
+    width: 240px;
+    background: linear-gradient(to bottom, #2a3f54 0%, #3b4e63 50%, #5f738c 100%);
+    color: white;
+    padding: 20px 0;
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
     position: relative;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #000;
+    z-index: 10;
 }
 
-.scanner-overlay {
+.logo {
+    text-align: center;
+    padding: 15px 0 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.logo h2 {
+    font-weight: 300;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+}
+
+.nav-menu {
+    list-style: none;
+    padding: 0 15px;
+}
+
+.nav-item {
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+
+.nav-item.active {
+    background: rgba(26, 188, 156, 0.2);
+    border-left: 4px solid #1abc9c;
+}
+
+.nav-item i {
+    margin-right: 12px;
+    font-size: 1.1rem;
+}
+
+.logout {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    bottom: 20px;
+    width: calc(100% - 30px);
+    left: 15px;
+}
+
+/* Main Content Area */
+.main-content {
+    flex: 1;
+    padding: 30px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
 }
 
-.scanner-frame {
-    width: 70%;
-    height: 70%;
-    border: 3px solid #1abc9c;
+.main-content h1 {
+    font-size: 2rem;
+    color: #2a3f54;
+    margin-bottom: 30px;
+}
+
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
+}
+
+.card {
+    background: white;
     border-radius: 8px;
-    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-.scanner-overlay p {
-    color: white;
-    margin-top: 15px;
+.card h2 {
+    font-size: 1.3rem;
+    color: #2a3f54;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Stock Alerts */
+.stock-alerts {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.alert-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.alert-item {
+    padding: 15px;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    border-left: 4px solid #e74c3c;
+}
+
+.alert-header {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.alert-details {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
     font-size: 0.9rem;
 }
 
-.scanner-controls {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
+.status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .product-list {
+.status.active {
+    background-color: #e3f7e8;
+    color: #27ae60;
+}
+
+.status.complete {
+    background-color: #e3f7e8;
+    color: #27ae60;
+}
+
+.status.cancel {
+    background-color: #fde8e8;
+    color: #e74c3c;
+}
+
+.no-alerts, .no-transactions {
+    text-align: center;
+    color: #999;
+    padding: 20px 0;
+}
+
+/* Latest Transactions */
+.latest-transactions {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.transaction-item {
+    padding: 15px;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+}
+
+.transaction-header {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.transaction-time {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.transaction-amount {
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Quick Actions */
+.quick-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.action-button {
+    padding: 15px;
+    border: none;
+    border-radius: 6px;
+    background-color: #2a3f54;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.action-button:hover {
+    background-color: #3b4e63;
+}
+
+.action-button i {
+    font-size: 1.2rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 30px 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    max-width: 300px;
+    margin: auto;
+}
+
+.modal-buttons {
+    margin-top: 20px;
+}
+
+.cancel-btn, .confirm-btn {
+    padding: 10px 20px;
+    border: none;
+    margin: 0 5px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.cancel-btn {
+    background-color: #ccc;
+    color: #333;
+}
+
+.cancel-btn:hover {
+    background-color: #bbb;
+}
+
+.confirm-btn {
+    background-color: #e74c3c;
+    color: white;
+    text-decoration: none;
+}
+
+.confirm-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .dashboard-container {
         grid-template-columns: 1fr;
     }
     
-    .product-card {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .product-info {
-        margin-bottom: 0;
-        margin-right: 10px;
-    }
-    
-    .select-button {
-        width: auto;
+    .quick-actions {
+        grid-column: 1;
+        grid-row: 3;
     }
 }
