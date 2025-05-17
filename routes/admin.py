@@ -69,37 +69,50 @@ def register_product():
                 filename = secure_filename(file.filename)
                 image = filename
 
-        # Generate QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr_data = f"Category: {category}\n Product: {product_name}\n Brand: {brand}\n Price: RM{price}\n Stock Quantity: {quantity}"
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-
-        # Save to database
         try:
             db_path = os.path.join(current_app.instance_path, 'site.db')
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
-            # Insert product
+            # Insert product without QR code first
             cursor.execute("""
                 INSERT INTO Product 
                 (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (product_name, category, price, quantity, qr_code_base64, image, brand))
+            """, (product_name, category, price, quantity, None, image, brand))
 
-            # Get the ID of the newly inserted product
+            # Get Product ID
             product_id = cursor.lastrowid
+
+            # Now generate QR code using product_id
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr_data = (
+                f"Product ID: {product_id}\n"
+                f"Category: {category}\n"
+                f"Product: {product_name}\n"
+                f"Brand: {brand}\n"
+                f"Price: RM{price}\n"
+                f"Stock Quantity: {quantity}"
+            )
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+            # Update product with QR code
+            cursor.execute("""
+                UPDATE Product
+                SET QRcode = ?
+                WHERE ProductID = ?
+            """, (qr_code_base64, product_id))
 
             # Log the activity
             cursor.execute("""
@@ -126,18 +139,13 @@ def register_product():
 
         except sqlite3.Error as e:
             conn.rollback()
-            return jsonify({
-                'success': False,
-                'message': f'Database error: {e}'
-            }), 500
+            return jsonify({'success': False, 'message': f'Database error: {e}'}), 500
         except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': str(e)
-            }), 500
+            return jsonify({'success': False, 'message': str(e)}), 500
         finally:
             if 'conn' in locals():
                 conn.close()
+
 
 @admin_bp.route('/print-qr/<product_id>')
 def print_qr(product_id):
@@ -145,42 +153,50 @@ def print_qr(product_id):
         # Get product data from database
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         cursor = conn.cursor()
-        cursor.execute("SELECT ProductName, QRcode FROM Product WHERE ProductID = ?", (product_id,))
+        cursor.execute("SELECT ProductID, ProductName, ProductBrand, QRcode FROM Product WHERE ProductID = ?", (product_id,))
         product = cursor.fetchone()
+        conn.close()
         
         if not product:
             return "Product not found", 404
-            
+
+        product_id, product_name, product_brand, qr_base64 = product
+
         # Create PDF
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
-        
-        # Add QR code (centered)
-        qr_img = ImageReader(BytesIO(base64.b64decode(product[1])))
-        p.drawImage(qr_img, (width-200)/2, height-250, width=200, height=200)
-        
-        # Add product name
-        p.setFont("Helvetica-Bold", 16)
-        p.drawCentredString(width/2, height-270, product[0])
-        
-        # Add footer
+
+        # Add QR code image (centered)
+        qr_img = ImageReader(BytesIO(base64.b64decode(qr_base64)))
+        p.drawImage(qr_img, (width - 200) / 2, height - 300, width=200, height=200)
+
+        # Add Product ID above QR
+        p.setFont("Helvetica", 12)
+        p.drawCentredString(width / 2, height - 80, f"Product ID: {product_id}")
+
+        # Add Brand + Product Name
+        p.setFont("Helvetica-Bold", 14)
+        p.drawCentredString(width / 2, height - 320, f"{product_brand} - {product_name}")
+
+        # Footer message
         p.setFont("Helvetica", 10)
-        p.drawCentredString(width/2, 30, "Scan this QR code for product details")
-        
+        p.drawCentredString(width / 2, 30, "Scan this QR code for product details")
+
         p.showPage()
         p.save()
-        
+
         buffer.seek(0)
         return send_file(
             buffer,
             as_attachment=True,
-            download_name=f"{product[0]}_QR.pdf",
+            download_name=f"{product_brand}_{product_name}_QR.pdf",
             mimetype='application/pdf'
         )
-        
+
     except Exception as e:
         return str(e), 500
+
     
 def get_product_from_db(product_id):
     return Product.query.get(product_id)
