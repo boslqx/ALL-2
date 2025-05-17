@@ -90,30 +90,7 @@
 
                 <!-- Products will be loaded here dynamically -->
                 <div class="products-grid" id="products-grid">
-                    <!-- Example product card (will be generated from DB) -->
-                    <div class="product-card">
-                        <div class="product-image">
-                            <img src="/static/images/placeholder.png" alt="Product Image">
-                        </div>
-                        <div class="product-info">
-                            <div class="product-brand-name">
-                                <span class="product-brand">Nestle</span>
-                                <span class="product-name">Milo 3-in-1 15s</span>
-                            </div>
-                            <div class="product-meta">
-                                <span class="product-price">RM12.50</span>
-                                <span class="product-stock">24 in stock</span>
-                            </div>
-                            <div class="product-actions">
-                                <button class="action-button details-button">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                                <button class="action-button restock-button">
-                                    <i class="fas fa-boxes"></i> Restock
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -282,15 +259,11 @@
         
         fetch('/api/products')
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
+                if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
             .then(products => {
-                if (products.error) {
-                    throw new Error(products.error);
-                }
+                if (products.error) throw new Error(products.error);
                 
                 if (products.length === 0) {
                     productsGrid.innerHTML = `
@@ -305,9 +278,9 @@
                 productsGrid.innerHTML = products.map(product => `
                     <div class="product-card" data-id="${product.ProductID}">
                         <div class="product-image">
-                            <img src="${product.Image || '/static/images/placeholder.png'}" 
+                            <img src="${getProductImageUrl(product.Image)}" 
                                 alt="${product.ProductName}"
-                                onerror="this.src='/static/images/placeholder.png'">
+                                onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
                         </div>
                         <div class="product-info">
                             <div class="product-brand-name">
@@ -315,10 +288,8 @@
                                 <span class="product-name">${product.ProductName}</span>
                             </div>
                             <div class="product-meta">
-                                <span class="product-price">RM${product.Price?.toFixed(2) || '0.00'}</span>
-                                <span class="product-stock">
-                                    ${product.StockQuantity || 0} in stock
-                                </span>
+                                <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                                <span class="product-stock">${product.StockQuantity || 0} in stock</span>
                             </div>
                             <div class="product-actions">
                                 <button class="action-button details-button" data-id="${product.ProductID}">
@@ -331,9 +302,24 @@
                         </div>
                     </div>
                 `).join('');
+                
+                // Add event listeners for the buttons
+                document.querySelectorAll('.details-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const productId = this.getAttribute('data-id');
+                        showProductDetails(productId);
+                    });
+                });
+                
+                document.querySelectorAll('.restock-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const productId = this.getAttribute('data-id');
+                        restockProduct(productId);
+                    });
+                });
             })
             .catch(error => {
-                console.error('Error fetching products:', error);
+                console.error('Error:', error);
                 productsGrid.innerHTML = `
                     <div class="error-message">
                         <i class="fas fa-exclamation-triangle"></i>
@@ -341,12 +327,25 @@
                         <button class="retry-button">Retry</button>
                     </div>
                 `;
-                
-                // Add retry functionality
-                document.querySelector('.retry-button')?.addEventListener('click', () => {
-                    location.reload();
-                });
+                document.querySelector('.retry-button')?.addEventListener('click', () => location.reload());
             });
+
+        // Helper function to construct proper image URL
+        function getProductImageUrl(imagePath) {
+            if (!imagePath) return '/static/images/placeholder.png';
+            return `/uploads/products/${imagePath}`;
+        }
+        
+        // Placeholder functions for button actions
+        function showProductDetails(productId) {
+            console.log('Showing details for product:', productId);
+            // Implement your details view here
+        }
+        
+        function restockProduct(productId) {
+            console.log('Restocking product:', productId);
+            // Implement your restock logic here
+        }
     });
 
     // Image Upload with Preview & Remove Button

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify, send_file,send_from_directory
 import sqlite3, os
 from werkzeug.utils import secure_filename
 import qrcode
@@ -232,3 +232,8 @@ def get_products():
     finally:
         if conn:
             conn.close()
+
+@admin_bp.route('/uploads/products/<filename>')
+def serve_product_image(filename):
+    upload_dir = os.path.join(current_app.instance_path, 'uploads', 'products')
+    return send_from_directory(upload_dir, filename)

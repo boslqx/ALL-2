@@ -273,18 +273,40 @@ body {
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
+/* Add to your admin.css */
 .product-image {
     height: 180px;
     background: #f8f9fa;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
 
 .product-image img {
     max-height: 100%;
     max-width: 100%;
     object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-image img {
+    transform: scale(1.05);
+}
+
+.loading-spinner {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+    font-size: 1.2rem;
+}
+
+.no-products, .error-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
 }
 
 .product-info {
@@ -357,24 +379,9 @@ body {
     opacity: 0.9;
 }
 
-.loading-spinner {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 40px;
-    color: #7f8c8d;
-    font-size: 1.2rem;
-}
-
 .loading-spinner i {
     margin-right: 10px;
     font-size: 1.5rem;
-}
-
-.no-products, .error-message {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 40px;
-    color: #7f8c8d;
 }
 
 .no-products i, .error-message i {
