@@ -189,3 +189,30 @@ def get_product_from_db(product_id):
 def print_view(product_id):
     product = get_product_from_db(product_id)  # Implement this
     return render_template('print.html', product=product)
+
+@admin_bp.route('/api/products')
+def get_products():
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row  # This allows accessing columns by name
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT ProductID, ProductName, ProductBrand, 
+                   Price, StockQuantity, Image 
+            FROM Product
+            ORDER BY ProductName
+        """)
+        
+        products = [dict(row) for row in cursor.fetchall()]
+        return jsonify(products)
+        
+    except sqlite3.Error as e:
+        current_app.logger.error(f"Database error: {str(e)}")
+        return jsonify({"error": "Database error"}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error: {str(e)}")
+        return jsonify({"error": "Server error"}), 500
+    finally:
+        if conn:
+            conn.close()
