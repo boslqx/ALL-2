@@ -22,7 +22,7 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </li>
-            <li class="nav-item {% if active_tab == 'new_transaction' %}active{% endif %}" onclick="window.location.href='#'">
+            <li class="nav-item {% if active_tab == 'new_transaction' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
                 <i class="fas fa-cash-register"></i>
                 <span>New Transaction</span>
             </li>
@@ -94,7 +94,7 @@
             <div class="card quick-actions">
                 <h2>Quick Actions</h2>
                 <div class="action-buttons">
-                    <button class="action-button" onclick="window.location.href='#'">
+                    <button class="action-button" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
                         <i class="fas fa-cash-register"></i>
                         New Transaction
                     </button>
