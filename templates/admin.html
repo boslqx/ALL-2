@@ -48,8 +48,75 @@
     <!-- Main Content (Placeholder) -->
     <div class="main-content">
         <div id="dashboard" class="section">Welcome to the Admin Dashboard</div>
-        <div id="products" class="section" style="display:none;">Product List will be shown here.</div>
         <div id="activity" class="section" style="display:none;">Sales and Inventory Activity</div>
+
+        <div id="products" class="section" style="display:none;">
+            <div class="products-container">
+                <!-- Header with title and search -->
+                <div class="products-header">
+                    <h2 class="products-title">Products</h2>
+                    <div class="search-container">
+                        <input type="text" placeholder="Search by brand or name..." class="search-input">
+                        <button class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter options -->
+                <div class="filter-options">
+                    <div class="filter-group">
+                        <select class="filter-select" id="category-filter">
+                            <option value="">All Categories</option>
+                            <!-- Will be populated from DB -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <select class="filter-select" id="brand-filter">
+                            <option value="">All Brands</option>
+                            <!-- Will be populated from DB -->
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <select class="filter-select" id="price-filter">
+                            <option value="">Sort by Price</option>
+                            <option value="low-high">Low to High</option>
+                            <option value="high-low">High to Low</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Products will be loaded here dynamically -->
+                <div class="products-grid" id="products-grid">
+                    <!-- Example product card (will be generated from DB) -->
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/static/images/placeholder.png" alt="Product Image">
+                        </div>
+                        <div class="product-info">
+                            <div class="product-brand-name">
+                                <span class="product-brand">Nestle</span>
+                                <span class="product-name">Milo 3-in-1 15s</span>
+                            </div>
+                            <div class="product-meta">
+                                <span class="product-price">RM12.50</span>
+                                <span class="product-stock">24 in stock</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="action-button details-button">
+                                    <i class="fas fa-info-circle"></i> Details
+                                </button>
+                                <button class="action-button restock-button">
+                                    <i class="fas fa-boxes"></i> Restock
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div id="register" class="section" style="display:none;">
             <div class="register-container">
