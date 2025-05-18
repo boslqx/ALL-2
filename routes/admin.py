@@ -62,12 +62,16 @@ def register_product():
         quantity = request.form.get('quantity')
 
         # Handle image upload
-        image = None
+        image_filename = None
         if 'image' in request.files:
             file = request.files['image']
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                image = filename
+                # Save to static/product_image
+                upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                os.makedirs(upload_dir, exist_ok=True)
+                file.save(os.path.join(upload_dir, filename))
+                image_filename = filename 
 
         try:
             db_path = os.path.join(current_app.instance_path, 'site.db')
@@ -79,7 +83,7 @@ def register_product():
                 INSERT INTO Product 
                 (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (product_name, category, price, quantity, None, image, brand))
+            """, (product_name, category, price, quantity, None, image_filename, brand))
 
             # Get Product ID
             product_id = cursor.lastrowid
