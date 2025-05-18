@@ -1,0 +1,300 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<div id="register" class="section">
+    <div class="register-container">
+        <h1 class="register-title">Register New Product</h1>
+        
+        <div class="register-card">
+            <!-- Left Column - Image Upload -->
+            <div class="register-column image-column">
+                <div class="upload-container">
+                    <div class="image-preview-container">
+                        <img src="{{ url_for('static', filename='images/placeholder.png') }}" id="preview-img" class="preview-image" alt="Product Preview">
+                        <div class="upload-overlay">
+                            <i class="fas fa-camera"></i>
+                            <span>Click to upload</span>
+                        </div>
+                    </div>
+                    <input type="file" id="image-upload" accept="image/*" hidden>
+                </div>
+                <div class="image-actions">
+                    <button class="action-button remove-image" disabled>
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Middle Column - Product Details -->
+            <div class="register-column form-column">
+                <div class="form-header">
+                    <h3>Product Information</h3>
+                    <div class="form-divider"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" class="category-select">
+                        <option value="" disabled selected>Select a category</option>
+                        <option value="Food & Beverages">Food & Beverages</option>
+                        <option value="Health & Personal">Health & Personal</option>
+                        <option value="Home & Living">Home & Living</option>
+                        <option value="Clothing & Accessories">Clothing & Accessories</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="brand">Brand Name</label>
+                    <input type="text" id="brand" placeholder="e.g. NESTLE, EMBORG">
+                </div>
+                
+                <div class="form-group">
+                    <label for="product">Product Name</label>
+                    <input type="text" id="product" placeholder="e.g. Baby Powder, Cheese">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label for="price">Price (RM)</label>
+                        <div class="input-with-icon">
+                            <span class="currency">RM</span>
+                            <input type="number" id="price" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group half-width">
+                        <label for="quantity">Stock Quantity</label>
+                        <input type="number" id="quantity" placeholder="0">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - QR Code -->
+            <div class="register-column qr-column">
+                <div class="qr-header">
+                    <h3>QR Code</h3>
+                    <div class="form-divider"></div>
+                </div>
+                
+                <div class="qr-preview-container">
+                    <div class="qr-placeholder">
+                        <i class="fas fa-qrcode"></i>
+                        <p>QR Code will generate after saving</p>
+                    </div>
+                </div>
+                
+                <div class="qr-actions">
+                    <button class="action-button print-qr" disabled>
+                        <i class="fas fa-print"></i> Print QR
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="save-button">
+                <i class="fas fa-save"></i> Save Product
+            </button>
+            <button type="button" class="cancel-button">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadContainer = document.querySelector('.image-preview-container');
+        const fileInput = document.getElementById('image-upload');
+        const previewImg = document.getElementById('preview-img');
+        const removeBtn = document.querySelector('.remove-image');
+        const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
+        const printBtn = document.querySelector('.print-qr');
+        const generateQRBtn = document.querySelector('.generate-qr');
+        const cancelBtn = document.querySelector('.cancel-button');
+        const saveBtn = document.querySelector('.save-button');
+
+        let lastSavedProductId = null;
+
+        // Image Upload Preview
+        uploadContainer.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function (e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImg.src = event.target.result;
+                    removeBtn.disabled = false;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        removeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            previewImg.src = placeholderImg;
+            this.disabled = true;
+        });
+
+        // Category handling
+        const categoryField = document.getElementById('category');
+        const otherCategoryContainer = document.querySelector('.other-category-container');
+        const otherCategoryInput = document.getElementById('other-category');
+
+        categoryField.addEventListener('change', function () {
+            otherCategoryContainer.style.display = this.value === 'Other' ? 'block' : 'none';
+            validateForm();
+        });
+
+        otherCategoryInput.addEventListener('input', validateForm);
+
+        // Input Restrictions
+        document.getElementById('quantity').addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '');
+            validateForm();
+        });
+
+        document.getElementById('price').addEventListener('input', validateForm);
+
+        // Form Validation
+        function validateForm() {
+            const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
+            let isValid = true;
+
+            requiredFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = 'red';
+                } else {
+                    field.style.borderColor = '#ddd';
+                }
+
+                if (id === 'category' && field.value === 'Other') {
+                    if (!otherCategoryInput.value.trim()) {
+                        isValid = false;
+                        otherCategoryInput.style.borderColor = 'red';
+                    } else {
+                        otherCategoryInput.style.borderColor = '#ddd';
+                    }
+                }
+            });
+
+            const price = document.getElementById('price');
+            if (isNaN(parseFloat(price.value))) {
+                price.style.borderColor = 'red';
+                isValid = false;
+            } else {
+                price.style.borderColor = '#ddd';
+            }
+
+            return isValid;
+        }
+
+        // Save Button
+        saveBtn.addEventListener('click', async function (e) {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please fill all required fields correctly',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('category', categoryField.value);
+            if (categoryField.value === 'Other') {
+                formData.append('other-category', otherCategoryInput.value);
+            }
+            formData.append('brand', document.getElementById('brand').value);
+            formData.append('product', document.getElementById('product').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('quantity', document.getElementById('quantity').value);
+
+            const imageInput = document.getElementById('image-upload');
+            if (imageInput.files[0]) {
+                formData.append('image', imageInput.files[0]);
+            }
+
+            try {
+                const response = await fetch('/register-product', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Failed to save product');
+
+                const data = await response.json();
+
+                if (data.success && data.qr_image_url) {
+                    lastSavedProductId = data.product_id;
+
+                    // Show QR Code
+                    document.querySelector('.qr-preview-container').innerHTML = `
+                        <img src="${data.qr_image_url}" 
+                            alt="Product QR Code"
+                            style="max-width:100%; height:auto;">
+                    `;
+
+                    // Enable buttons
+                    printBtn.disabled = false;
+                    generateQRBtn.disabled = false;
+
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    throw new Error(data.message || 'Unexpected error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+
+        // Print Button
+        printBtn.addEventListener('click', function () {
+            if (!lastSavedProductId) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please save the product first',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            window.open(`/print-qr/${lastSavedProductId}`, '_blank');
+        });
+
+        // Cancel Button
+        cancelBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (confirm('Discard all changes?')) {
+                document.getElementById('register-form').reset();
+                previewImg.src = placeholderImg;
+                removeBtn.disabled = true;
+                otherCategoryContainer.style.display = 'none';
+                document.querySelector('.qr-preview-container').innerHTML = '';
+                generateQRBtn.disabled = true;
+                printBtn.disabled = true;
+                document.querySelectorAll('input, select').forEach(el => el.style.borderColor = '#ddd');
+            }
+        });
+    });
+</script>
+
+{% endblock %}

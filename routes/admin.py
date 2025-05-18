@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify, send_file,send_from_directory
+from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify, send_file, send_from_directory
 import sqlite3, os
 from werkzeug.utils import secure_filename
 import qrcode
@@ -11,98 +11,120 @@ from db.models import Product
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 
-# Allowed image extensions
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-@admin_bp.route('/admin')
-def dashboard():
+# Utility function to get admin name
+def get_admin_name():
     user_id = session.get('user_id')
-    admin_name = 'Admin'
+    admin_name = "Admin"
 
     if user_id:
         try:
             db_path = os.path.join(current_app.instance_path, 'site.db')
-
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT Name FROM User WHERE UserID = ?", (user_id,))
             result = cursor.fetchone()
-
             if result:
                 admin_name = f"Admin {result[0]}"
-
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
+        except:
+            pass
         finally:
             if 'conn' in locals():
                 conn.close()
 
-    return render_template('admin.html', admin_name=admin_name, active_tab='dashboard')
+    return admin_name
 
 
-@admin_bp.route('/register-product', methods=['POST'])
+# Redirect /admin to /admin/dashboard
+@admin_bp.route('/admin/dashboard')
+def dashboard():
+    admin_name = get_admin_name()
+    return render_template('admin_dashboard.html', admin_name=admin_name)
+
+
+@admin_bp.route('/admin/allproducts')
+def all_products():
+    admin_name = get_admin_name()
+    return render_template('admin_allproducts.html', admin_name=admin_name)
+
+
+@admin_bp.route('/admin/register')
+def register():
+    admin_name = get_admin_name()
+    return render_template('admin_register.html', admin_name=admin_name)
+
+
+@admin_bp.route('/admin/activity')
+def activity():
+    admin_name = get_admin_name()
+    return render_template('admin_activity.html', admin_name=admin_name)
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@admin_bp.route('/register-container', methods=['POST']) 
 def register_product():
     if request.method == 'POST':
         user_id = session.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'message': 'Not authenticated'}), 401
 
-        # Get form data
-        category = request.form.get('category')
-        if category == 'Other':
-            category = request.form.get('other-category')
-        brand = request.form.get('brand')
-        product_name = request.form.get('product')
-        price = request.form.get('price')
-        quantity = request.form.get('quantity')
-
-        # Handle image upload
-        image_filename = None
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Save to static/product_image
-                upload_dir = os.path.join(current_app.static_folder, 'product_image')
-                os.makedirs(upload_dir, exist_ok=True)
-                file.save(os.path.join(upload_dir, filename))
-                image_filename = filename 
+        # Validate required fields
+        required_fields = ['category', 'brand', 'product', 'price', 'quantity']
+        if not all(field in request.form for field in required_fields):
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
 
         try:
+            # Get form data
+            category = request.form['category']
+            if category == 'Other':
+                category = request.form.get('other-category', category)
+            brand = request.form['brand']
+            product_name = request.form['product']
+            price = float(request.form['price'])
+            quantity = int(request.form['quantity'])
+
+            # Handle image upload
+            image_filename = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file and file.filename != '' and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    file.save(os.path.join(upload_dir, filename))
+                    image_filename = filename
+
+            # Database operations
             db_path = os.path.join(current_app.instance_path, 'site.db')
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
-            # Insert product without QR code first
+            # Insert product
             cursor.execute("""
                 INSERT INTO Product 
                 (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (product_name, category, price, quantity, None, image_filename, brand))
 
-            # Get Product ID
             product_id = cursor.lastrowid
 
-            # Now generate QR code using product_id
+            # Generate QR code
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
                 box_size=10,
                 border=4,
             )
-            qr_data = (
-                f"Product ID: {product_id}\n"
-                f"Category: {category}\n"
-                f"Product: {product_name}\n"
-                f"Brand: {brand}\n"
-                f"Price: RM{price}\n"
-                f"Stock Quantity: {quantity}"
-            )
+            qr_data = f"Product ID: {product_id}\nName: {product_name}\nBrand: {brand}\nPrice: RM{price:.2f}"
             qr.add_data(qr_data)
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
@@ -111,14 +133,12 @@ def register_product():
             img.save(buffered, format="PNG")
             qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-            # Update product with QR code
+            # Update with QR code
             cursor.execute("""
-                UPDATE Product
-                SET QRcode = ?
-                WHERE ProductID = ?
+                UPDATE Product SET QRcode = ? WHERE ProductID = ?
             """, (qr_code_base64, product_id))
 
-            # Log the activity
+            # Log activity
             cursor.execute("""
                 INSERT INTO ActivityLog 
                 (UserID, ActionType, TableAffected, RecordID, Description)
@@ -128,7 +148,7 @@ def register_product():
                 'ADD_PRODUCT',
                 'Product',
                 product_id,
-                f"Added new product: {product_name} (Brand: {brand}, Price: RM{price}, Qty: {quantity})"
+                f"Added {product_name} (Brand: {brand}, Price: RM{price:.2f})"
             ))
 
             conn.commit()
@@ -136,14 +156,15 @@ def register_product():
             return jsonify({
                 'success': True,
                 'product_id': product_id,
-                'qr_code': qr_code_base64,
                 'qr_image_url': f"data:image/png;base64,{qr_code_base64}",
-                'message': 'Product saved successfully!'
+                'message': 'Product registered successfully!'
             })
 
+        except ValueError as e:
+            return jsonify({'success': False, 'message': f'Invalid data: {str(e)}'}), 400
         except sqlite3.Error as e:
             conn.rollback()
-            return jsonify({'success': False, 'message': f'Database error: {e}'}), 500
+            return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
         finally:
