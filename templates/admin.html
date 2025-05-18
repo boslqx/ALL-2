@@ -262,11 +262,21 @@
         const productsGrid = document.getElementById('products-grid');
         let allProducts = []; // Store products for client-side filtering
         
+        // Get search elements
+        const searchInput = document.querySelector('.search-input');
+        const searchButton = document.querySelector('.search-button');
+        
         // Initial load
         loadProducts();
         
         // Filter functionality
         document.getElementById('apply-filters').addEventListener('click', applyFilters);
+        
+        // Search functionality
+        searchButton.addEventListener('click', performSearch);
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') performSearch();
+        });
 
         function loadProducts() {
             showLoading();
@@ -279,14 +289,28 @@
                 .catch(handleError);
         }
 
+        function performSearch() {
+            applyFilters(); // Integrated search now happens in applyFilters
+        }
+
         function applyFilters() {
             showLoading();
+            const searchTerm = searchInput.value.trim().toLowerCase();
             const categoryFilter = document.getElementById('category-filter').value;
             const brandFilter = document.getElementById('brand-filter').value;
             const priceFilter = document.getElementById('price-filter').value;
             
             // Use stored products instead of fetching again
             let filteredProducts = [...allProducts];
+            
+            // Apply search filter if term exists
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(product => {
+                    const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
+                    const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
+                    return nameMatch || brandMatch;
+                });
+            }
             
             // Apply category filter if category exists in products
             if (categoryFilter !== 'all') {

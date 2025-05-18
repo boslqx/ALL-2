@@ -183,12 +183,16 @@ body {
 }
 
 .search-button {
-    padding: 10px 15px;
-    background-color: #2c3e50;
+    padding: 8px 12px;
+    background-color: #4CAF50;
     color: white;
     border: none;
-    border-radius: 0 4px 4px 0;
+    border-radius: 4px;
     cursor: pointer;
+}
+
+.search-button:hover {
+    background-color: #45a049;
 }
 
 /* Filter options */
