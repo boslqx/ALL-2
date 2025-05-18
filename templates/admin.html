@@ -66,25 +66,39 @@
                 <!-- Filter options -->
                 <div class="filter-options">
                     <div class="filter-group">
+                        <label for="category-filter">Category</label>
                         <select class="filter-select" id="category-filter">
-                            <option value="">All Categories</option>
-                            <!-- Will be populated from DB -->
+                            <option value="all">All Categories</option>
+                            <option value="Food & Beverages">Food & Beverages</option>
+                            <option value="Health & Personal">Health & Personal</option>
+                            <option value="Home & Living">Home & Living</option>
+                            <option value="Clothing & Accessories">Clothing & Accessories</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     
                     <div class="filter-group">
+                        <label for="brand-filter">Brand</label>
                         <select class="filter-select" id="brand-filter">
-                            <option value="">All Brands</option>
-                            <!-- Will be populated from DB -->
+                            <option value="default">Default</option>
+                            <option value="a-z">A-Z</option>
+                            <option value="z-a">Z-A</option>
                         </select>
                     </div>
                     
                     <div class="filter-group">
+                        <label for="price-filter">Price</label>
                         <select class="filter-select" id="price-filter">
-                            <option value="">Sort by Price</option>
+                            <option value="default">Default</option>
                             <option value="low-high">Low to High</option>
                             <option value="high-low">High to Low</option>
                         </select>
+                    </div>
+                    
+                    <div class="filter-group filter-button-group">
+                        <button id="apply-filters" class="action-button">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
                     </div>
                 </div>
 
@@ -136,9 +150,6 @@
                                 <option value="Clothing & Accessories">Clothing & Accessories</option>
                                 <option value="Other">Other</option>
                             </select>
-                            <div class="other-category-container" style="display: none; margin-top: 10px;">
-                                <input type="text" id="other-category" placeholder="Please specify category" class="other-category-input">
-                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -249,86 +260,138 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const productsGrid = document.getElementById('products-grid');
+        let allProducts = []; // Store products for client-side filtering
         
-        // Loading state
-        productsGrid.innerHTML = `
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading products...
-            </div>
-        `;
+        // Initial load
+        loadProducts();
         
-        fetch('/api/products')
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
-            .then(products => {
-                if (products.error) throw new Error(products.error);
-                
-                if (products.length === 0) {
-                    productsGrid.innerHTML = `
-                        <div class="no-products">
-                            <i class="fas fa-box-open"></i>
-                            <p>No products found</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                productsGrid.innerHTML = products.map(product => `
-                    <div class="product-card" data-id="${product.ProductID}">
-                        <div class="product-image">
-                            <img src="${getProductImageUrl(product.Image)}" 
-                                alt="${product.ProductName}"
-                                onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
-                        </div>
-                        <div class="product-info">
-                            <div class="product-brand-name">
-                                <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
-                                <span class="product-name">${product.ProductName}</span>
-                            </div>
-                            <div class="product-meta">
-                                <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                                <span class="product-stock">${product.StockQuantity || 0} in stock</span>
-                            </div>
-                            <div class="product-actions">
-                                <button class="action-button details-button" data-id="${product.ProductID}">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                                <button class="action-button restock-button" data-id="${product.ProductID}">
-                                    <i class="fas fa-boxes"></i> Restock
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-                
-                // Add event listeners for the buttons
-                document.querySelectorAll('.details-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const productId = this.getAttribute('data-id');
-                        showProductDetails(productId);
-                    });
-                });
-                
-                document.querySelectorAll('.restock-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const productId = this.getAttribute('data-id');
-                        restockProduct(productId);
-                    });
-                });
-            })
-            .catch(error => {
-                console.error('Error:', error);
+        // Filter functionality
+        document.getElementById('apply-filters').addEventListener('click', applyFilters);
+
+        function loadProducts() {
+            showLoading();
+            fetch('/api/products')
+                .then(handleResponse)
+                .then(products => {
+                    allProducts = products; // Store all products
+                    renderProducts(products);
+                })
+                .catch(handleError);
+        }
+
+        function applyFilters() {
+            showLoading();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const brandFilter = document.getElementById('brand-filter').value;
+            const priceFilter = document.getElementById('price-filter').value;
+            
+            // Use stored products instead of fetching again
+            let filteredProducts = [...allProducts];
+            
+            // Apply category filter if category exists in products
+            if (categoryFilter !== 'all') {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.Category && product.Category === categoryFilter
+                );
+            }
+            
+            // Apply sorting
+            if (brandFilter === 'a-z') {
+                filteredProducts.sort((a, b) => 
+                    (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
+                );
+            } else if (brandFilter === 'z-a') {
+                filteredProducts.sort((a, b) => 
+                    (b.ProductBrand || '').localeCompare(a.ProductBrand || '')
+                );
+            }
+            
+            if (priceFilter === 'low-high') {
+                filteredProducts.sort((a, b) => (a.Price || 0) - (b.Price || 0));
+            } else if (priceFilter === 'high-low') {
+                filteredProducts.sort((a, b) => (b.Price || 0) - (a.Price || 0));
+            }
+            
+            renderProducts(filteredProducts);
+        }
+
+        function showLoading() {
+            productsGrid.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
+                </div>
+            `;
+        }
+
+        function handleResponse(response) {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        }
+
+        function renderProducts(products) {
+            if (products.length === 0) {
                 productsGrid.innerHTML = `
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p>Failed to load products. ${error.message}</p>
-                        <button class="retry-button">Retry</button>
+                    <div class="no-products">
+                        <i class="fas fa-box-open"></i>
+                        <p>No products found matching filters</p>
                     </div>
                 `;
-                document.querySelector('.retry-button')?.addEventListener('click', () => location.reload());
+                return;
+            }
+            
+            productsGrid.innerHTML = products.map(product => `
+                <div class="product-card" data-id="${product.ProductID}">
+                    <div class="product-image">
+                        <img src="${getProductImageUrl(product.Image)}" 
+                            alt="${product.ProductName}"
+                            onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand-name">
+                            <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                            <span class="product-name">${product.ProductName}</span>
+                        </div>
+                        <div class="product-meta">
+                            <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                            <span class="product-stock">${product.StockQuantity || 0} in stock</span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="action-button details-button" data-id="${product.ProductID}">
+                                <i class="fas fa-info-circle"></i> Details
+                            </button>
+                            <button class="action-button restock-button" data-id="${product.ProductID}">
+                                <i class="fas fa-boxes"></i> Restock
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Reattach event listeners
+            document.querySelectorAll('.details-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    showProductDetails(this.getAttribute('data-id'));
+                });
             });
+            
+            document.querySelectorAll('.restock-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    restockProduct(this.getAttribute('data-id'));
+                });
+            });
+        }
+
+        function handleError(error) {
+            console.error('Error:', error);
+            productsGrid.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load products. ${error.message}</p>
+                    <button class="retry-button">Retry</button>
+                </div>
+            `;
+            document.querySelector('.retry-button')?.addEventListener('click', loadProducts);
+        }
 
         // Helper function to construct proper image URL
         function getProductImageUrl(imagePath) {

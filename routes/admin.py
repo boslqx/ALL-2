@@ -214,25 +214,42 @@ def print_view(product_id):
 def get_products():
     try:
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
-        conn.row_factory = sqlite3.Row  # This allows accessing columns by name
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT ProductID, ProductName, ProductBrand, 
-                   Price, StockQuantity, Image 
-            FROM Product
-            ORDER BY ProductName
-        """)
-        
+
+        # Get filter parameters from request
+        category = request.args.get('category')
+        brand_sort = request.args.get('brand_sort')
+        price_sort = request.args.get('price_sort')
+
+        # Base query
+        query = "SELECT ProductID, ProductName, ProductBrand, Price, StockQuantity, Image, Category FROM Product"
+        params = []
+
+        # Add category filter if specified
+        if category and category != 'all':
+            query += " WHERE Category = ?"
+            params.append(category)
+
+        # Add sorting
+        if brand_sort == 'a-z':
+            query += " ORDER BY ProductBrand ASC"
+        elif brand_sort == 'z-a':
+            query += " ORDER BY ProductBrand DESC"
+        elif price_sort == 'low-high':
+            query += " ORDER BY Price ASC"
+        elif price_sort == 'high-low':
+            query += " ORDER BY Price DESC"
+        else:
+            query += " ORDER BY ProductName ASC"  # Default sorting
+
+        cursor.execute(query, params)
         products = [dict(row) for row in cursor.fetchall()]
         return jsonify(products)
         
     except sqlite3.Error as e:
         current_app.logger.error(f"Database error: {str(e)}")
         return jsonify({"error": "Database error"}), 500
-    except Exception as e:
-        current_app.logger.error(f"Unexpected error: {str(e)}")
-        return jsonify({"error": "Server error"}), 500
     finally:
         if conn:
             conn.close()

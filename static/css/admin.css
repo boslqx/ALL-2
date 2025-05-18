@@ -194,62 +194,70 @@ body {
 /* Filter options */
 .filter-options {
     display: flex;
-    gap: 15px;
-    margin-bottom: 25px;
-    flex-wrap: wrap;
-}
-
-.filter-group {
-    flex: 1;
-    min-width: 200px;
-}
-
-/* Enhanced Filter Styles */
-/* Enhanced Filter Styles */
-.filter-select {
-    width: 100%;
-    padding: 12px 15px; /* Slightly more padding */
-    border: 1px solid #e0e0e0; /* Lighter border */
-    border-radius: 8px; /* Slightly rounder corners */
-    background-color: white;
-    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    color: #2c3e50;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle shadow */
-    appearance: none; /* Removes default system styling */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237f8c8d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 14px;
-}
-
-.filter-select:hover {
-    border-color: #bdc3c7; /* Slightly darker border on hover */
-}
-
-.filter-select:focus {
-    border-color: #3498db;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-}
-
-.filter-group {
-    position: relative;
+    flex-wrap: nowrap; /* Changed from wrap to nowrap */
+    gap: 10px; /* Reduced gap */
+    align-items: flex-end;
     margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto; /* For horizontal scrolling if needed */
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Changed from 180px */
+    flex: 1 1 auto; /* Allow flexible sizing */
+    margin-right: 10px; /* Added for spacing */
+}
+
+.filter-group:last-child {
+    margin-right: 0;
 }
 
 .filter-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-family: 'Segoe UI', 'Roboto', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    color: #34495e;
+    font-weight: bold;
+    margin-bottom: 5px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.8em; /* Slightly smaller */
+    color: #555; /* Dark gray for better contrast */
+    white-space: nowrap; /* Prevent label wrapping */
+}
+
+.filter-select {
+    padding: 8px 10px; /* Slightly adjusted padding */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9em; /* Slightly smaller */
+    width: 100%;
+    min-width: 120px; /* Minimum width */
+}
+
+.filter-button-group {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    margin-left: auto; /* Push button to the right */
+    flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.action-button {
+    padding: 8px 20px; /* Wider padding */
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    white-space: nowrap; /* Prevent button text wrapping */
+}
+
+.action-button:hover {
+    background-color: #45a049;
 }
 
 /* Products grid */
