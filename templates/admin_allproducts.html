@@ -227,8 +227,7 @@
         
         // Placeholder functions for button actions
         function showProductDetails(productId) {
-            console.log('Showing details for product:', productId);
-            // Implement your details view here
+            window.location.href = `/admin/product/${productId}`;  // Matches new route
         }
         
         function restockProduct(productId) {

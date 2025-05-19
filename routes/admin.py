@@ -296,7 +296,7 @@ def product_details(product_id):
         product = cursor.fetchone()
         if not product:
             flash('Product not found', 'error')
-            return redirect(url_for('admin_allproducts.html'))
+            return redirect(url_for('admin.all_products'))
             
         return render_template(
             'admin_productdetails.html',
@@ -307,7 +307,11 @@ def product_details(product_id):
     except Exception as e:
         current_app.logger.error(f"Error fetching product: {str(e)}")
         flash('Error loading product', 'error')
-        return redirect(url_for('admin_allproducts'))
+        return render_template(
+            'admin_productdetails.html',
+            product={},  # Empty fallback
+            admin_name=get_admin_name()
+        )
     finally:
         if 'conn' in locals():
             conn.close()
