@@ -330,27 +330,48 @@ def update_product(product_id):
         if not old_product:
             return jsonify({'success': False, 'message': 'Product not found'}), 404
 
-        # Extract new data from request.form
+        # Extract new form values
         product_name = request.form['product_name']
         category = request.form['category']
         brand = request.form['brand']
         price = request.form['price']
         quantity = request.form['stock_quantity']
 
-        # Determine if QR needs to be regenerated
+        # Handle image upload or removal
+        image_filename = old_product['Image']
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            if file.filename and '.' in file.filename:
+                filename = secure_filename(file.filename)
+                upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = os.path.join(upload_dir, filename)
+                file.save(file_path)
+                image_filename = filename
+        elif 'remove_image' in request.form:
+            if image_filename:
+                try:
+                    os.remove(os.path.join(current_app.static_folder, 'product_image', image_filename))
+                except:
+                    pass
+                image_filename = None  # remove reference from DB
+
+        # Check if QR needs update
         qr_needs_update = (
             product_name != old_product['ProductName'] or
             category != old_product['Category'] or
-            brand != old_product['ProductBrand']
+            brand != old_product['ProductBrand'] or
+            price != str(old_product['Price'])  # compare as string to avoid float mismatch
         )
 
-        # Generate new QR code if necessary
+        # Generate new QR if needed
         if qr_needs_update:
-            import qrcode
-            import base64
-            from io import BytesIO
-
-            qr_data = f"{product_name}-{category}-{brand}"
+            qr_data = (
+                f"Product ID: {product_id}\n"
+                f"Name: {product_name}\n"
+                f"Brand: {brand}\n"
+                f"Price: RM{float(price):.2f}"
+            )
             qr = qrcode.make(qr_data)
             buffered = BytesIO()
             qr.save(buffered, format="PNG")
@@ -358,7 +379,7 @@ def update_product(product_id):
         else:
             new_qr_base64 = old_product['QRcode']
 
-        # Update the product
+        # Update product
         cursor.execute("""
             UPDATE Product SET 
                 ProductName = ?, 
@@ -366,15 +387,17 @@ def update_product(product_id):
                 ProductBrand = ?, 
                 Price = ?, 
                 StockQuantity = ?, 
-                QRcode = ?
+                QRcode = ?, 
+                Image = ?
             WHERE ProductID = ?
-        """, (product_name, category, brand, price, quantity, new_qr_base64, product_id))
+        """, (product_name, category, brand, price, quantity, new_qr_base64, image_filename, product_id))
         conn.commit()
 
         return jsonify({
             'success': True,
             'message': 'Product updated successfully',
-            'new_qr_base64': new_qr_base64  # send to frontend if you want to update preview
+            'new_qr_base64': new_qr_base64,
+            'new_image_url': f"/static/product_image/{image_filename}" if image_filename else None
         })
 
     except Exception as e:
@@ -383,6 +406,7 @@ def update_product(product_id):
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 # Delete Product
 @admin_bp.route('/delete-product/<int:product_id>', methods=['POST'])

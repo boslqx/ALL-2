@@ -28,7 +28,7 @@
                 </div>
 
                 <div class="image-actions edit-mode" style="display: none;">
-                    <button class="action-button remove-image" disabled>
+                    <button class="action-button remove-image" {% if not product.Image %}disabled{% endif %}>
                         <i class="fas fa-trash"></i> Remove
                     </button>
                 </div>
@@ -184,18 +184,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Remove Image
+    // Remove Image - Updated to work with existing images
     removeBtn?.addEventListener('click', function (e) {
         e.stopPropagation();
-        fileInput.value = '';
-        previewImg.src = placeholderImg;
-        this.disabled = true;
+        Swal.fire({
+            title: 'Remove Image?',
+            text: "This will remove the product image",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Remove',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fileInput.value = '';
+                previewImg.src = placeholderImg;
+                this.disabled = true;
+                
+                // Add flag to indicate image should be removed
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'remove_image';
+                hiddenInput.value = '1';
+                document.querySelector('.register-container').appendChild(hiddenInput);
+            }
+        });
     });
 
     // Save Changes
     document.getElementById('save-button').addEventListener('click', async function () {
         const formData = new FormData();
 
+        // Get all form data
         let category = document.getElementById('category').value;
         if (category === 'Other') {
             category = document.getElementById('other-category').value;
@@ -207,9 +226,11 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('price', document.getElementById('price').value);
         formData.append('stock_quantity', document.getElementById('quantity').value);
 
-        // Add image file if selected
-        if (fileInput?.files[0]) {
+        // Handle image changes
+        if (fileInput.files[0]) {
             formData.append('image', fileInput.files[0]);
+        } else if (document.querySelector('input[name="remove_image"]')) {
+            formData.append('remove_image', '1');
         }
 
         try {
@@ -220,7 +241,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             if (data.success) {
-                location.reload(); // Refresh to show updated data
+                // Refresh with updated image
+                if (data.new_image_url) {
+                    previewImg.src = data.new_image_url + '?t=' + new Date().getTime();
+                }
+                location.reload();
             } else {
                 throw new Error(data.message);
             }
