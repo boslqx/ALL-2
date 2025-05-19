@@ -792,6 +792,10 @@ body {
     font-size: 0.9rem;
 }
 
+.edit-mode {
+    transition: all 0.3s ease;
+}
+
 /* Form Actions */
 .form-actions {
     display: flex;
