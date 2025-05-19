@@ -3,7 +3,7 @@
 <div id="register" class="section">
     <div class="register-container">
         <h1 class="register-title">Register New Product</h1>
-        
+
         <div class="register-card">
             <!-- Left Column - Image Upload -->
             <div class="register-column image-column">
@@ -23,14 +23,14 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Middle Column - Product Details -->
             <div class="register-column form-column">
                 <div class="form-header">
                     <h3>Product Information</h3>
                     <div class="form-divider"></div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="category">Category</label>
                     <select id="category" class="category-select">
@@ -42,17 +42,23 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                
+
+                <!-- This was missing before -->
+                <div class="form-group other-category-container" style="display:none;">
+                    <label for="other-category">Other Category</label>
+                    <input type="text" id="other-category" placeholder="Enter category name">
+                </div>
+
                 <div class="form-group">
                     <label for="brand">Brand Name</label>
                     <input type="text" id="brand" placeholder="e.g. NESTLE, EMBORG">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="product">Product Name</label>
                     <input type="text" id="product" placeholder="e.g. Baby Powder, Cheese">
                 </div>
-                
+
                 <div class="form-row">
                     <div class="form-group half-width">
                         <label for="price">Price (RM)</label>
@@ -61,28 +67,28 @@
                             <input type="number" id="price" step="0.01" placeholder="0.00">
                         </div>
                     </div>
-                    
+
                     <div class="form-group half-width">
                         <label for="quantity">Stock Quantity</label>
                         <input type="number" id="quantity" placeholder="0">
                     </div>
                 </div>
             </div>
-            
+
             <!-- Right Column - QR Code -->
             <div class="register-column qr-column">
                 <div class="qr-header">
                     <h3>QR Code</h3>
                     <div class="form-divider"></div>
                 </div>
-                
+
                 <div class="qr-preview-container">
                     <div class="qr-placeholder">
                         <i class="fas fa-qrcode"></i>
                         <p>QR Code will generate after saving</p>
                     </div>
                 </div>
-                
+
                 <div class="qr-actions">
                     <button class="action-button print-qr" disabled>
                         <i class="fas fa-print"></i> Print QR
@@ -90,7 +96,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="form-actions">
             <button type="button" class="save-button">
                 <i class="fas fa-save"></i> Save Product
@@ -103,113 +109,42 @@
 </div>
 
 <script>
-    // Image Upload with Preview & Remove Button
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get all necessary elements
-        const uploadContainer = document.querySelector('.image-preview-container');
-        const fileInput = document.getElementById('image-upload');
-        const previewImg = document.getElementById('preview-img');
-        const removeBtn = document.querySelector('.remove-image');
-        const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
-
-        // Make the entire preview area clickable
-        uploadContainer.addEventListener('click', function() {
-            fileInput.click();
-        });
-
-        // Handle file selection
-        fileInput.addEventListener('change', function(e) {
-            if (e.target.files && e.target.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(event) {
-                    previewImg.src = event.target.result;
-                    removeBtn.disabled = false;
-                }
-                
-                reader.readAsDataURL(e.target.files[0]);
-            }
-        });
-
-        // Handle remove image
-        removeBtn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent triggering the upload container click
-            fileInput.value = '';
-            previewImg.src = placeholderImg;
-            this.disabled = true;
-        });
-    });
-
-    // Input Validation
-    document.getElementById('price').addEventListener('input', function(e) {
-        // Simple validation - just check if valid number when submitting
-        validateForm();
-    });
-
-    // Update your validateForm() function:
-    function validateForm() {
-        // ... (your existing validation code)
-        
-        // Price validation (simple version)
-        const priceInput = document.getElementById('price');
-        if (isNaN(parseFloat(priceInput.value))) {
-            priceInput.style.borderColor = 'red';
-            isValid = false;
-        } else {
-            priceInput.style.borderColor = '#ddd';
-        }
-        
-        return isValid;
-    }
-
-    document.getElementById('quantity').addEventListener('input', function(e) {
-        this.value = this.value.replace(/\D/g, '');
-        validateForm();
-    });
-
-    // Category selection
-    document.getElementById('category').addEventListener('change', function() {
-        const otherContainer = document.querySelector('.other-category-container');
-        otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
-        validateForm();
-    });
-
-    document.getElementById('other-category').addEventListener('input', validateForm);
-
-    // Form validation function
-    function validateForm() {
-        const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
-        let isValid = true;
-        
-        requiredFields.forEach(id => {
-            const field = document.getElementById(id);
-            if (!field.value.trim()) {
-                isValid = false;
-                field.style.borderColor = 'red';
-            } else {
-                field.style.borderColor = '#ddd';
-            }
-            
-            // Special case for "Other" category
-            if (id === 'category' && field.value === 'Other') {
-                const otherCategory = document.getElementById('other-category');
-                if (!otherCategory.value.trim()) {
-                    isValid = false;
-                    otherCategory.style.borderColor = 'red';
-                } else {
-                    otherCategory.style.borderColor = '#ddd';
-                }
-            }
-        });
-        
-        return isValid;
-    }
-
-   // Store product ID when saving
+document.addEventListener('DOMContentLoaded', function () {
+    const uploadContainer = document.querySelector('.image-preview-container');
+    const fileInput = document.getElementById('image-upload');
+    const previewImg = document.getElementById('preview-img');
+    const removeBtn = document.querySelector('.remove-image');
+    const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
     let lastSavedProductId = null;
 
-    // Save Button - Unified version
-    document.querySelector('.save-button').addEventListener('click', async function(e) {
+    uploadContainer.addEventListener('click', function () {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                previewImg.src = event.target.result;
+                removeBtn.disabled = false;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    removeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        fileInput.value = '';
+        previewImg.src = placeholderImg;
+        this.disabled = true;
+    });
+
+    document.getElementById('category').addEventListener('change', function () {
+        const otherContainer = document.querySelector('.other-category-container');
+        otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
+    });
+
+    document.querySelector('.save-button').addEventListener('click', async function (e) {
         e.preventDefault();
 
         if (!validateForm()) {
@@ -222,50 +157,35 @@
             return;
         }
 
-        // Prepare form data
         const formData = new FormData();
-        formData.append('category', document.getElementById('category').value);
-        if (document.getElementById('category').value === 'Other') {
+        const category = document.getElementById('category').value;
+        formData.append('category', category);
+        if (category === 'Other') {
             formData.append('other-category', document.getElementById('other-category').value);
         }
+
         formData.append('brand', document.getElementById('brand').value);
         formData.append('product', document.getElementById('product').value);
         formData.append('price', document.getElementById('price').value);
         formData.append('quantity', document.getElementById('quantity').value);
 
-        const imageInput = document.getElementById('image-upload');
-        if (imageInput.files[0]) {
-            formData.append('image', imageInput.files[0]);
+        if (fileInput.files[0]) {
+            formData.append('image', fileInput.files[0]);
         }
 
         try {
-            const response = await fetch('/register-product', {
+            const response = await fetch('/register-container', {
                 method: 'POST',
                 body: formData
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
             const data = await response.json();
-
-            if (data.success && data.qr_image_url) {
-                // Store product ID
+            if (data.success) {
                 lastSavedProductId = data.product_id;
-                
-                // Update QR preview
                 const qrContainer = document.querySelector('.qr-preview-container');
-                qrContainer.innerHTML = `
-                    <img src="${data.qr_image_url}" 
-                         alt="Product QR Code"
-                         style="max-width:100%; height:auto;">
-                `;
-
-                // Enable print button
+                qrContainer.innerHTML = `<img src="${data.qr_image_url}" style="max-width:100%; height:auto;">`;
                 document.querySelector('.print-qr').disabled = false;
 
-                // Show success message
                 Swal.fire({
                     title: 'Success!',
                     text: data.message,
@@ -273,10 +193,9 @@
                     confirmButtonText: 'OK'
                 });
             } else {
-                throw new Error(data.message || 'QR code not generated');
+                throw new Error(data.message);
             }
         } catch (error) {
-            console.error('Error:', error);
             Swal.fire({
                 title: 'Error!',
                 text: error.message,
@@ -286,8 +205,27 @@
         }
     });
 
-    // Print button handler
-    document.querySelector('.print-qr').addEventListener('click', function() {
+    document.querySelector('.cancel-button').addEventListener('click', function (e) {
+        e.preventDefault();
+        if (confirm('Discard all changes?')) {
+            document.getElementById('category').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('product').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('quantity').value = '';
+            document.getElementById('other-category').value = '';
+            document.querySelector('.other-category-container').style.display = 'none';
+
+            fileInput.value = '';
+            previewImg.src = placeholderImg;
+            removeBtn.disabled = true;
+            document.querySelector('.print-qr').disabled = true;
+
+            document.querySelectorAll('input, select').forEach(el => el.style.borderColor = '#ddd');
+        }
+    });
+
+    document.querySelector('.print-qr').addEventListener('click', function () {
         if (!lastSavedProductId) {
             Swal.fire({
                 title: 'Error!',
@@ -300,93 +238,32 @@
         window.open(`/print-qr/${lastSavedProductId}`, '_blank');
     });
 
-    // Cancel Button
-    document.querySelector('.cancel-button').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (confirm('Discard all changes?')) {
-            // Reset all form fields
-            document.getElementById('category').value = '';
-            document.getElementById('brand').value = '';
-            document.getElementById('product').value = '';
-            document.getElementById('price').value = '';
-            document.getElementById('quantity').value = '';
-            document.getElementById('other-category').value = '';
-            document.querySelector('.other-category-container').style.display = 'none';
-            
-            // Reset image
-            document.getElementById('image-upload').value = '';
-            document.getElementById('preview-img').src = '{{ url_for("static", filename="images/placeholder.png") }}';
-            document.querySelector('.remove-image').disabled = true;
-            
-            // Reset QR buttons
-            document.querySelector('.generate-qr').disabled = true;
-            document.querySelector('.print-qr').disabled = true;
-            
-            // Remove error highlights
-            document.querySelectorAll('input, select').forEach(el => {
-                el.style.borderColor = '#ddd';
-            });
-        }
-    });
+    function validateForm() {
+        const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
+        let isValid = true;
 
-    // QR Code Buttons
-    function displayQRCode(base64Data) {
-        const qrContainer = document.querySelector('.qr-preview-container');
-        qrContainer.innerHTML = `<img src="data:image/png;base64,${base64Data}" alt="QR Code" style="width:100%; height:auto;">`;
-    }
+        requiredFields.forEach(id => {
+            const field = document.getElementById(id);
+            if (!field.value.trim()) {
+                field.style.borderColor = 'red';
+                isValid = false;
+            } else {
+                field.style.borderColor = '#ddd';
+            }
 
-    // Modify your save button success handler:
-    fetch('/register-product', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Display QR code
-            const qrContainer = document.querySelector('.qr-preview-container');
-            qrContainer.innerHTML = `
-                <img src="${data.qr_image_url}" 
-                    alt="Product QR Code" 
-                    style="max-width:100%;height:auto;">
-            `;
-            
-            // Enable QR code buttons
-            document.querySelectorAll('.generate-qr, .print-qr').forEach(btn => {
-                btn.disabled = false;
-            });
-            
-            // Show success message
-            Swal.fire({
-                title: 'Success!',
-                text: data.message,
-                icon: 'success',
-                confirmButtonText: 'OK'
-            });
-        } else {
-            // Show error message
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-            title: 'Error!',
-            text: 'Failed to save product',
-            icon: 'error',
-            confirmButtonText: 'OK'
+            if (id === 'category' && field.value === 'Other') {
+                const otherCat = document.getElementById('other-category');
+                if (!otherCat.value.trim()) {
+                    otherCat.style.borderColor = 'red';
+                    isValid = false;
+                } else {
+                    otherCat.style.borderColor = '#ddd';
+                }
+            }
         });
-    });
 
+        return isValid;
+    }
+});
 </script>
 {% endblock %}
