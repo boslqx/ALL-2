@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="section">
+    <div class="register-container">
+        <!-- Back Button -->
+        <a href="{{ url_for('admin_allproducts.html') }}" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
+        
+        <h1 class="register-title">Product Details</h1>
+        
+        <div class="register-card">
+            <!-- Left Column - Image -->
+            <div class="register-column image-column">
+                <div class="upload-container">
+                    <img src="{{ url_for('static', filename='product_image/' + product.Image) if product.Image else url_for('static', filename='images/placeholder.png') }}" 
+                         id="preview-img" 
+                         class="preview-image" 
+                         alt="Product Preview">
+                </div>
+            </div>
+            
+            <!-- Middle Column - Product Details -->
+            <div class="register-column form-column">
+                <div class="form-header">
+                    <h3>Product Information</h3>
+                    <div class="form-divider"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="view-mode">{{ product.Category }}</div>
+                    <select id="category" class="edit-mode" style="display:none;">
+                        <!-- Populate with your categories -->
+                    </select>
+                </div>
+                
+                <!-- Repeat for other fields (Brand, Product Name, etc.) -->
+                
+            </div>
+            
+            <!-- Right Column - QR Code -->
+            <div class="register-column qr-column">
+                <div class="qr-header">
+                    <h3>QR Code</h3>
+                    <div class="form-divider"></div>
+                </div>
+                <div class="qr-preview-container">
+                    {% if product.QRcode %}
+                        <img src="data:image/png;base64,{{ product.QRcode }}" 
+                             alt="Product QR Code">
+                    {% else %}
+                        <div class="qr-placeholder">
+                            <i class="fas fa-qrcode"></i>
+                            <p>No QR Code generated</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button id="edit-button" class="action-button">
+                <i class="fas fa-edit"></i> Edit Product
+            </button>
+            <button id="save-button" class="action-button primary" style="display:none;">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button id="delete-button" class="action-button danger">
+                <i class="fas fa-trash"></i> Delete Product
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle Edit Mode
+document.getElementById('edit-button').addEventListener('click', function() {
+    // Show editable fields
+    document.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'block');
+    
+    // Toggle buttons
+    this.style.display = 'none';
+    document.getElementById('save-button').style.display = 'inline-block';
+});
+
+// Save Changes
+document.getElementById('save-button').addEventListener('click', async function() {
+    // Similar to your register-product logic
+    // Call /update-product/<product_id>
+});
+
+// Delete Product
+document.getElementById('delete-button').addEventListener('click', function() {
+    Swal.fire({
+        title: 'Confirm Delete',
+        text: "This cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/delete-product/{{ product.ProductID }}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = "{{ url_for('admin_allproducts') }}";
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -279,3 +279,121 @@ def get_products():
 def serve_product_image(filename):
     upload_dir = os.path.join(current_app.instance_path, 'uploads', 'products')
     return send_from_directory(upload_dir, filename)
+
+# Product Details View
+@admin_bp.route('/admin/product/<int:product_id>')
+def product_details(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT * FROM Product 
+            WHERE ProductID = ?
+        """, (product_id,))
+        
+        product = cursor.fetchone()
+        if not product:
+            flash('Product not found', 'error')
+            return redirect(url_for('admin_allproducts.html'))
+            
+        return render_template(
+            'admin_productdetails.html',
+            product=dict(product),
+            admin_name=get_admin_name()
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching product: {str(e)}")
+        flash('Error loading product', 'error')
+        return redirect(url_for('admin_allproducts'))
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+# Update Product
+@admin_bp.route('/update-product/<int:product_id>', methods=['POST'])
+def update_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Fetch old product data
+        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
+        old_product = cursor.fetchone()
+        if not old_product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        # Extract new data from request.form
+        product_name = request.form['product_name']
+        category = request.form['category']
+        brand = request.form['brand']
+        price = request.form['price']
+        quantity = request.form['stock_quantity']
+
+        # Determine if QR needs to be regenerated
+        qr_needs_update = (
+            product_name != old_product['ProductName'] or
+            category != old_product['Category'] or
+            brand != old_product['ProductBrand']
+        )
+
+        # Generate new QR code if necessary
+        if qr_needs_update:
+            import qrcode
+            import base64
+            from io import BytesIO
+
+            qr_data = f"{product_name}-{category}-{brand}"
+            qr = qrcode.make(qr_data)
+            buffered = BytesIO()
+            qr.save(buffered, format="PNG")
+            new_qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        else:
+            new_qr_base64 = old_product['QRcode']
+
+        # Update the product
+        cursor.execute("""
+            UPDATE Product SET 
+                ProductName = ?, 
+                Category = ?, 
+                ProductBrand = ?, 
+                Price = ?, 
+                StockQuantity = ?, 
+                QRcode = ?
+            WHERE ProductID = ?
+        """, (product_name, category, brand, price, quantity, new_qr_base64, product_id))
+        conn.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Product updated successfully',
+            'new_qr_base64': new_qr_base64  # send to frontend if you want to update preview
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+# Delete Product
+@admin_bp.route('/delete-product/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+        
+        # Soft delete or hard delete based on your DB design
+        cursor.execute("DELETE FROM Product WHERE ProductID = ?", (product_id,))
+        conn.commit()
+        
+        return jsonify({'success': True, 'message': 'Product deleted'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
