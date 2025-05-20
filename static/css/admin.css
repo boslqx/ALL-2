@@ -494,7 +494,7 @@ body {
 }
 
 /* Disable pointer events when not in edit mode */
-.image-preview-container:not(.edit-mode) {
+#product-details .image-preview-container:not(.edit-mode) {
     pointer-events: none; /* Block interactions */
 }
 /* Back Button */
