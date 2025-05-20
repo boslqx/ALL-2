@@ -425,3 +425,43 @@ def delete_product(product_id):
     finally:
         if 'conn' in locals():
             conn.close()
+
+@admin_bp.route('/api/products/restock', methods=['POST'])
+def restock_product():
+    try:
+        data = request.get_json()
+        product_id = data.get('productId')
+        quantity = int(data.get('quantity', 0))
+
+        if not product_id or quantity < 1:
+            return jsonify({'success': False, 'message': 'Invalid product ID or quantity'}), 400
+
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        # Make sure the product exists
+        cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        # Update stock quantity
+        cursor.execute("""
+            UPDATE Product
+            SET StockQuantity = StockQuantity + ?
+            WHERE ProductID = ?
+        """, (quantity, product_id))
+        conn.commit()
+
+        # Return new quantity for confirmation
+        cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
+        new_quantity = cursor.fetchone()[0]
+
+        return jsonify({'success': True, 'newQuantity': new_quantity})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+    finally:
+        if 'conn' in locals():
+            conn.close()

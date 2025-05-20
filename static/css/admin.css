@@ -516,6 +516,63 @@ body {
     color: white;
 }
 
+/* RESTOCK-SPECIFIC MODAL (won't affect other modals) */
+.restock-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none; /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.restock-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 350px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Scoped title style */
+.restock-modal-content h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 1.2rem; /* Explicit size to avoid inheritance */
+}
+
+/* Scoped form styles */
+.restock-form-group {
+  margin: 15px 0;
+}
+
+.restock-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Scoped button styles */
+.restock-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.restock-cancel-btn {
+  background: #e0e0e0;
+}
+
+.restock-confirm-btn {
+  background: #2ecc71;
+  color: white;
+}
+
 
 /* ===== Register Product Section ===== */
 .register-container {
