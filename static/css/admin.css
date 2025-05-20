@@ -557,21 +557,48 @@ body {
   border-radius: 4px;
 }
 
-/* Scoped button styles */
+/* Restock Modal Button Container */
 .restock-modal-buttons {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
+/* Cancel Button */
 .restock-cancel-btn {
-  background: #e0e0e0;
+  background-color: #f2f2f2;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
 }
 
-.restock-confirm-btn {
-  background: #2ecc71;
-  color: white;
+.restock-cancel-btn:hover {
+  background-color: #e0e0e0;
 }
+
+/* Confirm Button */
+.restock-confirm-btn {
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.restock-confirm-btn:hover {
+  background-color: #219150;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
 
 
 /* ===== Register Product Section ===== */
