@@ -149,17 +149,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const updateUrl = "{{ url_for('admin.update_product', product_id=product.ProductID) }}";
     const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
 
+    // DOM Elements
     const fileInput = document.getElementById('image-upload');
     const previewImg = document.getElementById('preview-img');
     const removeBtn = document.querySelector('.remove-image');
+    const uploadOverlay = document.querySelector('.upload-overlay.edit-mode');
+    const imagePreviewContainer = document.querySelector('.image-preview-container');
+    
+    // Initialize upload overlay state
+    if (uploadOverlay) {
+        uploadOverlay.style.display = 'none'; // Start hidden
+        uploadOverlay.style.cursor = 'pointer'; // Clickable when visible
+    }
 
-    // Toggle Edit Mode
     document.getElementById('edit-button').addEventListener('click', function () {
+        // Toggle view/edit modes
         document.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
         document.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'block');
 
+        // Toggle buttons
         this.style.display = 'none';
         document.getElementById('save-button').style.display = 'inline-block';
+
+        // Activate upload overlay
+        if (uploadOverlay) {
+            uploadOverlay.style.display = 'flex';
+            imagePreviewContainer.style.pointerEvents = 'auto';
+        }
 
         // Category "Other" toggle logic
         document.getElementById('category')?.addEventListener('change', function () {
@@ -168,23 +184,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Image Upload Preview
-    document.querySelector('.image-preview-container')?.addEventListener('click', () => {
-        fileInput?.click();
-    });
+    // Click handler for image container
+    if (imagePreviewContainer) {
+        imagePreviewContainer.addEventListener('click', function(e) {
+            // Only trigger in edit mode when clicking overlay/empty space
+            if (uploadOverlay && uploadOverlay.style.display === 'flex' && 
+                (e.target === this || e.target === uploadOverlay || uploadOverlay.contains(e.target))) {
+                fileInput.click();
+            }
+        });
+    }
 
+    // File input change handler
     fileInput?.addEventListener('change', function (e) {
         if (e.target.files && e.target.files[0]) {
             const reader = new FileReader();
             reader.onload = event => {
                 previewImg.src = event.target.result;
-                removeBtn.disabled = false;
+                if (removeBtn) removeBtn.disabled = false;
             };
             reader.readAsDataURL(e.target.files[0]);
         }
     });
 
-    // Remove Image - Updated to work with existing images
+    // Remove Image
     removeBtn?.addEventListener('click', function (e) {
         e.stopPropagation();
         Swal.fire({
@@ -200,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 previewImg.src = placeholderImg;
                 this.disabled = true;
                 
-                // Add flag to indicate image should be removed
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'remove_image';
@@ -213,8 +235,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Save Changes
     document.getElementById('save-button').addEventListener('click', async function () {
         const formData = new FormData();
-
-        // Get all form data
         let category = document.getElementById('category').value;
         if (category === 'Other') {
             category = document.getElementById('other-category').value;
@@ -226,7 +246,6 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('price', document.getElementById('price').value);
         formData.append('stock_quantity', document.getElementById('quantity').value);
 
-        // Handle image changes
         if (fileInput.files[0]) {
             formData.append('image', fileInput.files[0]);
         } else if (document.querySelector('input[name="remove_image"]')) {
@@ -238,18 +257,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 body: formData
             });
-
             const data = await response.json();
+            
             if (data.success) {
-                // Show success message
                 await Swal.fire({
                     title: 'Success!',
                     text: 'Product changes saved successfully',
                     icon: 'success',
                     confirmButtonText: 'OK'
                 });
-
-                // Refresh with updated image
                 if (data.new_image_url) {
                     previewImg.src = data.new_image_url + '?t=' + new Date().getTime();
                 }

@@ -477,6 +477,26 @@ body {
     display: none;
 }
 
+/* Hide the button by default (non-edit mode) */
+.upload-overlay {
+    display: none; /* Hidden by default */
+}
+
+/* Only show in edit mode */
+.upload-overlay.edit-mode {
+    display: flex !important; /* Force visible only in edit mode */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    cursor: pointer; /* Only clickable in edit mode */
+}
+
+/* Disable pointer events when not in edit mode */
+.image-preview-container:not(.edit-mode) {
+    pointer-events: none; /* Block interactions */
+}
 /* Back Button */
 .back-button {
     display: inline-block;
