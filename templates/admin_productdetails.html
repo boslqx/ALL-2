@@ -241,6 +241,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const data = await response.json();
             if (data.success) {
+                // Show success message
+                await Swal.fire({
+                    title: 'Success!',
+                    text: 'Product changes saved successfully',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+
                 // Refresh with updated image
                 if (data.new_image_url) {
                     previewImg.src = data.new_image_url + '?t=' + new Date().getTime();
