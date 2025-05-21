@@ -8,6 +8,7 @@ from reportlab.lib.utils import ImageReader
 from io import BytesIO
 import base64
 from db.models import Product
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 
@@ -465,3 +466,70 @@ def restock_product():
     finally:
         if 'conn' in locals():
             conn.close()
+
+@admin_bp.route('/admin/activity')
+def admin_activity_logs():
+    try:
+        action_filter = request.args.get('action', 'all')
+
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Base query
+        query = """
+            SELECT 
+                A.Timestamp,
+                U.Username,
+                A.ActionType,
+                A.Description
+            FROM ActivityLog A
+            LEFT JOIN User U ON A.UserID = U.UserID
+        """
+        params = []
+
+        if action_filter != 'all':
+            query += " WHERE A.ActionType = ?"
+            params.append(action_filter)
+
+        query += " ORDER BY A.Timestamp DESC LIMIT 200"
+
+        cursor.execute(query, params)
+        logs = cursor.fetchall()
+
+        logs_list = []
+        for log in logs:
+            logs_list.append({
+                'Timestamp': log['Timestamp'],
+                'UserName': log['UserName'],
+                'ActionType': log['ActionType'],
+                'Description': log['Description']
+            })
+
+        return jsonify(logs_list)
+
+    except Exception as e:
+        return jsonify({'error': str(e), 'message': 'Failed to fetch logs'}), 500
+
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+def log_activity(user_id, action_type, table_name, record_id, description):
+    conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        action_type,
+        table_name,
+        record_id,
+        description,
+        datetime.utcnow().isoformat()
+    ))
+
+    conn.commit()
+    conn.close()

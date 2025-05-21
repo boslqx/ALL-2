@@ -1,6 +1,145 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<div id="activity" class="section">
-    Sales and Inventory Activity
+<div class="activity-logs-container">
+    <h2>Inventory Activity Log</h2>
+    <div class="log-filters">
+        <select id="log-filter">
+            <option value="all">All Activities</option>
+            <option value="ADD_PRODUCT">Product Additions</option>
+            <option value="UPDATE_STOCK">Stock Updates</option>
+            <option value="DELETE_PRODUCT">Product Deletions</option>
+            <option value="EDIT_PRODUCT">Product Edits</option>
+        </select>
+        <button id="refresh-logs" class="btn-refresh">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <span id="log-status" class="status-message"></span>
+    </div>
+    <div class="log-table-container">
+        <table id="activity-logs-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody id="logs-body">
+                <!-- Logs will be loaded here dynamically -->
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize logs when page loads
+        loadActivityLogs();
+
+        // Set up event listeners
+        document.getElementById('log-filter').addEventListener('change', loadActivityLogs);
+        document.getElementById('refresh-logs').addEventListener('click', loadActivityLogs);
+
+        async function loadActivityLogs() {
+            const tbody = document.getElementById('logs-body');
+            const statusElement = document.getElementById('log-status');
+            
+            // Show loading state
+            tbody.innerHTML = `
+                <tr class="loading-row">
+                    <td colspan="4">
+                        <i class="fas fa-spinner fa-spin"></i> Loading activity logs...
+                    </td>
+                </tr>
+            `;
+            
+            statusElement.textContent = 'Fetching latest logs...';
+            
+            try {
+                const filter = document.getElementById('log-filter').value;
+                const response = await fetch(`/admin/activity?action=${filter}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
+                }
+                
+                const logs = await response.json();
+                
+                if (logs.error) {
+                    throw new Error(logs.error);
+                }
+                
+                renderLogs(logs);
+                statusElement.textContent = `Loaded ${logs.length} activities`;
+                
+            } catch (error) {
+                console.error('Failed to load activity logs:', error);
+                tbody.innerHTML = `
+                    <tr class="error-row">
+                        <td colspan="4">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            Error loading logs: ${error.message}
+                        </td>
+                    </tr>
+                `;
+                statusElement.textContent = 'Failed to load logs';
+            }
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('logs-body');
+            tbody.innerHTML = '';
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #7f8c8d;">
+                            No activity logs found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            logs.forEach(log => {
+                const row = document.createElement('tr');
+                
+                // Format timestamp
+                const timestamp = new Date(log.Timestamp).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                // Format action with icon
+                const action = formatActionWithIcon(log.ActionType);
+                
+                row.innerHTML = `
+                    <td>${timestamp}</td>
+                    <td>${log.UserName || 'System'}</td>
+                    <td>${action}</td>
+                    <td>${log.Description || 'No description available'}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function formatActionWithIcon(actionType) {
+            const actions = {
+                'ADD_PRODUCT': '<i class="fas fa-plus-circle text-success"></i> Add Product',
+                'UPDATE_STOCK': '<i class="fas fa-boxes text-primary"></i> Stock Update',
+                'DELETE_PRODUCT': '<i class="fas fa-trash-alt text-danger"></i> Delete Product',
+                'EDIT_PRODUCT': '<i class="fas fa-edit text-warning"></i> Edit Product'
+            };
+            
+            return actions[actionType] || actionType;
+        }
+    });
+</script>
 {% endblock %}
+

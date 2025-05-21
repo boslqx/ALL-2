@@ -960,3 +960,95 @@ body {
     }
 }
 
+/* Activity Logs */
+.activity-logs-container {
+    padding: 25px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.log-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#log-filter {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+}
+
+.btn-refresh {
+    padding: 8px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.2s;
+}
+
+.btn-refresh:hover {
+    background: #2980b9;
+}
+
+.status-message {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.log-table-container {
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#activity-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#activity-logs-table th {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+#activity-logs-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ecf0f1;
+    color: #34495e;
+}
+
+#activity-logs-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+#activity-logs-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Loading state */
+.loading-row td {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+}
+
+/* Error state */
+.error-row td {
+    text-align: center;
+    padding: 20px;
+    color: #e74c3c;
+}
