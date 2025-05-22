@@ -394,6 +394,15 @@ def update_product(product_id):
         """, (product_name, category, brand, price, quantity, new_qr_base64, image_filename, product_id))
         conn.commit()
 
+        # Log the product update activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='EDIT_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Updated product: {product_name} (Price: RM{price}, Stock: {quantity})"
+        )
+
         return jsonify({
             'success': True,
             'message': 'Product updated successfully',
@@ -419,6 +428,15 @@ def delete_product(product_id):
         # Soft delete or hard delete based on your DB design
         cursor.execute("DELETE FROM Product WHERE ProductID = ?", (product_id,))
         conn.commit()
+
+        # Log the deletion activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='DELETE_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Deleted product ID {product_id}"
+        )
         
         return jsonify({'success': True, 'message': 'Product deleted'})
     except Exception as e:
@@ -457,6 +475,15 @@ def restock_product():
         # Return new quantity for confirmation
         cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
         new_quantity = cursor.fetchone()[0]
+
+        # Log the restock activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='UPDATE_STOCK',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Restocked {quantity} units (New total: {new_quantity})"
+        )
 
         return jsonify({'success': True, 'newQuantity': new_quantity})
 
@@ -553,20 +580,25 @@ def admin_activity_logs():
             conn.close()
 
 def log_activity(user_id, action_type, table_name, record_id, description):
-    conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
 
-    cursor.execute("""
-        INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        user_id,
-        action_type,
-        table_name,
-        record_id,
-        description,
-        datetime.utcnow().isoformat()
-    ))
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            action_type,
+            table_name,
+            record_id,
+            description,
+            datetime.utcnow().isoformat()
+        ))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+    except Exception as e:
+        current_app.logger.error(f"Failed to log activity: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
