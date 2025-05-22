@@ -467,23 +467,34 @@ def restock_product():
         if 'conn' in locals():
             conn.close()
 
-# Add new route to get users
 @admin_bp.route('/admin/api/users')
-def get_users():
+def get_admin_users():
     try:
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
-        cursor.execute("SELECT UserID, Username, Name FROM User")
-        users = [dict(row) for row in cursor.fetchall()]
+
+        # Only select users with Role = 'admin'
+        cursor.execute("SELECT UserID, Username, Name FROM User WHERE Role = 'admin'")
+        rows = cursor.fetchall()
+
+        users = []
+        for row in rows:
+            users.append({
+                'UserID': row['UserID'],
+                'Username': row['Username'],
+                'Name': row['Name']
+            })
+
         return jsonify(users)
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 # Update activity logs endpoint
 @admin_bp.route('/admin/activity-logs')
@@ -540,7 +551,7 @@ def admin_activity_logs():
     finally:
         if 'conn' in locals():
             conn.close()
-            
+
 def log_activity(user_id, action_type, table_name, record_id, description):
     conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
     cursor = conn.cursor()
