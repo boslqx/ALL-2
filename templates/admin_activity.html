@@ -58,7 +58,7 @@
             
             try {
                 const filter = document.getElementById('log-filter').value;
-                const response = await fetch(`/admin/activity?action=${filter}`);
+                const response = await fetch(`/admin/activity-logs?action=${filter}`);
                 
                 if (!response.ok) {
                     throw new Error(`Server returned ${response.status}`);
