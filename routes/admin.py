@@ -467,10 +467,34 @@ def restock_product():
         if 'conn' in locals():
             conn.close()
 
-@admin_bp.route('/admin/activity-logs')  # Changed endpoint
+# Add new route to get users
+@admin_bp.route('/admin/api/users')
+def get_users():
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT UserID, Username, Name FROM User")
+        users = [dict(row) for row in cursor.fetchall()]
+        return jsonify(users)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+# Update activity logs endpoint
+@admin_bp.route('/admin/activity-logs')
 def admin_activity_logs():
     try:
+        # Get filters
         action_filter = request.args.get('action', 'all')
+        user_filter = request.args.get('user', 'all')
+        date_from = request.args.get('from')
+        date_to = request.args.get('to')
+        
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -478,17 +502,32 @@ def admin_activity_logs():
         query = """
             SELECT 
                 A.Timestamp,
-                U.Username as UserName,
+                U.UserID,
+                COALESCE(U.Name, U.Username) AS UserName,
                 A.ActionType,
                 A.Description
             FROM ActivityLog A
             LEFT JOIN User U ON A.UserID = U.UserID
+            WHERE 1=1
         """
         params = []
         
+        # Apply filters
         if action_filter != 'all':
-            query += " WHERE A.ActionType = ?"
+            query += " AND A.ActionType = ?"
             params.append(action_filter)
+            
+        if user_filter != 'all':
+            query += " AND A.UserID = ?"
+            params.append(user_filter)
+            
+        if date_from:
+            query += " AND DATE(A.Timestamp) >= ?"
+            params.append(date_from)
+            
+        if date_to:
+            query += " AND DATE(A.Timestamp) <= ?"
+            params.append(date_to)
 
         query += " ORDER BY A.Timestamp DESC LIMIT 200"
         
@@ -501,7 +540,7 @@ def admin_activity_logs():
     finally:
         if 'conn' in locals():
             conn.close()
-
+            
 def log_activity(user_id, action_type, table_name, record_id, description):
     conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
     cursor = conn.cursor()
