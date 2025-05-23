@@ -1,6 +1,144 @@
 {% extends "admin_base.html" %}
 {% block content %}
-<div id="dashboard" class="section">
-    Welcome to the Admin Dashboard
+<div class="dashboard-container">
+    <h2>Admin Dashboard</h2>
+    
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Products</h3>
+                <span id="total-products">Loading...</span>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="card-content">
+                <h3>Low Stock Items</h3>
+                <span id="low-stock">Loading...</span>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="card-content">
+                <h3>Recent Activity</h3>
+                <span id="recent-activity">Loading...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity Section -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-list-alt"></i> Recent Activities</h3>
+        <div class="recent-activities" id="recent-activities-list">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading activities...
+            </div>
+        </div>
+        <a href="/admin/activity" class="view-all-link">
+            View All Activities <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <div class="quick-actions">
+            <a href="/admin/register" class="quick-action">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New Product</span>
+            </a>
+            <a href="/admin/allproducts" class="quick-action">
+                <i class="fas fa-boxes"></i>
+                <span>Manage Products</span>
+            </a>
+            <a href="#" class="quick-action" id="quick-restock">
+                <i class="fas fa-warehouse"></i>
+                <span>Restock Items</span>
+            </a>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch dashboard data
+    fetchDashboardData();
+    
+    // Set up quick restock button
+    document.getElementById('quick-restock').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Implement quick restock functionality
+        alert('Quick restock feature will be implemented here');
+    });
+});
+
+async function fetchDashboardData() {
+    try {
+        const response = await fetch('/admin/api/dashboard-stats');
+        const data = await response.json();
+        
+        // Update summary cards
+        document.getElementById('total-products').textContent = data.total_products;
+        document.getElementById('low-stock').textContent = data.low_stock_items;
+        document.getElementById('recent-activity').textContent = data.recent_activities_count + ' today';
+        
+        // Render recent activities
+        const activitiesList = document.getElementById('recent-activities-list');
+        activitiesList.innerHTML = '';
+        
+        if (data.recent_activities.length === 0) {
+            activitiesList.innerHTML = '<div class="no-activities">No recent activities found</div>';
+            return;
+        }
+        
+        data.recent_activities.forEach(activity => {
+            const activityEl = document.createElement('div');
+            activityEl.className = 'activity-item';
+            activityEl.innerHTML = `
+                <div class="activity-icon">
+                    <i class="${getActivityIcon(activity.ActionType)}"></i>
+                </div>
+                <div class="activity-details">
+                    <div class="activity-description">${activity.Description}</div>
+                    <div class="activity-meta">
+                        <span class="activity-user">${activity.UserName}</span>
+                        <span class="activity-time">${formatTime(activity.Timestamp)}</span>
+                    </div>
+                </div>
+            `;
+            activitiesList.appendChild(activityEl);
+        });
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        document.getElementById('recent-activities-list').innerHTML = 
+            '<div class="error-message">Failed to load activities</div>';
+    }
+}
+
+function getActivityIcon(actionType) {
+    const icons = {
+        'ADD_PRODUCT': 'fas fa-plus-circle text-success',
+        'EDIT_PRODUCT': 'fas fa-edit text-warning',
+        'DELETE_PRODUCT': 'fas fa-trash-alt text-danger',
+        'UPDATE_STOCK': 'fas fa-boxes text-primary'
+    };
+    return icons[actionType] || 'fas fa-info-circle';
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+</script>
 {% endblock %}

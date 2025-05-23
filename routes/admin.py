@@ -66,10 +66,46 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+@admin_bp.route('/admin/api/dashboard-stats')
+def dashboard_stats():
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Get total products count
+        cursor.execute("SELECT COUNT(*) FROM Product")
+        total_products = cursor.fetchone()[0]
+        
+        # Get low stock items (assuming low stock = quantity < 10)
+        cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity < 10")
+        low_stock_items = cursor.fetchone()[0]
+        
+        # Get today's activities
+        today = datetime.now().strftime('%Y-%m-%d')
+        cursor.execute("""
+            SELECT A.Description, A.ActionType, A.Timestamp, 
+                   COALESCE(U.Name, U.Username) AS UserName
+            FROM ActivityLog A
+            LEFT JOIN User U ON A.UserID = U.UserID
+            WHERE DATE(A.Timestamp) = ?
+            ORDER BY A.Timestamp DESC
+            LIMIT 5
+        """, (today,))
+        recent_activities = [dict(row) for row in cursor.fetchall()]
+        
+        return jsonify({
+            'total_products': total_products,
+            'low_stock_items': low_stock_items,
+            'recent_activities_count': len(recent_activities),
+            'recent_activities': recent_activities
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @admin_bp.route('/register-container', methods=['POST']) 
 def register_product():
