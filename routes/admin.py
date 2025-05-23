@@ -65,6 +65,34 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@admin_bp.route('/admin/api/profile')
+def get_profile():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT UserID as id, Username, Name as name, Email as email, Role as role
+            FROM User 
+            WHERE UserID = ?
+        """, (user_id,))
+        
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        return jsonify(dict(user))
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @admin_bp.route('/admin/api/dashboard-stats')
 def dashboard_stats():

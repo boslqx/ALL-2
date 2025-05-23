@@ -3,6 +3,40 @@
 <div class="dashboard-container">
     <h2>Admin Dashboard</h2>
     
+    <!-- Profile Section -->
+    <div class="dashboard-section profile-section">
+        <h3><i class="fas fa-user"></i> Profile</h3>
+        <div class="profile-details">
+            <div class="profile-row">
+                <div class="profile-label">Name:</div>
+                <div class="profile-value" id="profile-name">Loading...</div>
+                <div class="profile-label">Email:</div>
+                <div class="profile-value" id="profile-email">Loading...</div>
+            </div>
+            <div class="profile-row">
+                <div class="profile-label">ID:</div>
+                <div class="profile-value" id="profile-id">Loading...</div>
+                <div class="profile-label">Role:</div>
+                <div class="profile-value" id="profile-role">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <div class="quick-actions">
+            <a href="/admin/register" class="quick-action">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New Product</span>
+            </a>
+            <a href="/admin/allproducts" class="quick-action">
+                <i class="fas fa-boxes"></i>
+                <span>Manage Products</span>
+            </a>
+        </div>
+    </div>
+    
     <!-- Summary Cards -->
     <div class="summary-cards">
         <div class="summary-card">
@@ -48,38 +82,13 @@
             View All Activities <i class="fas fa-arrow-right"></i>
         </a>
     </div>
-    
-    <!-- Quick Actions -->
-    <div class="dashboard-section">
-        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
-        <div class="quick-actions">
-            <a href="/admin/register" class="quick-action">
-                <i class="fas fa-plus-circle"></i>
-                <span>Add New Product</span>
-            </a>
-            <a href="/admin/allproducts" class="quick-action">
-                <i class="fas fa-boxes"></i>
-                <span>Manage Products</span>
-            </a>
-            <a href="#" class="quick-action" id="quick-restock">
-                <i class="fas fa-warehouse"></i>
-                <span>Restock Items</span>
-            </a>
-        </div>
-    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch dashboard data
     fetchDashboardData();
-    
-    // Set up quick restock button
-    document.getElementById('quick-restock').addEventListener('click', function(e) {
-        e.preventDefault();
-        // Implement quick restock functionality
-        alert('Quick restock feature will be implemented here');
-    });
+    fetchProfileData();
 });
 
 async function fetchDashboardData() {
@@ -123,6 +132,27 @@ async function fetchDashboardData() {
         console.error('Error loading dashboard data:', error);
         document.getElementById('recent-activities-list').innerHTML = 
             '<div class="error-message">Failed to load activities</div>';
+    }
+}
+
+async function fetchProfileData() {
+    try {
+        const response = await fetch('/admin/api/profile');
+        const data = await response.json();
+        
+        // Update profile information
+        document.getElementById('profile-name').textContent = data.name || 'N/A';
+        document.getElementById('profile-email').textContent = data.email || 'N/A';
+        document.getElementById('profile-id').textContent = data.id || 'N/A';
+        document.getElementById('profile-role').textContent = data.role || 'N/A';
+        
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+        // Set error state
+        document.getElementById('profile-name').textContent = 'Error loading';
+        document.getElementById('profile-email').textContent = 'Error loading';
+        document.getElementById('profile-id').textContent = 'Error loading';
+        document.getElementById('profile-role').textContent = 'Error loading';
     }
 }
 
