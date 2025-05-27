@@ -1,0 +1,47 @@
+{% extends "manager_base.html" %}
+
+{% block content %}
+<div class="product-details-container">
+    <!-- Back Button -->
+    <a href="{{ url_for('manager.all_products') }}" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back to All Products
+    </a>
+
+    <h1>Product Details</h1>
+
+    <div class="product-details-card">
+        <!-- Product Image -->
+        <div class="product-image">
+            <img src="{{ url_for('static', filename='product_image/' + product.Image) if product.Image else url_for('static', filename='images/placeholder.png') }}"
+                 alt="{{ product.ProductName }}">
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+            <h2>{{ product.ProductName }}</h2>
+            <p><strong>Brand:</strong> {{ product.ProductBrand }}</p>
+            <p><strong>Category:</strong> {{ product.Category }}</p>
+            <p><strong>Price:</strong> RM{{ "%.2f"|format(product.Price) }}</p>
+            <p><strong>Stock:</strong> {{ product.StockQuantity }} units</p>
+        </div>
+
+        <!-- QR Code -->
+        <div class="product-qr">
+            <h3>QR Code</h3>
+            {% if product.QrCode %}
+                <img src="data:image/png;base64,{{ product.QrCode }}" alt="QR Code">
+                <button class="print-qr">Print QR</button>
+            {% else %}
+                <p>No QR code generated.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Print QR Code
+    document.querySelector('.print-qr')?.addEventListener('click', () => {
+        window.open(`/print-qr/{{ product.ProductID }}`, '_blank');
+    });
+</script>
+{% endblock %}

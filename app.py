@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
-from routes.login import login_bp  # Only this import
+from routes.login import login_bp
 from routes.admin import admin_bp
 from routes.manager import manager_bp
 from routes.cashier import cashier_bp

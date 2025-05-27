@@ -4,119 +4,254 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manager Dashboard</title>
-
-    <!-- External CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
-
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-    <h2>{{ manager_name }}</h2>
-     </div>
+            <h2>{{ manager_name }}</h2>
+        </div>
         <ul class="nav-menu">
-             <li class="nav-item {% if active_tab == 'Dashboard' %}active{% endif %}" onclick="showSection('Dashboard')">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
+            <li class="nav-item {% if active_tab == 'Dashboard' %}active{% endif %}">
+                <a href="{{ url_for('manager.dashboard') }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
             </li>
-            <li class="nav-item {% if active_tab == 'All Products' %}active{% endif %}" onclick="showSection('All Products')">
-                <i class="fas fa-box-open"></i>
-                <span>All Products</span>
+            <li class="nav-item {% if active_tab == 'All Products' %}active{% endif %}">
+                <a href="{{ url_for('manager.all_products') }}" class="nav-link">
+                    <i class="fas fa-box-open"></i>
+                    <span>All Products</span>
+                </a>
             </li>
-            <li class="nav-item {% if active_tab == 'Inventory Report' %}active{% endif %}" onclick="showSection('Inventory Report')">
-                <i class="fas fa-chart-line"></i>
-                <span>Inventory Report</span>
+            <li class="nav-item {% if active_tab == 'Inventory Report' %}active{% endif %}">
+                <a href="{{ url_for('manager.inventory_report') }}" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Inventory Report</span>
+                </a>
             </li>
-            <li class="nav-item {% if active_tab == 'Sales Report' %}active{% endif %}" onclick="showSection('Sales Report')">
-                <i class="fas fa-chart-line"></i>
-                <span>Sales Report</span>
+            <li class="nav-item {% if active_tab == 'Sales Report' %}active{% endif %}">
+                <a href="{{ url_for('manager.sales_report') }}" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Sales Report</span>
+                </a>
             </li>
-            <li class="nav-item {% if active_tab == 'Employee' %}active{% endif %}" onclick="showSection('Employee')">
-                <i class="fas fa-clipboard-list"></i>
-                <span>Employee</span>
+            <li class="nav-item {% if active_tab == 'Employee' %}active{% endif %}">
+                <a href="{{ url_for('manager.employee') }}" class="nav-link">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Employee</span>
+                </a>
             </li>
-            <li class="nav-item logout" onclick="showLogoutModal()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
+            <li class="nav-item logout">
+                <a href="#" class="nav-link" onclick="showLogoutModal(); return false;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
             </li>
         </ul>
     </div>
 
-    <!-- Main Content (Placeholder) -->
+    <!-- Main Content -->
     <div class="main-content">
         <div id="Dashboard" class="section">Manager Dashboard</div>
-        <div id="All Products" class="section" style="display:none;">Products list</div>
-        <div id="Inventory Report" class="section" style="display:none;">
-    <div class="activity-logs-container">
-        <h2>Inventory Activity Log</h2>
-        <div class="log-filters">
-            <select id="log-filter">
-                <option value="all">All Activities</option>
-                <option value="ADD_PRODUCT">Product Additions</option>
-                <option value="UPDATE_STOCK">Stock Updates</option>
-            </select>
-            <button id="refresh-logs">Refresh</button>
-            <span id="log-status"></span>
-        </div>
-        <div class="log-table-container">
-            <table id="activity-logs-table">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Action</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody id="logs-body">
-                    <!-- Logs will be loaded here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-        <div id="Sales Report" class="section" style="display:none;">Sales Report</div>
-        <div id="Employee" class="section" style="display:none;">Manage Employees</div>
-    </div>
 
+        <div id="All Products" class="section" style="display:none;">
+            <div class="products-container">
+                <div class="products-header">
+                    <h2 class="products-title">Products</h2>
+                    <div class="search-container">
+                        <input type="text" placeholder="Search by brand or name..." class="search-input">
+                        <button class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filter-options">
+                    <div class="filter-group">
+                        <label for="category-filter">Category</label>
+                        <select class="filter-select" id="category-filter">
+                            <option value="all">All Categories</option>
+                            <option value="Food & Beverages">Food & Beverages</option>
+                            <option value="Health & Personal">Health & Personal</option>
+                            <option value="Home & Living">Home & Living</option>
+                            <option value="Clothing & Accessories">Clothing & Accessories</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="brand-filter">Brand</label>
+                        <select class="filter-select" id="brand-filter">
+                            <option value="default">Default</option>
+                            <option value="a-z">A-Z</option>
+                            <option value="z-a">Z-A</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="price-filter">Price</label>
+                        <select class="filter-select" id="price-filter">
+                            <option value="default">Default</option>
+                            <option value="low-high">Low to High</option>
+                            <option value="high-low">High to Low</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group filter-button-group">
+                        <button id="apply-filters" class="action-button">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+
+                <div class="products-grid" id="products-grid"></div>
+            </div>
+        </div>
+
+        <div id="Inventory Report" class="section" style="display:none;">
+            <div class="activity-logs-container">
+                <h2>Inventory Activity Log</h2>
+                <div class="log-filters">
+                    <select id="log-filter">
+                        <option value="all">All Activities</option>
+                        <option value="ADD_PRODUCT">Product Additions</option>
+                        <option value="UPDATE_STOCK">Stock Updates</option>
+                    </select>
+                    <button id="refresh-logs">Refresh</button>
+                    <span id="log-status"></span>
+                </div>
+                <div class="log-table-container">
+                    <table id="activity-logs-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body">
+                            <!-- Logs will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="Sales Report" class="section" style="display:none;">
+            <div class="content-container">
+                <h2>Sales Report</h2>
+                <p>Sales report content will go here</p>
+            </div>
+        </div>
+
+        <div id="Employee" class="section" style="display:none;">
+            <div class="employee-management">
+                <h2>Employee Management</h2>
+                <div class="add-employee-form">
+                    <h3>Add New Cashier</h3>
+                    <form id="addEmployeeForm">
+                        <div class="form-group">
+                            <label for="employeeName">Full Name:</label>
+                            <input type="text" id="employeeName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeEmail">Email:</label>
+                            <input type="email" id="employeeEmail" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeUsername">Username:</label>
+                            <input type="text" id="employeeUsername" name="username" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Create Account</button>
+                    </form>
+                    <div id="employeeMessage" class="message"></div>
+                </div>
+                <div class="employee-list">
+                    <h3>Current Employees</h3>
+                    <table id="employeesTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeesBody">
+                            <!-- Employee data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="modal">
-    <div class="modal-content">
-        <p>Are you sure you want to log out?</p>
-        <div class="modal-buttons">
-        <button id="cancelLogout" class="cancel-btn">No</button>
-        <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        <div class="modal-content">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button id="cancelLogout" class="cancel-btn">No</button>
+                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            </div>
         </div>
     </div>
-    </div>
-
-
-
 
     <script>
-    function showSection(sectionId) {
-        // Hide all sections
+
+    // Handle section visibility based on URL
+    function checkActiveSection() {
+        const path = window.location.pathname;
+        const sectionMap = {
+            '/manager': 'Dashboard',
+            '/manager/dashboard': 'Dashboard',
+            '/manager/all-products': 'All Products',
+            '/manager/inventory-report': 'Inventory Report',
+            '/manager/sales-report': 'Sales Report',
+            '/manager/employee': 'Employee'
+        };
+
+        // Hide all sections first
         document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
 
-        // Show selected section
+        // Show the appropriate section based on URL
+        const sectionId = sectionMap[path] || 'Dashboard';
         document.getElementById(sectionId).style.display = 'block';
 
         // Update active class on sidebar
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        const activeLink = document.querySelector(`.nav-item a[href="${path}"]`);
+        if (activeLink) activeLink.parentElement.classList.add('active');
+
+        // Load content if needed
+        if (sectionId === 'Employee') {
+            loadEmployees();
+        } else if (sectionId === 'Inventory Report') {
+            loadActivityLogs();
+        } else if (sectionId === 'All Products') {
+            loadProducts();
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const logoutBtn = document.querySelector('.logout');
+    // Initialize on page load and when navigating back/forward
+    document.addEventListener('DOMContentLoaded', function() {
+        checkActiveSection();
+        window.addEventListener('popstate', checkActiveSection);
+
+        // Logout modal handling
+        const logoutBtn = document.querySelector('.logout a');
         const logoutModal = document.getElementById('logoutModal');
         const cancelLogout = document.getElementById('cancelLogout');
 
         if (logoutBtn && logoutModal && cancelLogout) {
-            logoutBtn.addEventListener('click', () => {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
                 logoutModal.style.display = 'flex';
             });
 
@@ -124,67 +259,261 @@
                 logoutModal.style.display = 'none';
             });
         }
+
+        // Refresh logs button
+        const refreshBtn = document.getElementById('refresh-logs');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', loadActivityLogs);
+        }
+
+        // Employee form submission
+        const addEmployeeForm = document.getElementById('addEmployeeForm');
+        if (addEmployeeForm) {
+            addEmployeeForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = {
+                    name: document.getElementById('employeeName').value,
+                    email: document.getElementById('employeeEmail').value,
+                    username: document.getElementById('employeeUsername').value
+                };
+
+                try {
+                    const response = await fetch('/manager/add-employee', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showEmployeeMessage('Employee added successfully! Temporary password: ' + result.temp_password, 'success');
+                        addEmployeeForm.reset();
+                        loadEmployees();
+                    } else {
+                        showEmployeeMessage(result.error || 'Failed to add employee', 'error');
+                    }
+                } catch (error) {
+                    showEmployeeMessage('Error: ' + error.message, 'error');
+                }
+            });
+        }
+
+        // Product search and filter functionality
+        const searchInput = document.querySelector('.search-input');
+        const searchButton = document.querySelector('.search-button');
+        const applyFiltersBtn = document.getElementById('apply-filters');
+
+        if (searchButton) {
+            searchButton.addEventListener('click', performSearch);
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+        }
+
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', applyFilters);
+        }
     });
-    </script>
-    <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Load logs when Inventory Report section is shown
-    const inventoryNavItem = document.querySelector('.nav-item[onclick*="Inventory Report"]');
-    if (inventoryNavItem) {
-        inventoryNavItem.addEventListener('click', loadActivityLogs);
+
+    // Product management functions
+    let allProducts = [];
+
+    function loadProducts() {
+        showLoading('products-grid');
+        fetch('/api/products')
+            .then(handleResponse)
+            .then(products => {
+                allProducts = products;
+                renderProducts(products);
+            })
+            .catch(error => {
+                handleError(error, 'products-grid');
+            });
     }
 
-    // Refresh button
-    const refreshBtn = document.getElementById('refresh-logs');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadActivityLogs);
+    function performSearch() {
+        applyFilters();
     }
 
+    function applyFilters() {
+        showLoading('products-grid');
+        const searchTerm = document.querySelector('.search-input').value.trim().toLowerCase();
+        const categoryFilter = document.getElementById('category-filter').value;
+        const brandFilter = document.getElementById('brand-filter').value;
+        const priceFilter = document.getElementById('price-filter').value;
+
+        let filteredProducts = [...allProducts];
+
+        // Apply search filter
+        if (searchTerm) {
+            filteredProducts = filteredProducts.filter(product => {
+                const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
+                const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
+                return nameMatch || brandMatch;
+            });
+        }
+
+        // Apply category filter
+        if (categoryFilter !== 'all') {
+            filteredProducts = filteredProducts.filter(product =>
+                product.Category && product.Category === categoryFilter
+            );
+        }
+
+        // Apply sorting
+        if (brandFilter === 'a-z') {
+            filteredProducts.sort((a, b) =>
+                (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
+            );
+        } else if (brandFilter === 'z-a') {
+            filteredProducts.sort((a, b) =>
+                (b.ProductBrand || '').localeCompare(a.ProductBrand || '')
+            );
+        }
+
+        if (priceFilter === 'low-high') {
+            filteredProducts.sort((a, b) => (a.Price || 0) - (b.Price || 0));
+        } else if (priceFilter === 'high-low') {
+            filteredProducts.sort((a, b) => (b.Price || 0) - (a.Price || 0));
+        }
+
+        renderProducts(filteredProducts);
+    }
+
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            `;
+        }
+    }
+
+    function handleResponse(response) {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+    }
+
+    function renderProducts(products) {
+        const productsGrid = document.getElementById('products-grid');
+        if (!productsGrid) return;
+
+        if (products.length === 0) {
+            productsGrid.innerHTML = `
+                <div class="no-products">
+                    <i class="fas fa-box-open"></i>
+                    <p>No products found matching filters</p>
+                </div>
+            `;
+            return;
+        }
+
+        productsGrid.innerHTML = products.map(product => `
+            <div class="product-card" data-id="${product.ProductID}">
+                <div class="product-image">
+                    <img src="${getProductImageUrl(product.Image)}"
+                        alt="${product.ProductName}"
+                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand-name">
+                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                        <span class="product-name">${product.ProductName}</span>
+                    </div>
+                    <div class="product-meta">
+                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                            ${product.StockQuantity || 0} in stock
+                        </span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="action-button details-button" data-id="${product.ProductID}">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="action-button alert-button ${product.StockQuantity <= 10 ? 'warning' : ''}
+                            ${product.AlertThreshold ? 'active-alert' : ''}"
+                            data-id="${product.ProductID}">
+                            <i class="fas ${product.StockQuantity <= 10 ? 'fa-exclamation-triangle' :
+                              product.AlertThreshold ? 'fa-bell-slash' : 'fa-bell'}"></i>
+                            ${product.AlertThreshold ? `Alert (${product.AlertThreshold})` :
+                              product.StockQuantity <= 10 ? 'Low Stock' : 'Stock Alert'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        // Reattach event listeners
+        document.querySelectorAll('.details-button').forEach(button => {
+            button.addEventListener('click', function() {
+                showProductDetails(this.getAttribute('data-id'));
+            });
+        });
+
+
+    }
+
+    function handleError(error, elementId) {
+        console.error('Error:', error);
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load data. ${error.message}</p>
+                    <button class="retry-button">Retry</button>
+                </div>
+            `;
+            document.querySelector('.retry-button')?.addEventListener('click', () => {
+                if (elementId === 'products-grid') loadProducts();
+                else if (elementId === 'employeesBody') loadEmployees();
+                else if (elementId === 'logs-body') loadActivityLogs();
+            });
+        }
+    }
+
+    function showProductDetails(productId) {
+        window.location.href = `/manager/product/${productId}`;
+    }
+
+
+
+
+    function getProductImageUrl(imagePath) {
+        if (!imagePath) return '/static/images/placeholder.png';
+        return `/static/product_image/${imagePath}`;
+    }
+
+    // Employee and Activity Logs functions
     async function loadActivityLogs() {
         try {
             const statusElement = document.getElementById('log-status');
             const tbody = document.getElementById('logs-body');
 
-            // Show loading state
             if (statusElement) statusElement.textContent = 'Loading...';
             if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Loading logs...</td></tr>';
 
             const filter = document.getElementById('log-filter').value;
             const url = filter === 'all'
-    ? '/manager/activity-logs'
-    : `/manager/activity-logs?action=${filter}`;
-const response = await fetch(url);
+                ? '/manager/activity-logs'
+                : `/manager/activity-logs?action=${filter}`;
 
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const logs = await response.json();
-
-            if (logs.error) {
-                throw new Error(logs.error);
-            }
+            if (logs.error) throw new Error(logs.error);
 
             renderLogs(logs);
             if (statusElement) statusElement.textContent = '';
-
         } catch (error) {
             console.error('Error loading logs:', error);
-            const errorElement = document.createElement('div');
-            errorElement.textContent = `Failed to load logs: ${error.message}`;
-            errorElement.style.color = 'red';
-            errorElement.style.padding = '20px';
-            errorElement.style.textAlign = 'center';
-
-            const tbody = document.getElementById('logs-body');
-            if (tbody) {
-                tbody.innerHTML = '';
-                tbody.appendChild(document.createElement('tr')).appendChild(errorElement);
-            }
-
-            const statusElement = document.getElementById('log-status');
-            if (statusElement) statusElement.textContent = 'Error loading logs';
+            handleError(error, 'logs-body');
         }
     }
 
@@ -193,17 +522,13 @@ const response = await fetch(url);
         if (!tbody) return;
 
         tbody.innerHTML = '';
-
         if (logs.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="4" style="text-align: center;">No activity logs found</td>`;
-            tbody.appendChild(row);
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No activity logs found</td></tr>';
             return;
         }
 
         logs.forEach(log => {
             const row = document.createElement('tr');
-            // Format timestamp if needed
             const timestamp = new Date(log.Timestamp).toLocaleString();
             row.innerHTML = `
                 <td>${timestamp}</td>
@@ -218,14 +543,65 @@ const response = await fetch(url);
     function formatActionType(action) {
         const actions = {
             'ADD_PRODUCT': 'Add Product',
-            'UPDATE_STOCK': 'Update Stock',
-            // Add more action types as needed
+            'UPDATE_STOCK': 'Update Stock'
         };
         return actions[action] || action;
     }
-});
-</script>
 
+    async function loadEmployees() {
+        try {
+            const response = await fetch('/manager/get-employees');
+            const employees = await response.json();
 
+            if (response.ok) {
+                renderEmployees(employees);
+            } else {
+                throw new Error(employees.error || 'Failed to load employees');
+            }
+        } catch (error) {
+            console.error('Error loading employees:', error);
+            handleError(error, 'employeesBody');
+        }
+    }
+
+    function renderEmployees(employees) {
+        const tbody = document.getElementById('employeesBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (employees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No employees found</td></tr>';
+            return;
+        }
+
+        employees.forEach(employee => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${employee.Name}</td>
+                <td>${employee.Username}</td>
+                <td>${employee.Email || 'N/A'}</td>
+                <td>${employee.Role}</td>
+                <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function showEmployeeMessage(message, type) {
+        const messageElement = document.getElementById('employeeMessage');
+        if (messageElement) {
+            messageElement.textContent = message;
+            messageElement.className = `message ${type}`;
+            setTimeout(() => {
+                messageElement.textContent = '';
+                messageElement.className = 'message';
+            }, 5000);
+        }
+    }
+
+    function showLogoutModal() {
+        document.getElementById('logoutModal').style.display = 'flex';
+    }
+    </script>
 </body>
 </html>

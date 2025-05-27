@@ -1,0 +1,29 @@
+// In the renderProducts function, remove the alert button:
+productsGrid.innerHTML = products.map(product => `
+    <div class="product-card" data-id="${product.ProductID}">
+        <div class="product-image">
+            <img src="${getProductImageUrl(product.Image)}"
+                alt="${product.ProductName}"
+                onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+        </div>
+        <div class="product-info">
+            <div class="product-brand-name">
+                <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                <span class="product-name">${product.ProductName}</span>
+            </div>
+            <div class="product-meta">
+                <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                    ${product.StockQuantity || 0} in stock
+                </span>
+            </div>
+            <div class="product-actions">
+                <button class="action-button details-button" data-id="${product.ProductID}">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+            </div>
+        </div>
+    </div>
+`).join('');
+
+// Remove the entire setupStockAlert and updateStockAlert functions
