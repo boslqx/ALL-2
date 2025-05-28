@@ -11,15 +11,23 @@ body {
     background-color: #e8eccc;
 }
 
-/* Sidebar Styles */
+
 .sidebar {
     width: 240px;
     background: linear-gradient(to bottom, #2a3f54 0%, #3b4e63 50%, #5f738c 100%);
     color: white;
     padding: 20px 0;
     box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
-    position: relative;
+    position: fixed; /* Changed from relative to fixed */
     z-index: 10;
+    height: 100vh; /* Ensure it takes full viewport height */
+    overflow-y: auto; /* Add scroll if content is too long */
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    margin-left: 240px; /* Add margin to account for fixed sidebar */
 }
 
 .logo {
@@ -69,11 +77,19 @@ body {
     width: 100%;
 }
 
+
+
 .logout {
-    position: absolute;
-    bottom: 20px;
-    width: calc(100% - 30px);
-    left: 15px;
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.logout:hover {
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
 }
 
 /* Main Content Area */

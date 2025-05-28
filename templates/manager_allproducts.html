@@ -1,4 +1,6 @@
-// In the renderProducts function, remove the alert button:
+{% extends "manager_base.html" %}
+
+{% block content %}
 productsGrid.innerHTML = products.map(product => `
     <div class="product-card" data-id="${product.ProductID}">
         <div class="product-image">
@@ -26,4 +28,4 @@ productsGrid.innerHTML = products.map(product => `
     </div>
 `).join('');
 
-// Remove the entire setupStockAlert and updateStockAlert functions
+{% endblock %}

@@ -11,8 +11,8 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <h2>{{ manager_name }}</h2>
-        </div>
+    <h2>{{ manager_name or 'Manager Dashboard' }}</h2>
+</div>
         <ul class="nav-menu">
             <li class="nav-item {% if active_tab == 'Dashboard' %}active{% endif %}">
                 <a href="{{ url_for('manager.dashboard') }}" class="nav-link">

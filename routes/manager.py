@@ -107,8 +107,8 @@ def add_employee():
             return jsonify({'error': 'Username already exists'}), 400
 
         cursor.execute("""
-            INSERT INTO User (Name, Username, Email, PasswordHash, Role, IsActive, MustChangePassword)
-            VALUES (?, ?, ?, ?, 'cashier', 1, 1)
+            INSERT INTO User (Name, Username, Email, Password, Role)
+            VALUES (?, ?, ?, ?, 'cashier')
         """, (name, username, email, temp_password))
 
         conn.commit()
@@ -160,7 +160,6 @@ def product_details(product_id):
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Fetch product from Product table (removed AlertThreshold)
         cursor.execute("""
             SELECT 
                 ProductID, 
@@ -180,12 +179,15 @@ def product_details(product_id):
         if not product:
             return "Product not found", 404
 
-        # Convert to dict and handle binary data (e.g., QR code)
         product_data = dict(product)
         if product_data.get('QrCode'):
             product_data['QrCode'] = base64.b64encode(product_data['QrCode']).decode('utf-8')
 
-        return render_template('manager_productdetails.html', product=product_data)
+        # Add manager_name to the template context
+        return render_template('manager_productdetails.html',
+                            product=product_data,
+                            manager_name=get_manager_name(session.get('user_id')),
+                            active_tab='All Products')  # Maintain active tab state
 
     except Exception as e:
         return f"Error loading product: {str(e)}", 500
@@ -193,3 +195,84 @@ def product_details(product_id):
         if conn:
             conn.close()
 
+@manager_bp.context_processor
+def inject_manager_name():
+    return {'manager_name': get_manager_name(session.get('user_id'))}
+
+@manager_bp.route('/api/products')
+def get_products():
+    try:
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT 
+                p.ProductID, 
+                p.ProductName, 
+                p.Category, 
+                p.Price, 
+                p.StockQuantity, 
+                p.ProductBrand,
+                p.Image,
+                sa.AlertThreshold
+            FROM Product p
+            LEFT JOIN StockAlert sa ON p.ProductID = sa.ProductID
+            ORDER BY p.ProductName
+        """)
+
+        products = [dict(product) for product in cursor.fetchall()]
+        return jsonify(products)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/api/set-alert', methods=['POST'])
+def set_alert():
+    try:
+        data = request.get_json()
+        product_id = data.get('product_id')
+        threshold = data.get('threshold')
+
+        if not product_id or threshold is None:
+            return jsonify({'error': 'Product ID and threshold are required'}), 400
+
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Check if alert already exists
+        cursor.execute("SELECT * FROM StockAlert WHERE ProductID = ?", (product_id,))
+        existing_alert = cursor.fetchone()
+
+        if existing_alert:
+            if threshold <= 0:
+                # Remove alert if threshold is 0 or negative
+                cursor.execute("DELETE FROM StockAlert WHERE ProductID = ?", (product_id,))
+            else:
+                # Update existing alert
+                cursor.execute("""
+                    UPDATE StockAlert 
+                    SET AlertThreshold = ?, AlertStatus = 'active', Timestamp = CURRENT_TIMESTAMP
+                    WHERE ProductID = ?
+                """, (threshold, product_id))
+        else:
+            if threshold > 0:
+                # Create new alert
+                cursor.execute("""
+                    INSERT INTO StockAlert (ProductID, AlertType, AlertThreshold, AlertStatus, Timestamp)
+                    VALUES (?, 'low_stock', ?, 'active', CURRENT_TIMESTAMP)
+                """, (product_id, threshold))
+
+        conn.commit()
+        return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()

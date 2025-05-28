@@ -58,6 +58,7 @@
     <div class="main-content">
         <div id="Dashboard" class="section">Manager Dashboard</div>
 
+
         <div id="All Products" class="section" style="display:none;">
             <div class="products-container">
                 <div class="products-header">
@@ -204,6 +205,144 @@
     </div>
 
     <script>
+    // Product management functions
+    let allProducts = [];
+
+    function setupStockAlert() {
+        document.querySelectorAll('.alert-button').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const productId = this.getAttribute('data-id');
+                const product = allProducts.find(p => p.ProductID == productId);
+
+                const { value: threshold } = await Swal.fire({
+                    title: 'Set Stock Alert Threshold',
+                    input: 'number',
+                    inputLabel: 'Alert when stock reaches:',
+                    inputValue: product.AlertThreshold || (product.StockQuantity <= 10 ? product.StockQuantity : ''),
+                    inputAttributes: {
+                        min: 0,
+                        step: 1
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Set Alert',
+                    cancelButtonText: 'Remove Alert',
+                    inputValidator: (value) => {
+                        if (value === '' && this.textContent.includes('Remove')) {
+                            return null;
+                        }
+                        if (value === '') {
+                            return 'Please enter a number or click Remove Alert';
+                        }
+                    }
+                });
+
+                if (threshold !== undefined) {
+                    try {
+                        const response = await fetch('/api/set-alert', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                product_id: productId,
+                                threshold: threshold === '' ? 0 : parseInt(threshold)
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (response.ok) {
+                            Swal.fire('Success', 'Alert threshold updated', 'success');
+                            loadProducts();
+                        } else {
+                            throw new Error(result.error || 'Failed to set alert');
+                        }
+                    } catch (error) {
+                        Swal.fire('Error', error.message, 'error');
+                    }
+                }
+            });
+        });
+    }
+
+    function loadProducts() {
+        showLoading('products-grid');
+        fetch('/api/products')
+            .then(handleResponse)
+            .then(products => {
+                allProducts = products;
+                renderProducts(products);
+            })
+            .catch(error => {
+                handleError(error, 'products-grid');
+            });
+    }
+
+    function renderProducts(products) {
+        const productsGrid = document.getElementById('products-grid');
+        if (!productsGrid) return;
+
+        if (products.length === 0) {
+            productsGrid.innerHTML = `
+                <div class="no-products">
+                    <i class="fas fa-box-open"></i>
+                    <p>No products found matching filters</p>
+                </div>
+            `;
+            return;
+        }
+
+        productsGrid.innerHTML = products.map(product => `
+            <div class="product-card" data-id="${product.ProductID}">
+                <div class="product-image">
+                    <img src="${getProductImageUrl(product.Image)}"
+                        alt="${product.ProductName}"
+                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand-name">
+                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                        <span class="product-name">${product.ProductName}</span>
+                    </div>
+                    <div class="product-meta">
+                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                            ${product.StockQuantity || 0} in stock
+                        </span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="action-button details-button" data-id="${product.ProductID}">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
+                        <button class="action-button alert-button ${product.StockQuantity <= 10 ? 'warning' : ''} ${product.AlertThreshold ? 'active-alert' : ''}"
+                            data-id="${product.ProductID}">
+                            <i class="fas ${product.StockQuantity <= 10 ? 'fa-exclamation-triangle' :
+                              product.AlertThreshold ? 'fa-bell' : 'fa-bell'}"></i>
+                            ${product.AlertThreshold ? `Alert (${product.AlertThreshold})` :
+                              product.StockQuantity <= 10 ? 'Low Stock' : 'Stock Alert'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.details-button').forEach(button => {
+            button.addEventListener('click', function() {
+                showProductDetails(this.getAttribute('data-id'));
+            });
+        });
+
+        setupStockAlert();
+    }
+
+    function getProductImageUrl(imagePath) {
+        if (!imagePath) return '/static/images/placeholder.png';
+        // Check if path already includes static
+        if (imagePath.includes('static/')) {
+            return imagePath;
+        }
+        return `/static/product_image/${imagePath}`;
+    }
 
     // Handle section visibility based on URL
     function checkActiveSection() {
@@ -217,19 +356,14 @@
             '/manager/employee': 'Employee'
         };
 
-        // Hide all sections first
         document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
-
-        // Show the appropriate section based on URL
         const sectionId = sectionMap[path] || 'Dashboard';
         document.getElementById(sectionId).style.display = 'block';
 
-        // Update active class on sidebar
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const activeLink = document.querySelector(`.nav-item a[href="${path}"]`);
         if (activeLink) activeLink.parentElement.classList.add('active');
 
-        // Load content if needed
         if (sectionId === 'Employee') {
             loadEmployees();
         } else if (sectionId === 'Inventory Report') {
@@ -318,22 +452,6 @@
         }
     });
 
-    // Product management functions
-    let allProducts = [];
-
-    function loadProducts() {
-        showLoading('products-grid');
-        fetch('/api/products')
-            .then(handleResponse)
-            .then(products => {
-                allProducts = products;
-                renderProducts(products);
-            })
-            .catch(error => {
-                handleError(error, 'products-grid');
-            });
-    }
-
     function performSearch() {
         applyFilters();
     }
@@ -347,7 +465,6 @@
 
         let filteredProducts = [...allProducts];
 
-        // Apply search filter
         if (searchTerm) {
             filteredProducts = filteredProducts.filter(product => {
                 const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
@@ -356,14 +473,12 @@
             });
         }
 
-        // Apply category filter
         if (categoryFilter !== 'all') {
             filteredProducts = filteredProducts.filter(product =>
                 product.Category && product.Category === categoryFilter
             );
         }
 
-        // Apply sorting
         if (brandFilter === 'a-z') {
             filteredProducts.sort((a, b) =>
                 (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
@@ -399,65 +514,6 @@
         return response.json();
     }
 
-    function renderProducts(products) {
-        const productsGrid = document.getElementById('products-grid');
-        if (!productsGrid) return;
-
-        if (products.length === 0) {
-            productsGrid.innerHTML = `
-                <div class="no-products">
-                    <i class="fas fa-box-open"></i>
-                    <p>No products found matching filters</p>
-                </div>
-            `;
-            return;
-        }
-
-        productsGrid.innerHTML = products.map(product => `
-            <div class="product-card" data-id="${product.ProductID}">
-                <div class="product-image">
-                    <img src="${getProductImageUrl(product.Image)}"
-                        alt="${product.ProductName}"
-                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
-                </div>
-                <div class="product-info">
-                    <div class="product-brand-name">
-                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
-                        <span class="product-name">${product.ProductName}</span>
-                    </div>
-                    <div class="product-meta">
-                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
-                            ${product.StockQuantity || 0} in stock
-                        </span>
-                    </div>
-                    <div class="product-actions">
-                        <button class="action-button details-button" data-id="${product.ProductID}">
-                            <i class="fas fa-eye"></i> View Details
-                        </button>
-                        <button class="action-button alert-button ${product.StockQuantity <= 10 ? 'warning' : ''}
-                            ${product.AlertThreshold ? 'active-alert' : ''}"
-                            data-id="${product.ProductID}">
-                            <i class="fas ${product.StockQuantity <= 10 ? 'fa-exclamation-triangle' :
-                              product.AlertThreshold ? 'fa-bell-slash' : 'fa-bell'}"></i>
-                            ${product.AlertThreshold ? `Alert (${product.AlertThreshold})` :
-                              product.StockQuantity <= 10 ? 'Low Stock' : 'Stock Alert'}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-        // Reattach event listeners
-        document.querySelectorAll('.details-button').forEach(button => {
-            button.addEventListener('click', function() {
-                showProductDetails(this.getAttribute('data-id'));
-            });
-        });
-
-
-    }
-
     function handleError(error, elementId) {
         console.error('Error:', error);
         const element = document.getElementById(elementId);
@@ -481,15 +537,6 @@
         window.location.href = `/manager/product/${productId}`;
     }
 
-
-
-
-    function getProductImageUrl(imagePath) {
-        if (!imagePath) return '/static/images/placeholder.png';
-        return `/static/product_image/${imagePath}`;
-    }
-
-    // Employee and Activity Logs functions
     async function loadActivityLogs() {
         try {
             const statusElement = document.getElementById('log-status');
