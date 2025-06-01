@@ -1,0 +1,144 @@
+:root {
+    --primary-blue: #2563eb;
+    --light-blue: #eff6ff;
+    --dark-blue: #1e40af;
+    --gray-light: #f3f4f6;
+    --gray-medium: #9ca3af;
+    --gray-dark: #4b5563;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, 
+        #3b82f6 0%,      /* Blue */
+        #60a5fa 20%,     /* Lighter Blue */
+        #a78bfa 40%,     /* Soft Purple */
+        #f472b6 60%,     /* Pink */
+        #facc15 80%,     /* Light Yellow */
+        #3b82f6 100%     /* Back to Blue */
+    );
+    background-size: 200% 200%;
+    animation: gradientShift 15s ease infinite;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Optional animation for shifting background */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body::before,
+body::after {
+    content: "";
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(160px);
+    opacity: 0.5;
+    z-index: -1;
+}
+
+body::before {
+    background: #93c5fd; /* Pale Blue */
+    top: -150px;
+    left: -150px;
+}
+
+body::after {
+    background: #e879f9; /* Light Magenta */
+    bottom: -150px;
+    right: -150px;
+}
+
+.login-container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 380px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    text-align: center;
+}
+
+.login-container h2 {
+    color: var(--dark-blue);
+    margin-bottom: 1.75rem;
+    font-weight: 600;
+    font-size: 1.75rem;
+}
+
+.input-group {
+    margin-bottom: 1.25rem;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--gray-dark);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    background-color: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login-button:hover {
+    background-color: var(--dark-blue);
+}
+
+.forgot-password {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--primary-blue);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+    color: var(--dark-blue);
+}
+
+.error-message {
+    color: #dc2626;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
