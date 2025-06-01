@@ -142,3 +142,86 @@ body::after {
     margin-top: 1rem;
     font-size: 0.9rem;
 }
+
+/* Add these to your existing login.css */
+.forgot-password-container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 380px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    margin: 0 auto;
+}
+
+.forgot-password-container h2 {
+    color: var(--dark-blue);
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.forgot-password-container p {
+    color: var(--gray-dark);
+    margin-bottom: 1.5rem;
+}
+
+.code-input {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 1rem 0;
+}
+
+.code-input input {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 1.5rem;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+}
+
+.code-input input:focus {
+    border-color: var(--primary-blue);
+    outline: none;
+}
+
+.secondary-button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--gray-light);
+    color: var(--gray-dark);
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-button:hover {
+    background-color: #e5e7eb;
+}
+
+.message {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+.message-success {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.message-error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+.message-info {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
