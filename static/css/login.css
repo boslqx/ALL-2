@@ -225,3 +225,40 @@ body::after {
     background-color: #dbeafe;
     color: #1e40af;
 }
+
+/* 👁️ Password field wrapper for eye icon */
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input[type="password"],
+.password-wrapper input[type="text"] {
+    padding-right: 40px; /* space for the eye icon */
+}
+
+/* 👁️ Eye icon inside password field */
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6b7280; /* optional: subtle gray */
+}
+
+/* ✅ Password strength text */
+#password-strength {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+}
+
+/* 📋 Password requirements list */
+.password-requirements {
+    font-size: 0.85rem;
+    margin-top: 10px;
+    color: #555;
+    text-align: left;
+    padding-left: 20px;
+    list-style-type: disc;
+}

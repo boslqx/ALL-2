@@ -9,13 +9,13 @@
 body {
     display: flex;
     min-height: 100vh;
-    background-color: #e8eccc;
+    background-color: #f0f0ef;
 }
 
 /* ===== Sidebar ===== */
 .sidebar {
     width: 240px;
-    background: linear-gradient(to bottom, #2a3f54 0%, #3b4e63 50%, #5f738c 100%);
+    background: linear-gradient(to bottom, #183cb4 0%, #1e40af 50%, #52688d 100%);
     color: white;
     padding: 20px 0;
     position: fixed;

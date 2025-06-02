@@ -4,6 +4,7 @@ from db.models import User
 from db import db
 import random
 import string
+import re
 from datetime import datetime, timedelta
 from flask_mail import Message
 from extensions import mail
@@ -16,10 +17,10 @@ class LoginView(MethodView):
         return render_template('login.html')
 
     def post(self):
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
 
-        user = User.query.filter_by(Username=username).first()
+        user = User.query.filter_by(Email=email).first()
 
         if user and user.Password == password:
             session['user_id'] = user.UserID
@@ -105,8 +106,21 @@ def reset_password():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
         
+        # Password format check
         if new_password != confirm_password:
             flash('Passwords do not match', 'danger')
+            return redirect(url_for('login.reset_password'))
+
+        if len(new_password) < 8 or len(new_password) > 12:
+            flash('Password must be 8 to 12 characters long', 'danger')
+            return redirect(url_for('login.reset_password'))
+
+        if not re.search(r'[0-9]', new_password):
+            flash('Password must contain at least one number', 'danger')
+            return redirect(url_for('login.reset_password'))
+
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+            flash('Password must contain at least one special character', 'danger')
             return redirect(url_for('login.reset_password'))
         
         # Update user password
