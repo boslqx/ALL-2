@@ -5,6 +5,7 @@ from routes.login import login_bp
 from routes.admin import admin_bp
 from routes.manager import manager_bp
 from routes.cashier import cashier_bp
+from routes.register import register_bp
 from extensions import mail  
 import os
 
@@ -36,6 +37,7 @@ app.register_blueprint(login_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(manager_bp)
 app.register_blueprint(cashier_bp)
+app.register_blueprint(register_bp)
 
 @app.route('/')
 def home():
