@@ -17,8 +17,9 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <h2>{{ admin_name }}</h2>
+            <img src="{{ url_for('static', filename='cover.png') }}" alt="Admin Logo" class="sidebar-logo">
         </div>
+
         
         <ul class="nav-menu">
             <li class="nav-item {% if request.path == url_for('admin.dashboard') %}active{% endif %}">
