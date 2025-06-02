@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>{{ cashier_name }}</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item active">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </li>
+            <li class="nav-item" onclick="window.location.href='#'">
+                <i class="fas fa-history"></i>
+                <span>Recent Sales</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content checkout-content">
+        <div class="checkout-header">
+            <button class="back-button" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1>Checkout</h1>
+        </div>
+
+        <div class="checkout-body">
+            <!-- Order Items -->
+            <div class="order-items" id="order-items">
+                <!-- Items will be populated by JavaScript -->
+                <div class="order-item">
+                    <div class="item-info">
+                        <h3>Gradient Graphic T-shirt</h3>
+                        <p>Size: Large</p>
+                        <p>Color: White</p>
+                    </div>
+                    <div class="item-price">$145</div>
+                </div>
+                <div class="divider"></div>
+                
+                <div class="order-item">
+                    <div class="item-info">
+                        <h3>Checkered Shirt</h3>
+                        <p>Size: Medium</p>
+                        <p>Color: Red</p>
+                    </div>
+                    <div class="item-price">$180</div>
+                </div>
+                <div class="divider"></div>
+                
+                <div class="order-item">
+                    <div class="item-info">
+                        <h3>Skinny Fit Jeans</h3>
+                        <p>Size: Large</p>
+                        <p>Color: Blue</p>
+                    </div>
+                    <div class="item-price">$240</div>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-method">
+                <h2>Payment Method</h2>
+                
+                <div class="payment-options">
+                    <div class="payment-option active" data-method="cash">
+                        <div class="option-header">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <h3>Cash</h3>
+                        </div>
+                        <div class="option-details">
+                            <div class="payment-field">
+                                <label>Amount Received</label>
+                                <input type="number" id="cash-received" placeholder="Enter amount">
+                            </div>
+                            <div class="payment-field">
+                                <label>Change</label>
+                                <input type="text" id="cash-change" placeholder="0.00" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-option" data-method="card">
+                        <div class="option-header">
+                            <i class="fas fa-credit-card"></i>
+                            <h3>Debit/Credit Card</h3>
+                        </div>
+                        <div class="option-details">
+                            <div class="payment-field">
+                                <label>Card Number</label>
+                                <input type="text" placeholder="Enter card number">
+                            </div>
+                            <div class="payment-field">
+                                <label>Expiry Date</label>
+                                <input type="text" placeholder="MM/YY">
+                            </div>
+                            <div class="payment-field">
+                                <label>CVV</label>
+                                <input type="text" placeholder="CVV">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">$565.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (6%):</span>
+                    <span id="tax">$33.90</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span id="total">$598.90</span>
+                </div>
+                
+                <button class="complete-button" id="complete-button">
+                    Complete Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Transaction Successful!</h3>
+            <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>
+            Total Amount: <span id="transaction-amount"></span></p>
+            <div class="modal-buttons">
+                <button class="action-button primary" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
+                    New Transaction
+                </button>
+                <button class="action-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                    Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Payment method selection
+            const paymentOptions = document.querySelectorAll('.payment-option');
+            paymentOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove active class from all options
+                    paymentOptions.forEach(opt => opt.classList.remove('active'));
+                    
+                    // Add active class to clicked option
+                    this.classList.add('active');
+                });
+            });
+            
+            // Calculate change when cash received changes
+            const cashReceived = document.getElementById('cash-received');
+            const cashChange = document.getElementById('cash-change');
+            const totalAmount = parseFloat(document.getElementById('total').textContent.replace('$', ''));
+            
+            cashReceived.addEventListener('input', function() {
+                const received = parseFloat(this.value) || 0;
+                const change = received - totalAmount;
+                cashChange.value = change >= 0 ? change.toFixed(2) : '0.00';
+            });
+            
+            // Complete payment button
+            document.getElementById('complete-button').addEventListener('click', function() {
+                const activeMethod = document.querySelector('.payment-option.active').dataset.method;
+                
+                if (activeMethod === 'cash') {
+                    const received = parseFloat(cashReceived.value) || 0;
+                    if (received < totalAmount) {
+                        alert('Amount received is less than total amount');
+                        return;
+                    }
+                }
+                
+                // Process payment (you'll need to implement this)
+                processPayment(activeMethod);
+            });
+        });
+        
+        // Replace the processPayment function in checkout.html
+        async function processPayment(method) {
+            // Get payment details based on method
+            let paymentDetails = {};
+            if (method === 'cash') {
+                paymentDetails = {
+                    method: 'cash',
+                    amountReceived: parseFloat(document.getElementById('cash-received').value),
+                    change: parseFloat(document.getElementById('cash-change').value)
+                };
+            } else if (method === 'card') {
+                paymentDetails = {
+                    method: 'card',
+                    cardNumber: document.querySelector('.payment-option.active input[type="text"]').value,
+                    // Add other card details as needed
+                };
+            }
+
+            // Get cart items (you'll need to pass these from the previous page or store in sessionStorage)
+            const cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+            
+            // Calculate totals
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.06;
+            const total = subtotal + tax;
+
+            // Prepare transaction data
+            const transactionData = {
+                cashierId: getCashierId(), // You'll need to implement this
+                totalAmount: total,
+                paymentMethod: method,
+                items: cart.map(item => ({
+                    productId: item.id,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            };
+
+             try {
+                const response = await fetch('/cashier/complete-transaction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(transactionData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success modal
+                    document.getElementById('transaction-id').textContent = data.transactionId;
+                    document.getElementById('transaction-amount').textContent = `RM${data.totalAmount.toFixed(2)}`;
+                    document.getElementById('successModal').style.display = 'flex';
+                    
+                    // Open receipt in new tab
+                    window.open(data.receiptUrl, '_blank');
+                    
+                    // Clear cart
+                    sessionStorage.removeItem('cart');
+                } else {
+                    alert(data.error || 'Failed to process transaction');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to process transaction');
+            }
+        }
+
+        // Helper function to get cashier ID (you'll need to implement this properly)
+        function getCashierId() {
+            // This should return the logged-in cashier's ID
+            // You might get this from your session or a hidden input
+            return 1; // Placeholder - replace with actual implementation
+        }
+        
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
