@@ -76,21 +76,6 @@ body::after {
     font-size: 1.75rem;
 }
 
-.login-logo {
-    text-align: left;            /* or center, if preferred */    
-    margin-bottom: 10px;         /* spacing below the logo */
-}
-
-.login-logo img {
-    width: 300px;
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 8px auto 0 auto;  /* small top margin, no bottom */
-    padding: 0;
-}              
-
-
 .input-group {
     margin-bottom: 1.25rem;
     text-align: left;
