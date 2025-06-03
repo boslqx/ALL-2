@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Code</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="forgot-password-container">
+        <h2>Verify Your Email</h2> 
+        <p>We've sent a 4-digit code to your email</p>
+        <form method="POST" action="{{ url_for('login.verify_code') }}">
+            <div class="code-input">
+                <input type="text" name="digit1" maxlength="1" pattern="\d" required>
+                <input type="text" name="digit2" maxlength="1" pattern="\d" required>
+                <input type="text" name="digit3" maxlength="1" pattern="\d" required>
+                <input type="text" name="digit4" maxlength="1" pattern="\d" required>
+            </div>
+            <input type="hidden" name="verification_code" id="verification_code">
+            <button type="submit" class="login-button">Verify Code</button>
+            <button type="button" class="secondary-button" onclick="window.location.href='{{ url_for('login.forgot_password') }}'">Resend Code</button>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="message message-{{ messages[0][0] }}">
+                        {{ messages[0][1] }}
+                    </div>
+                {% endif %}
+            {% endwith %}
+        </form>
+    </div>
+
+    <script>
+        document.querySelector('form').addEventListener('submit', function() {
+            const digit1 = document.querySelector('input[name="digit1"]').value;
+            const digit2 = document.querySelector('input[name="digit2"]').value;
+            const digit3 = document.querySelector('input[name="digit3"]').value;
+            const digit4 = document.querySelector('input[name="digit4"]').value;
+            document.getElementById('verification_code').value = digit1 + digit2 + digit3 + digit4;
+        });
+
+        // Auto-focus and auto-tab between inputs
+        const inputs = document.querySelectorAll('.code-input input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                if (input.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
