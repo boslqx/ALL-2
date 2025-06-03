@@ -572,7 +572,7 @@ body {
 
 .search-button {
     padding: 8px 12px;
-    background-color: #4CAF50;
+    background-color: #3f67ec;
     color: white;
     border: none;
     border-radius: 4px;
@@ -580,7 +580,7 @@ body {
 }
 
 .search-button:hover {
-    background-color: #45a049;
+    background-color: #1923ad;
 }
 
 /* Filter options */
@@ -987,7 +987,7 @@ body {
 
 /* Confirm Button */
 .restock-confirm-btn {
-  background-color: #27ae60;
+  background-color: #3f67ec;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -999,7 +999,7 @@ body {
 }
 
 .restock-confirm-btn:hover {
-  background-color: #219150;
+  background-color: rgb(36, 25, 184);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
