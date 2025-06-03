@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 from db import db
 import sys
-import os
+import os 
     
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter

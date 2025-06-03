@@ -8,7 +8,7 @@ from flask_mail import Message
 from extensions import mail
 import secrets
 import string
-
+ 
 register_bp = Blueprint('register', __name__, template_folder='../templates')
 
 class RegisterView(MethodView):

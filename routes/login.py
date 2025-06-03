@@ -15,7 +15,7 @@ login_bp = Blueprint('login', __name__, template_folder='../templates')
 class LoginView(MethodView):
     def get(self):
         return render_template('login.html')
-
+ 
     def post(self):
         email = request.form.get('email')
         password = request.form.get('password')

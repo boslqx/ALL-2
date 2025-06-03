@@ -685,3 +685,4 @@ def log_activity(user_id, action_type, table_name, record_id, description):
     finally:
         if 'conn' in locals():
             conn.close()
+  
