@@ -5,6 +5,8 @@ from routes.login import login_bp
 from routes.admin import admin_bp
 from routes.manager import manager_bp
 from routes.cashier import cashier_bp
+from routes.register import register_bp
+from extensions import mail  
 import os
 
 # Absolute path to templates folder
@@ -12,20 +14,30 @@ template_dir = os.path.abspath('templates')
 
 # Flask app setup
 app = Flask(__name__, template_folder=template_dir)
-app.secret_key = 'your_secret_key'  # Needed for session/flash messages
+app.secret_key = 'your_secret_key'
 
 # Database config
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize db
-db.init_app(app)
+# ✅ Mail config
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'bosliangqx@gmail.com'
+app.config['MAIL_PASSWORD'] = 'piei powg ateb kqid' 
+app.config['MAIL_DEFAULT_SENDER'] = 'bosliangqx@gmail.com'
 
-# ✅ Register only the login blueprint for now
+# Initialize extensions
+db.init_app(app)
+mail.init_app(app) 
+
+# Register blueprints
 app.register_blueprint(login_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(manager_bp)
 app.register_blueprint(cashier_bp)
+app.register_blueprint(register_bp)
 
 @app.route('/')
 def home():

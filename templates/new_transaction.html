@@ -64,6 +64,19 @@
             width: 100%;
             height: auto;
         }
+        
+        /* Loading spinner */
+        .loading-spinner {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .no-products {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -100,8 +113,10 @@
             </button>
             <h1>New Transaction</h1>
             <div class="search-container">
-                <input type="text" id="product-search" placeholder="Search products...">
-                <i class="fas fa-search"></i>
+                <input type="text" id="product-search" placeholder="Search products..." class="search-input">
+                <button class="search-button" id="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
         </div>
 
@@ -111,7 +126,7 @@
                 <div class="filters">
                     <div class="filter-group">
                         <label for="category-filter">Category:</label>
-                        <select id="category-filter">
+                        <select id="category-filter" class="filter-select">
                             <option value="">All Categories</option>
                             {% for category in categories %}
                             <option value="{{ category }}">{{ category }}</option>
@@ -120,34 +135,33 @@
                     </div>
                     <div class="filter-group">
                         <label for="stock-filter">Stock:</label>
-                        <select id="stock-filter">
+                        <select id="stock-filter" class="filter-select">
                             <option value="all">All Stock</option>
                             <option value="low">Low Stock (<10)</option>
                             <option value="out">Out of Stock</option>
                         </select>
                     </div>
+                    <div class="filter-group">
+                        <label for="sort-filter">Sort By:</label>
+                        <select id="sort-filter" class="filter-select">
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="price-asc">Price (Low-High)</option>
+                            <option value="price-desc">Price (High-Low)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group filter-button-group">
+                        <button id="apply-filters" class="action-button">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                    </div>
                 </div>
 
                 <div class="product-list" id="product-list">
-                    {% for product in products %}
-                    <div class="product-card" data-id="{{ product.ProductID }}">
-                        <div class="product-info">
-                            <h3>{{ product.ProductName }}</h3>
-                            {% if product.ProductBrand %}
-                            <p class="product-brand">{{ product.ProductBrand }}</p>
-                            {% endif %}
-                            <div class="product-details">
-                                <span class="price">RM{{ "%.2f"|format(product.Price) }}</span>
-                                <span class="stock {{ 'low-stock' if product.StockQuantity < 10 else '' }}">
-                                    {{ product.StockQuantity }} in stock
-                                </span>
-                            </div>
-                        </div>
-                        <button class="select-button" onclick="addToCart({{ product.ProductID }}, '{{ product.ProductName }}', {{ product.Price }}, {{ product.StockQuantity }})">
-                            <i class="fas fa-cart-plus"></i> Select
-                        </button>
+                    <!-- Products will be loaded here dynamically -->
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i> Loading products...
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 
@@ -200,15 +214,6 @@
                         <span>Total:</span>
                         <span id="total">RM0.00</span>
                     </div>
-                    <div class="payment-methods">
-                        <label>Payment Method:</label>
-                        <select id="payment-method">
-                            <option value="Cash">Cash</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Debit Card">Debit Card</option>
-                            <option value="E-Wallet">E-Wallet</option>
-                        </select>
-                    </div>
                     <button class="checkout-button" id="checkout-button" onclick="processCheckout()" disabled>
                         <i class="fas fa-credit-card"></i> Proceed to Payment
                     </button>
@@ -255,54 +260,159 @@
         let scannerActive = false;
         let videoStream = null;
         let scanInterval = null;
+        let allProducts = []; // Store all products for client-side filtering
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            // Load initial products
+            loadProducts();
+            
             // Set up event listeners
-            document.getElementById('product-search').addEventListener('input', searchProducts);
-            document.getElementById('category-filter').addEventListener('change', searchProducts);
-            document.getElementById('stock-filter').addEventListener('change', searchProducts);
+            document.getElementById('search-button').addEventListener('click', applyFilters);
+            document.getElementById('product-search').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') applyFilters();
+            });
+            document.getElementById('apply-filters').addEventListener('click', applyFilters);
         });
 
-        // Search products with filters
-        function searchProducts() {
-            const query = document.getElementById('product-search').value;
-            const category = document.getElementById('category-filter').value;
-            const stockFilter = document.getElementById('stock-filter').value;
-            
-            fetch(`/cashier/search-products?query=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&stock_filter=${stockFilter}`)
-                .then(response => response.json())
+        // Load products from server
+        function loadProducts() {
+            showLoading();
+            fetch('/cashier/search-products')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
                 .then(products => {
-                    const productList = document.getElementById('product-list');
-                    productList.innerHTML = '';
-                    
-                    if (products.length === 0) {
-                        productList.innerHTML = '<div class="no-products">No products found matching your criteria</div>';
-                        return;
-                    }
-                    
-                    products.forEach(product => {
-                        const productCard = document.createElement('div');
-                        productCard.className = 'product-card';
-                        productCard.dataset.id = product.id;
-                        productCard.innerHTML = `
-                            <div class="product-info">
-                                <h3>${product.name}</h3>
-                                ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
-                                <div class="product-details">
-                                    <span class="price">RM${product.price.toFixed(2)}</span>
-                                    <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
-                                        ${product.stock} in stock
-                                    </span>
-                                </div>
-                            </div>
-                            <button class="select-button" onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
-                                <i class="fas fa-cart-plus"></i> Select
-                            </button>
-                        `;
-                        productList.appendChild(productCard);
-                    });
+                    allProducts = products; // Store all products
+                    renderProducts(products);
+                })
+                .catch(error => {
+                    console.error('Error loading products:', error);
+                    showError(error);
                 });
+        }
+
+        // Apply all filters and sorting
+        function applyFilters() {
+            showLoading();
+            
+            const searchTerm = document.getElementById('product-search').value.trim().toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const stockFilter = document.getElementById('stock-filter').value;
+            const sortFilter = document.getElementById('sort-filter').value;
+            
+            // Start with all products
+            let filteredProducts = [...allProducts];
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(product => {
+                    const nameMatch = product.name?.toLowerCase().includes(searchTerm) || false;
+                    const brandMatch = product.brand?.toLowerCase().includes(searchTerm) || false;
+                    return nameMatch || brandMatch;
+                });
+            }
+            
+            // Apply category filter
+            if (categoryFilter) {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.category === categoryFilter
+                );
+            }
+            
+            // Apply stock filter
+            if (stockFilter === 'low') {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.stock < 10
+                );
+            } else if (stockFilter === 'out') {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.stock === 0
+                );
+            }
+            
+            // Apply sorting
+            switch(sortFilter) {
+                case 'name-asc':
+                    filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'name-desc':
+                    filteredProducts.sort((a, b) => b.name.localeCompare(a.name));
+                    break;
+                case 'price-asc':
+                    filteredProducts.sort((a, b) => a.price - b.price);
+                    break;
+                case 'price-desc':
+                    filteredProducts.sort((a, b) => b.price - a.price);
+                    break;
+            }
+            
+            renderProducts(filteredProducts);
+        }
+        
+        // Helper function to get product image URL
+        function getProductImageUrl(imagePath) {
+            if (!imagePath) return '/static/images/placeholder.png';
+            return `/static/product_image/${imagePath}`;
+        }
+
+        // Render products to the page
+        function renderProducts(products) {
+            const productList = document.getElementById('product-list');
+            
+            if (products.length === 0) {
+                productList.innerHTML = `
+                    <div class="no-products">
+                        <i class="fas fa-box-open"></i>
+                        <p>No products found matching filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            productList.innerHTML = products.map(product => `
+                <div class="product-card" data-id="${product.id}">
+                    <div class="product-image">
+                        <img src="${getProductImageUrl(product.image)}" 
+                            alt="${product.name}"
+                            onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                    </div>
+                    <div class="product-info">
+                        <h3>${product.name}</h3>
+                        ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
+                        <div class="product-details">
+                            <span class="price">RM${product.price.toFixed(2)}</span>
+                            <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
+                                ${product.stock} in stock
+                            </span>
+                        </div>
+                    </div>
+                    <button class="select-button" onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
+                        <i class="fas fa-cart-plus"></i> Select
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('product-list').innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
+                </div>
+            `;
+        }
+
+        // Show error message
+        function showError(error) {
+            document.getElementById('product-list').innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load products. ${error.message}</p>
+                    <button class="retry-button" onclick="loadProducts()">Retry</button>
+                </div>
+            `;
         }
 
         // Add product to cart
@@ -443,37 +553,9 @@
 
         // Process checkout
         function processCheckout() {
-            const paymentMethod = document.getElementById('payment-method').value;
-            
-            fetch('/cashier/checkout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    items: cart,
-                    payment_method: paymentMethod
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success modal
-                    document.getElementById('transaction-id').textContent = data.transaction_id;
-                    document.getElementById('transaction-amount').textContent = `RM${data.total_amount.toFixed(2)}`;
-                    document.getElementById('successModal').style.display = 'flex';
-                    
-                    // Clear cart
-                    cart = [];
-                    updateCartDisplay();
-                } else {
-                    alert(data.error || 'Failed to process transaction');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to process transaction');
-            });
+            // Store cart in sessionStorage before redirecting
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = '/cashier/checkout-page';
         }
 
         // Toggle QR scanner

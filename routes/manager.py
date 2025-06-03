@@ -230,3 +230,72 @@ def get_products():
     finally:
         if 'conn' in locals():
             conn.close()
+
+
+@manager_bp.route('/manager/sales-data')
+def get_sales_data():
+    try:
+        days = request.args.get('days', '30')
+        try:
+            days = int(days)
+        except ValueError:
+            days = 30
+
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Get sales data by date
+        cursor.execute("""
+            SELECT 
+                DATE(Sale.Timestamp) as sale_date,
+                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
+                COUNT(DISTINCT Sale.SaleID) as transaction_count,
+                SUM(SaleItem.Quantity) as items_sold
+            FROM Sale
+            JOIN SaleItem ON Sale.SaleID = SaleItem.SaleID
+            WHERE Sale.Timestamp >= DATE('now', ? || ' days')
+            GROUP BY DATE(Sale.Timestamp)
+            ORDER BY sale_date DESC
+        """, (f'-{days}',))
+        daily_sales = [dict(row) for row in cursor.fetchall()]
+
+        # Get top selling products
+        cursor.execute("""
+            SELECT 
+                Product.ProductName,
+                SUM(SaleItem.Quantity) as total_quantity,
+                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_revenue
+            FROM SaleItem
+            JOIN Product ON SaleItem.ProductID = Product.ProductID
+            GROUP BY Product.ProductID
+            ORDER BY total_quantity DESC
+            LIMIT 10
+        """)
+        top_products = [dict(row) for row in cursor.fetchall()]
+
+        # Get sales by category
+        cursor.execute("""
+            SELECT 
+                Product.Category,
+                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
+                SUM(SaleItem.Quantity) as items_sold
+            FROM SaleItem
+            JOIN Product ON SaleItem.ProductID = Product.ProductID
+            GROUP BY Product.Category
+            ORDER BY total_sales DESC
+        """)
+        category_sales = [dict(row) for row in cursor.fetchall()]
+
+        return jsonify({
+            'daily_sales': daily_sales,
+            'top_products': top_products,
+            'category_sales': category_sales
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()

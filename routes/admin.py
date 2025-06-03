@@ -464,7 +464,7 @@ def update_product(product_id):
             action_type='EDIT_PRODUCT',
             table_name='Product',
             record_id=product_id,
-            description=f"Updated product: {product_name} (Price: RM{price}, Stock: {quantity})"
+            description=f"Updated product information: {product_name}"
         )
 
         return jsonify({
@@ -488,26 +488,37 @@ def delete_product(product_id):
     try:
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         cursor = conn.cursor()
-        
-        # Soft delete or hard delete based on your DB design
+
+        # 🔍 Fetch product name and brand before deletion
+        cursor.execute("SELECT ProductName, ProductBrand FROM Product WHERE ProductID = ?", (product_id,))
+        result = cursor.fetchone()
+        product_name = product_brand = "Unknown"
+
+        if result:
+            product_name, product_brand = result
+
+        # 🗑 Delete the product
         cursor.execute("DELETE FROM Product WHERE ProductID = ?", (product_id,))
         conn.commit()
 
-        # Log the deletion activity
+        # 📝 Log the deletion activity
         log_activity(
             user_id=session.get('user_id'),
             action_type='DELETE_PRODUCT',
             table_name='Product',
             record_id=product_id,
-            description=f"Deleted product ID {product_id}"
+            description=f"Deleted product {product_brand} {product_name} ID: {product_id}"
         )
-        
+
         return jsonify({'success': True, 'message': 'Product deleted'})
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 @admin_bp.route('/api/products/restock', methods=['POST'])
 def restock_product():
@@ -522,11 +533,18 @@ def restock_product():
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         cursor = conn.cursor()
 
-        # Make sure the product exists
-        cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
+        # Fetch current stock, product name, and brand
+        cursor.execute("""
+            SELECT StockQuantity, ProductName, ProductBrand
+            FROM Product
+            WHERE ProductID = ?
+        """, (product_id,))
         result = cursor.fetchone()
+
         if not result:
             return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        current_stock, product_name, product_brand = result
 
         # Update stock quantity
         cursor.execute("""
@@ -536,7 +554,7 @@ def restock_product():
         """, (quantity, product_id))
         conn.commit()
 
-        # Return new quantity for confirmation
+        # Get new quantity
         cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
         new_quantity = cursor.fetchone()[0]
 
@@ -546,7 +564,7 @@ def restock_product():
             action_type='UPDATE_STOCK',
             table_name='Product',
             record_id=product_id,
-            description=f"Restocked {quantity} units (New total: {new_quantity})"
+            description=f"Restocked {quantity} units for {product_brand} {product_name} - New total: {new_quantity}"
         )
 
         return jsonify({'success': True, 'newQuantity': new_quantity})
@@ -557,6 +575,7 @@ def restock_product():
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 @admin_bp.route('/admin/api/users')
 def get_admin_users():

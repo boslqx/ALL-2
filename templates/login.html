@@ -10,7 +10,9 @@
 </head> 
 <body>
     <div class="login-container">
-        <h2>Login</h2>
+        <div class="login-logo">
+            <img src="{{ url_for('static', filename='cover.png') }}" alt="Login Logo">
+        </div>
         <form method="POST" action="/login">
             <div class="input-group">
                 <label for="username">EMAIL</label>

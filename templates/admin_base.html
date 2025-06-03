@@ -17,8 +17,9 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <h2>{{ admin_name }}</h2>
+            <img src="{{ url_for('static', filename='cover.png') }}" alt="Admin Logo" class="sidebar-logo">
         </div>
+
         
         <ul class="nav-menu">
             <li class="nav-item {% if request.path == url_for('admin.dashboard') %}active{% endif %}">
@@ -51,11 +52,12 @@
         </ul>
 
         <div class="logout-container">
-            <div class="nav-item logout" onclick="showLogoutModal()">
+            <div class="nav-item logout" onclick="confirmLogout()">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </div>
         </div>
+
     </div>
 
     <!-- Main Content -->
@@ -63,35 +65,23 @@
         {% block content %}{% endblock %}
     </div>
 
-    <!-- Logout Modal -->
-    <div id="logoutModal" class="modal">
-        <div class="modal-content">
-            <p>Are you sure you want to log out?</p>
-            <div class="modal-buttons">
-                <button id="cancelLogout" class="cancel-btn">No</button>
-                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    // Show logout modal
-    function showLogoutModal() {
-        document.getElementById('logoutModal').style.display = 'flex';
+<script>
+    function confirmLogout() {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You will be logged out of the system.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb', // match your blue theme
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, logout',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "{{ url_for('login.logout') }}";
+            }
+        });
     }
-    
-    // Hide modal when clicking No
-    document.getElementById('cancelLogout').addEventListener('click', function() {
-        document.getElementById('logoutModal').style.display = 'none';
-    });
-    
-    // Close modal when clicking outside
-    window.addEventListener('click', function(event) {
-        const modal = document.getElementById('logoutModal');
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-    </script>
+</script>
 </body>
 </html> 

@@ -3,7 +3,7 @@
     --light-blue: #eff6ff;
     --dark-blue: #1e40af;
     --gray-light: #f3f4f6;
-    --gray-medium: #9ca3af; 
+    --gray-medium: #9ca3af;
     --gray-dark: #4b5563;
 }
 
@@ -12,12 +12,12 @@ body {
     padding: 0;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: linear-gradient(135deg, 
-        #3b82f6 0%,      /* Blue */
-        #60a5fa 20%,     /* Lighter Blue */
-        #a78bfa 40%,     /* Soft Purple */
-        #f472b6 60%,     /* Pink */
-        #facc15 80%,     /* Light Yellow */
-        #3b82f6 100%     /* Back to Blue */
+        #3b82f6 0%,   
+        #60a5fa 20%,    
+        #a78bfa 40%,    
+        #f472b6 60%,    
+        #facc15 80%,     
+        #3b82f6 100%    
     );
     background-size: 200% 200%;
     animation: gradientShift 15s ease infinite;
@@ -75,6 +75,21 @@ body::after {
     font-weight: 600;
     font-size: 1.75rem;
 }
+
+.login-logo {
+    text-align: left;        
+    margin-bottom: 10px;         
+}
+
+.login-logo img {
+    width: 300px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 8px auto 0 auto;  /* small top margin, no bottom */
+    padding: 0;
+}              
+
 
 .input-group {
     margin-bottom: 1.25rem;
