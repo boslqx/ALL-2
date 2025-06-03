@@ -21,13 +21,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ✅ Mail config
+# Current problematic config:
+# In app.py
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'bosliangqx@gmail.com'
-app.config['MAIL_PASSWORD'] = 'piei powg ateb kqid' 
-app.config['MAIL_DEFAULT_SENDER'] = 'bosliangqx@gmail.com'
-
+app.config['MAIL_USERNAME'] = 'killerpill585@gmail.com'  # Your Gmail
+app.config['MAIL_PASSWORD'] = 'fsjc efmx pzqm pcfx'  # Use App Password, not regular password
+app.config['MAIL_DEFAULT_SENDER'] = 'killerpill585@gmail.com'
 # Initialize extensions
 db.init_app(app)
 mail.init_app(app) 

@@ -9,9 +9,9 @@
 </head>
 <body>
     <div class="login-container">
-        <h2>Verify Your Email</h2>
-        <p>Please enter the temporary password sent to your email</p>
-        <form method="POST" action="{{ url_for('register.register') }}">
+        <h2>Verify Your Account</h2>
+        <p>Please enter the temporary password from your email</p>
+        <form method="POST" action="{{ url_for('register.register_with_token', token=token) }}">
             <div class="input-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" value="{{ session.get('register_email', '') }}" readonly>

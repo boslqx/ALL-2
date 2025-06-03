@@ -14,6 +14,10 @@ class User(db.Model):
     Role = db.Column(db.String(15), nullable=False)
     Name = db.Column(db.String(50), nullable=False)
     Email = db.Column(db.String(50), unique=True, nullable=False)
+    registration_token = db.Column(db.String(128))  # Add this
+    token_expiry = db.Column(db.DateTime)  # Add this
+    IsActive = db.Column(db.Boolean, default=False)  # Add this
+
 
     # Relationships
     transactions = db.relationship('Transaction', backref='cashier', lazy=True)

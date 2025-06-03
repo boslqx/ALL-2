@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>   
@@ -215,45 +215,31 @@
             <div class="employee-management">
                 <h2>Employee Management</h2>
                 <div class="add-employee-form">
-                    <h3>Add New Cashier</h3>
-                    <form id="addEmployeeForm">
-                        <div class="form-group">
-                            <label for="employeeName">Full Name:</label>
-                            <input type="text" id="employeeName" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="employeeEmail">Email:</label>
-                            <input type="email" id="employeeEmail" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="employeeUsername">Username:</label>
-                            <input type="text" id="employeeUsername" name="username" required>
-                        </div>
-                        <button type="submit" class="btn-primary">Create Account</button>
-                    </form>
-                    <div id="employeeMessage" class="message"></div>
-                </div>
-                <div class="employee-list">
-                    <h3>Current Employees</h3>
-                    <table id="employeesTable">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="employeesBody">
-                            <!-- Employee data will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <h3>Add New Employee</h3>
+    <form id="addEmployeeForm">
+        <div class="form-group">
+            <label for="employeeName">Full Name:</label>
+            <input type="text" id="employeeName" name="name" required>
         </div>
-    </div>
+        <div class="form-group">
+            <label for="employeeEmail">Email:</label>
+            <input type="email" id="employeeEmail" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="employeeUsername">Username:</label>
+            <input type="text" id="employeeUsername" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="employeeRole">Role:</label>
+            <select id="employeeRole" name="role" required>
+                <option value="cashier">Cashier</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-primary">Create Account</button>
+    </form>
+    <div id="employeeMessage" class="message"></div>
+</div>
 
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="modal">
@@ -599,40 +585,40 @@ function getProductImageUrl(imagePath) {
         }
     }
 
-    function renderEmployees(employees) {
-        const tbody = document.getElementById('employeesBody');
-        if (!tbody) return;
+   function renderEmployees(employees) {
+    const tbody = document.getElementById('employeesBody');
+    if (!tbody) return;
 
-        tbody.innerHTML = '';
-        if (employees.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No employees found</td></tr>';
-            return;
-        }
-
-        employees.forEach(employee => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${employee.Name}</td>
-                <td>${employee.Username}</td>
-                <td>${employee.Email || 'N/A'}</td>
-                <td>${employee.Role}</td>
-                <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
-                <td>
-                    <button class="action-button remove-button" data-id="${employee.UserID}">
-                        <i class="fas fa-trash-alt"></i> Remove
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        // Add event listeners for remove buttons
-        document.querySelectorAll('.remove-button').forEach(button => {
-            button.addEventListener('click', function() {
-                removeEmployee(this.getAttribute('data-id'));
-            });
-        });
+    tbody.innerHTML = '';
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No employees found</td></tr>';
+        return;
     }
+
+    employees.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${employee.Name}</td>
+            <td>${employee.Username}</td>
+            <td>${employee.Email || 'N/A'}</td>
+            <td>${employee.Role === 'admin' ? 'Admin' : 'Cashier'}</td>
+            <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
+            <td>
+                <button class="action-button remove-button" data-id="${employee.UserID}">
+                    <i class="fas fa-trash-alt"></i> Remove
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Add event listeners for remove buttons
+    document.querySelectorAll('.remove-button').forEach(button => {
+        button.addEventListener('click', function() {
+            removeEmployee(this.getAttribute('data-id'));
+        });
+    });
+}
 
     // Initialize on page load and when navigating back/forward
     document.addEventListener('DOMContentLoaded', function() {
@@ -662,36 +648,37 @@ function getProductImageUrl(imagePath) {
         }
 
         // Employee form submission
-        const addEmployeeForm = document.getElementById('addEmployeeForm');
-        if (addEmployeeForm) {
-            addEmployeeForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const formData = {
-                    name: document.getElementById('employeeName').value,
-                    email: document.getElementById('employeeEmail').value,
-                    username: document.getElementById('employeeUsername').value
-                };
+const addEmployeeForm = document.getElementById('addEmployeeForm');
+if (addEmployeeForm) {
+    addEmployeeForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = {
+            name: document.getElementById('employeeName').value,
+            email: document.getElementById('employeeEmail').value,
+            username: document.getElementById('employeeUsername').value,
+            role: document.getElementById('employeeRole').value
+        };
 
-                try {
-                    const response = await fetch('/manager/add-employee', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        showEmployeeMessage('Employee added successfully! Verification email sent.', 'success');
-                        addEmployeeForm.reset();
-                        loadEmployees();
-                    } else {
-                        showEmployeeMessage(result.error || 'Failed to add employee', 'error');
-                    }
-                } catch (error) {
-                    showEmployeeMessage('Error: ' + error.message, 'error');
-                }
+        try {
+            const response = await fetch('/manager/add-employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
             });
+            const result = await response.json();
+
+            if (response.ok) {
+                showEmployeeMessage('Employee added successfully! Account details sent to their email.', 'success');
+                addEmployeeForm.reset();
+                loadEmployees();
+            } else {
+                showEmployeeMessage(result.error || 'Failed to add employee', 'error');
+            }
+        } catch (error) {
+            showEmployeeMessage('Error: ' + error.message, 'error');
         }
+    });
+}
 
         // Product search and filter functionality
         const searchInput = document.querySelector('.search-input');

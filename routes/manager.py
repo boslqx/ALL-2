@@ -2,8 +2,44 @@ from flask import Blueprint, render_template, session, current_app, request, jso
 import sqlite3, os
 import secrets
 import string
-from datetime import datetime
+from datetime import datetime,timedelta
 import base64
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from flask_mail import Message
+from extensions import mail
+from flask import url_for
+
+def send_account_email(name, email, username, password, role):
+    try:
+        subject = "Your New Account Details"
+        html = f"""
+        <h2>Welcome to the System, {name}!</h2>
+        <p>Your account has been created with the following details:</p>
+        <ul>
+            <li><strong>Username:</strong> {username}</li>
+            <li><strong>Temporary Password:</strong> {password}</li>
+            <li><strong>Role:</strong> {role.capitalize()}</li>
+        </ul>
+        <p>Please log in and change your password immediately.</p>
+        <p>Login URL: {request.host_url}login</p>
+        <p>Best regards,<br>The Management Team</p>
+        """
+
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html,
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Account email sent to {email}")
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending email to {email}: {str(e)}")
+        # Don't fail the operation if email fails
 
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
 
@@ -86,6 +122,7 @@ def get_activity_logs():
         if 'conn' in locals():
             conn.close()
 
+
 @manager_bp.route('/manager/add-employee', methods=['POST'])
 def add_employee():
     try:
@@ -93,28 +130,65 @@ def add_employee():
         name = data.get('name')
         email = data.get('email')
         username = data.get('username')
+        role = data.get('role', 'cashier')
 
-        if not all([name, username]):
-            return jsonify({'error': 'Name and username are required'}), 400
+        if not all([name, username, email]):
+            return jsonify({'error': 'Name, username and email are required'}), 400
 
+        # Generate token and expiry (24 hours from now)
+        token = secrets.token_urlsafe(32)
+        expiry = datetime.utcnow() + timedelta(hours=24)
         temp_password = generate_temp_password()
+
         db_path = os.path.join(current_app.instance_path, 'site.db')
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
-        cursor.execute("SELECT UserID FROM User WHERE Username = ?", (username,))
+        # Check if username or email exists
+        cursor.execute("SELECT UserID FROM User WHERE Username = ? OR Email = ?", (username, email))
         if cursor.fetchone():
-            return jsonify({'error': 'Username already exists'}), 400
+            return jsonify({'error': 'Username or email already exists'}), 400
 
+        # Insert new employee with inactive status and temp password
         cursor.execute("""
-            INSERT INTO User (Name, Username, Email, Password, Role)
-            VALUES (?, ?, ?, ?, 'cashier')
-        """, (name, username, email, temp_password))
+            INSERT INTO User (Name, Username, Email, Role, Password, registration_token, token_expiry, IsActive)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, username, email, role, temp_password, token, expiry, False))
 
         conn.commit()
+
+        # Generate proper registration URL
+        registration_url = url_for('register.register', token=token, _external=True)
+
+        try:
+            msg = Message(
+                subject="Complete Your Account Registration",
+                recipients=[email],
+                sender=current_app.config['MAIL_DEFAULT_SENDER']
+            )
+
+            msg.html = f"""
+            <h2>Welcome to the System, {name}!</h2>
+            <p>Your manager has created an account for you.</p>
+            <p>Your temporary password is: <strong>{temp_password}</strong></p>
+            <p>Please complete your registration by clicking the link below:</p>
+            <p><a href="{registration_url}">{registration_url}</a></p>
+            <p>This link will expire in 24 hours.</p>
+            <p>Best regards,<br>The Management Team</p>
+            """
+
+            mail.send(msg)
+            current_app.logger.info(f"Registration email sent to {email}")
+        except Exception as e:
+            current_app.logger.error(f"Error sending email to {email}: {str(e)}")
+            return jsonify({
+                'message': 'Employee added but email could not be sent. Please provide them with this registration link manually.',
+                'registration_url': registration_url,
+                'temp_password': temp_password
+            })
+
         return jsonify({
-            'message': 'Employee added successfully',
-            'temp_password': temp_password
+            'message': 'Employee added successfully. Registration email sent.'
         })
 
     except sqlite3.Error as e:
@@ -125,6 +199,40 @@ def add_employee():
         if 'conn' in locals():
             conn.close()
 
+def send_registration_email(name, email, token, temp_password=None):
+    try:
+        subject = "Complete Your Account Registration"
+        registration_url = url_for('register.register', token=token, _external=True)
+
+        html = f"""
+        <h2>Welcome to the System, {name}!</h2>
+        <p>Your manager has created an account for you.</p>
+        """
+
+        if temp_password:
+            html += f"""
+            <p>Your temporary password is: <strong>{temp_password}</strong></p>
+            """
+
+        html += f"""
+        <p>Please complete your registration by clicking the link below:</p>
+        <p><a href="{registration_url}">{registration_url}</a></p>
+        <p>This link will expire in 24 hours.</p>
+        <p>Best regards,<br>The Management Team</p>
+        """
+
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html,
+            sender=current_app.config['MAIL_DEFAULT_SENDER']
+        )
+
+        mail.send(msg)
+        current_app.logger.info(f"Registration email sent to {email}")
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending email to {email}: {str(e)}")
 @manager_bp.route('/manager/get-employees')
 def get_employees():
     try:
