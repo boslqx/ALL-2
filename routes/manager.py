@@ -199,6 +199,7 @@ def product_details(product_id):
 def inject_manager_name():
     return {'manager_name': get_manager_name(session.get('user_id'))}
 
+
 @manager_bp.route('/api/products')
 def get_products():
     try:
@@ -207,69 +208,22 @@ def get_products():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        # Simplified query without alert joins
         cursor.execute("""
             SELECT 
-                p.ProductID, 
-                p.ProductName, 
-                p.Category, 
-                p.Price, 
-                p.StockQuantity, 
-                p.ProductBrand,
-                p.Image,
-                sa.AlertThreshold
-            FROM Product p
-            LEFT JOIN StockAlert sa ON p.ProductID = sa.ProductID
-            ORDER BY p.ProductName
+                ProductID, 
+                ProductName, 
+                Category, 
+                Price, 
+                StockQuantity, 
+                ProductBrand,
+                Image
+            FROM Product
+            ORDER BY ProductName
         """)
 
         products = [dict(product) for product in cursor.fetchall()]
         return jsonify(products)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        if 'conn' in locals():
-            conn.close()
-
-@manager_bp.route('/api/set-alert', methods=['POST'])
-def set_alert():
-    try:
-        data = request.get_json()
-        product_id = data.get('product_id')
-        threshold = data.get('threshold')
-
-        if not product_id or threshold is None:
-            return jsonify({'error': 'Product ID and threshold are required'}), 400
-
-        db_path = os.path.join(current_app.instance_path, 'site.db')
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-
-        # Check if alert already exists
-        cursor.execute("SELECT * FROM StockAlert WHERE ProductID = ?", (product_id,))
-        existing_alert = cursor.fetchone()
-
-        if existing_alert:
-            if threshold <= 0:
-                # Remove alert if threshold is 0 or negative
-                cursor.execute("DELETE FROM StockAlert WHERE ProductID = ?", (product_id,))
-            else:
-                # Update existing alert
-                cursor.execute("""
-                    UPDATE StockAlert 
-                    SET AlertThreshold = ?, AlertStatus = 'active', Timestamp = CURRENT_TIMESTAMP
-                    WHERE ProductID = ?
-                """, (threshold, product_id))
-        else:
-            if threshold > 0:
-                # Create new alert
-                cursor.execute("""
-                    INSERT INTO StockAlert (ProductID, AlertType, AlertThreshold, AlertStatus, Timestamp)
-                    VALUES (?, 'low_stock', ?, 'active', CURRENT_TIMESTAMP)
-                """, (product_id, threshold))
-
-        conn.commit()
-        return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

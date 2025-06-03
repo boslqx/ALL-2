@@ -58,7 +58,6 @@
     <div class="main-content">
         <div id="Dashboard" class="section">Manager Dashboard</div>
 
-
         <div id="All Products" class="section" style="display:none;">
             <div class="products-container">
                 <div class="products-header">
@@ -182,6 +181,7 @@
                                 <th>Email</th>
                                 <th>Role</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="employeesBody">
@@ -206,143 +206,130 @@
 
     <script>
     // Product management functions
-    let allProducts = [];
+let allProducts = [];
 
-    function setupStockAlert() {
-        document.querySelectorAll('.alert-button').forEach(button => {
-            button.addEventListener('click', async function(e) {
-                e.preventDefault();
-                e.stopPropagation();
+function setupStockAlert() {
+    document.querySelectorAll('.alert-button').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-                const productId = this.getAttribute('data-id');
-                const product = allProducts.find(p => p.ProductID == productId);
+            const productId = this.getAttribute('data-id');
+            const product = allProducts.find(p => p.ProductID == productId);
 
-                const { value: threshold } = await Swal.fire({
-                    title: 'Set Stock Alert Threshold',
-                    input: 'number',
-                    inputLabel: 'Alert when stock reaches:',
-                    inputValue: product.AlertThreshold || (product.StockQuantity <= 10 ? product.StockQuantity : ''),
-                    inputAttributes: {
-                        min: 0,
-                        step: 1
-                    },
-                    showCancelButton: true,
-                    confirmButtonText: 'Set Alert',
-                    cancelButtonText: 'Remove Alert',
-                    inputValidator: (value) => {
-                        if (value === '' && this.textContent.includes('Remove')) {
-                            return null;
-                        }
-                        if (value === '') {
-                            return 'Please enter a number or click Remove Alert';
-                        }
-                    }
-                });
-
-                if (threshold !== undefined) {
-                    try {
-                        const response = await fetch('/api/set-alert', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                product_id: productId,
-                                threshold: threshold === '' ? 0 : parseInt(threshold)
-                            })
-                        });
-
-                        const result = await response.json();
-                        if (response.ok) {
-                            Swal.fire('Success', 'Alert threshold updated', 'success');
-                            loadProducts();
-                        } else {
-                            throw new Error(result.error || 'Failed to set alert');
-                        }
-                    } catch (error) {
-                        Swal.fire('Error', error.message, 'error');
+            const { value: threshold } = await Swal.fire({
+                title: 'Set Stock Alert Threshold',
+                input: 'number',
+                inputLabel: 'Alert when stock reaches:',
+                inputValue: product.AlertThreshold || (product.StockQuantity <= 10 ? product.StockQuantity : ''),
+                inputAttributes: {
+                    min: 0,
+                    step: 1
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Set Alert',
+                cancelButtonText: 'Remove Alert',
+                inputValidator: (value) => {
+                    if (value === '' && product.AlertStatus !== 'active') {
+                        return 'Please enter a number or click Remove Alert';
                     }
                 }
             });
+
+            if (threshold !== undefined) {
+                try {
+                    const response = await fetch('/api/set-alert', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            product_id: productId,
+                            threshold: threshold === '' ? 0 : parseInt(threshold)
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        Swal.fire('Success', 'Alert threshold updated', 'success');
+                        loadProducts();
+                    } else {
+                        throw new Error(result.error || 'Failed to set alert');
+                    }
+                } catch (error) {
+                    Swal.fire('Error', error.message, 'error');
+                }
+            }
         });
+    });
+}
+
+function loadProducts() {
+    showLoading('products-grid');
+    fetch('/api/products')
+        .then(handleResponse)
+        .then(products => {
+            allProducts = products;
+            renderProducts(products);
+        })
+        .catch(error => {
+            handleError(error, 'products-grid');
+        });
+}
+
+function renderProducts(products) {
+    const productsGrid = document.getElementById('products-grid');
+    if (!productsGrid) return;
+
+    if (products.length === 0) {
+        productsGrid.innerHTML = `
+            <div class="no-products">
+                <i class="fas fa-box-open"></i>
+                <p>No products found matching filters</p>
+            </div>
+        `;
+        return;
     }
 
-    function loadProducts() {
-        showLoading('products-grid');
-        fetch('/api/products')
-            .then(handleResponse)
-            .then(products => {
-                allProducts = products;
-                renderProducts(products);
-            })
-            .catch(error => {
-                handleError(error, 'products-grid');
-            });
-    }
-
-    function renderProducts(products) {
-        const productsGrid = document.getElementById('products-grid');
-        if (!productsGrid) return;
-
-        if (products.length === 0) {
-            productsGrid.innerHTML = `
-                <div class="no-products">
-                    <i class="fas fa-box-open"></i>
-                    <p>No products found matching filters</p>
+    productsGrid.innerHTML = products.map(product => `
+        <div class="product-card" data-id="${product.ProductID}">
+            <div class="product-image">
+                <img src="${getProductImageUrl(product.Image)}"
+                    alt="${product.ProductName}"
+                    onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+            </div>
+            <div class="product-info">
+                <div class="product-brand-name">
+                    <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                    <span class="product-name">${product.ProductName}</span>
                 </div>
-            `;
-            return;
-        }
-
-        productsGrid.innerHTML = products.map(product => `
-            <div class="product-card" data-id="${product.ProductID}">
-                <div class="product-image">
-                    <img src="${getProductImageUrl(product.Image)}"
-                        alt="${product.ProductName}"
-                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                <div class="product-meta">
+                    <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                    <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                        ${product.StockQuantity || 0} in stock
+                    </span>
                 </div>
-                <div class="product-info">
-                    <div class="product-brand-name">
-                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
-                        <span class="product-name">${product.ProductName}</span>
-                    </div>
-                    <div class="product-meta">
-                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
-                            ${product.StockQuantity || 0} in stock
-                        </span>
-                    </div>
-                    <div class="product-actions">
-                        <button class="action-button details-button" data-id="${product.ProductID}">
-                            <i class="fas fa-eye"></i> View Details
-                        </button>
-                        <button class="action-button alert-button ${product.StockQuantity <= 10 ? 'warning' : ''} ${product.AlertThreshold ? 'active-alert' : ''}"
-                            data-id="${product.ProductID}">
-                            <i class="fas ${product.StockQuantity <= 10 ? 'fa-exclamation-triangle' :
-                              product.AlertThreshold ? 'fa-bell' : 'fa-bell'}"></i>
-                            ${product.AlertThreshold ? `Alert (${product.AlertThreshold})` :
-                              product.StockQuantity <= 10 ? 'Low Stock' : 'Stock Alert'}
-                        </button>
-                    </div>
+                <div class="product-actions">
+                    <button class="action-button details-button" data-id="${product.ProductID}">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
                 </div>
             </div>
-        `).join('');
+        </div>
+    `).join('');
 
-        document.querySelectorAll('.details-button').forEach(button => {
-            button.addEventListener('click', function() {
-                showProductDetails(this.getAttribute('data-id'));
-            });
+    document.querySelectorAll('.details-button').forEach(button => {
+        button.addEventListener('click', function() {
+            showProductDetails(this.getAttribute('data-id'));
         });
+    });
+}
 
-        setupStockAlert();
+function getProductImageUrl(imagePath) {
+    if (!imagePath) return '/static/images/placeholder.png';
+    if (imagePath.includes('static/')) {
+        return imagePath;
     }
-
-    function getProductImageUrl(imagePath) {
-        if (!imagePath) return '/static/images/placeholder.png';
-        // Check if path already includes static
-        if (imagePath.includes('static/')) {
-            return imagePath;
-        }
-        return `/static/product_image/${imagePath}`;
-    }
+    return `/static/product_image/${imagePath}`;
+}
 
     // Handle section visibility based on URL
     function checkActiveSection() {
@@ -371,6 +358,75 @@
         } else if (sectionId === 'All Products') {
             loadProducts();
         }
+    }
+
+    // Employee management functions
+    async function removeEmployee(userId) {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, remove it!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch('/manager/remove-employee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    Swal.fire('Removed!', data.message, 'success');
+                    loadEmployees();
+                } else {
+                    throw new Error(data.error || 'Failed to remove employee');
+                }
+            } catch (error) {
+                Swal.fire('Error', error.message, 'error');
+            }
+        }
+    }
+
+    function renderEmployees(employees) {
+        const tbody = document.getElementById('employeesBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (employees.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No employees found</td></tr>';
+            return;
+        }
+
+        employees.forEach(employee => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${employee.Name}</td>
+                <td>${employee.Username}</td>
+                <td>${employee.Email || 'N/A'}</td>
+                <td>${employee.Role}</td>
+                <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
+                <td>
+                    <button class="action-button remove-button" data-id="${employee.UserID}">
+                        <i class="fas fa-trash-alt"></i> Remove
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Add event listeners for remove buttons
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.addEventListener('click', function() {
+                removeEmployee(this.getAttribute('data-id'));
+            });
+        });
     }
 
     // Initialize on page load and when navigating back/forward
@@ -420,7 +476,7 @@
                     const result = await response.json();
 
                     if (response.ok) {
-                        showEmployeeMessage('Employee added successfully! Temporary password: ' + result.temp_password, 'success');
+                        showEmployeeMessage('Employee added successfully! Verification email sent.', 'success');
                         addEmployeeForm.reset();
                         loadEmployees();
                     } else {
@@ -609,29 +665,6 @@
             console.error('Error loading employees:', error);
             handleError(error, 'employeesBody');
         }
-    }
-
-    function renderEmployees(employees) {
-        const tbody = document.getElementById('employeesBody');
-        if (!tbody) return;
-
-        tbody.innerHTML = '';
-        if (employees.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No employees found</td></tr>';
-            return;
-        }
-
-        employees.forEach(employee => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${employee.Name}</td>
-                <td>${employee.Username}</td>
-                <td>${employee.Email || 'N/A'}</td>
-                <td>${employee.Role}</td>
-                <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
-            `;
-            tbody.appendChild(row);
-        });
     }
 
     function showEmployeeMessage(message, type) {
