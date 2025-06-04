@@ -608,11 +608,15 @@ body {
     gap: 5px;
 }
 
+/* Product card details button */
 .details-button {
-    background-color: #3498db; /* Manager's light blue */
+    background-color: #3498db;
     color: white;
 }
 
+.details-button:hover {
+    background-color: #2980b9;
+}
 
 .action-button:hover {
     opacity: 0.9;
@@ -647,21 +651,6 @@ body {
 
 .error-message {
     color: #e74c3c;
-}
-
-.retry-button {
-    margin-top: 20px;
-    padding: 8px 20px;
-    background-color: #5f738c; /* Manager's light blue */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.retry-button:hover {
-    background-color: #3b4e63; /* Medium blue */
 }
 
 /* Low stock styling */
