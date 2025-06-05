@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, current_app, request, jsonify
+from flask import Blueprint, render_template, session, current_app, request, jsonify, flash, redirect
 import sqlite3, os
 import secrets
 import string
@@ -297,45 +297,24 @@ def generate_temp_password(length=12):
 @manager_bp.route('/manager/product/<int:product_id>')
 def product_details(product_id):
     try:
-        db_path = os.path.join(current_app.instance_path, 'site.db')
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT 
-                ProductID, 
-                ProductName, 
-                Category, 
-                Price, 
-                StockQuantity, 
-                ProductBrand,
-                Image,
-                QrCode
-            FROM Product
-            WHERE ProductID = ?
-        """, (product_id,))
+        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
+        result = cursor.fetchone()
+        if not result:
+            flash('Product not found', 'danger')
+            return redirect(url_for('manager.all_products'))
 
-        product = cursor.fetchone()
+        product = dict(result)
 
-        if not product:
-            return "Product not found", 404
-
-        product_data = dict(product)
-        if product_data.get('QrCode'):
-            product_data['QrCode'] = base64.b64encode(product_data['QrCode']).decode('utf-8')
-
-        # Add manager_name to the template context
-        return render_template('manager_productdetails.html',
-                            product=product_data,
-                            manager_name=get_manager_name(session.get('user_id')),
-                            active_tab='All Products')  # Maintain active tab state
+        return render_template('manager_productdetails.html', product=product)
 
     except Exception as e:
-        return f"Error loading product: {str(e)}", 500
-    finally:
-        if conn:
-            conn.close()
+        current_app.logger.error(f"Error fetching product: {e}")
+        flash('Error loading product', 'danger')
+        return redirect(url_for('manager.all_products'))
 
 @manager_bp.context_processor
 def inject_manager_name():

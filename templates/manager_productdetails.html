@@ -1,47 +1,86 @@
 {% extends "manager_base.html" %}
 
 {% block content %}
-<div class="product-details-container">
-    <!-- Back Button -->
-    <a href="{{ url_for('manager.all_products') }}" class="back-button">
-        <i class="fas fa-arrow-left"></i> Back to All Products
-    </a>
+<div class="section">
+    <div class="register-container">
+        <!-- Back Button -->
+        <a href="{{ url_for('manager.all_products') }}" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Products
+        </a>
 
-    <h1>Product Details</h1>
+        <h1 class="register-title">Product Details</h1>
 
-    <div class="product-details-card">
-        <!-- Product Image -->
-        <div class="product-image">
-            <img src="{{ url_for('static', filename='product_image/' + product.Image) if product.Image else url_for('static', filename='images/placeholder.png') }}"
-                 alt="{{ product.ProductName }}">
-        </div>
+        <div class="register-card">
+            <!-- Left Column - Image -->
+            <div class="register-column image-column">
+                <div class="image-preview-container">
+                    {% if product.Image %}
+                        <img src="{{ url_for('static', filename='product_image/' + product.Image) }}"
+                            class="preview-image"
+                            alt="Product Image">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='images/placeholder.png') }}"
+                            class="preview-image"
+                            alt="Placeholder">
+                    {% endif %}
+                </div>
+            </div>
 
-        <!-- Product Info -->
-        <div class="product-info">
-            <h2>{{ product.ProductName }}</h2>
-            <p><strong>Brand:</strong> {{ product.ProductBrand }}</p>
-            <p><strong>Category:</strong> {{ product.Category }}</p>
-            <p><strong>Price:</strong> RM{{ "%.2f"|format(product.Price) }}</p>
-            <p><strong>Stock:</strong> {{ product.StockQuantity }} units</p>
-        </div>
+            <!-- Middle Column - Product Info -->
+            <div class="register-column form-column">
+                <div class="form-header">
+                    <h3>Product Information</h3>
+                    <div class="form-divider"></div>
+                </div>
 
-        <!-- QR Code -->
-        <div class="product-qr">
-            <h3>QR Code</h3>
-            {% if product.QrCode %}
-                <img src="data:image/png;base64,{{ product.QrCode }}" alt="QR Code">
-                <button class="print-qr">Print QR</button>
-            {% else %}
-                <p>No QR code generated.</p>
-            {% endif %}
+                <div class="form-group">
+                    <label>Category</label>
+                    <div class="view-mode">{{ product.Category }}</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Brand Name</label>
+                    <div class="view-mode">{{ product.ProductBrand }}</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <div class="view-mode">{{ product.ProductName }}</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group half-width">
+                        <label>Price (RM)</label>
+                        <div class="view-mode">RM{{ "%.2f"|format(product.Price) }}</div>
+                    </div>
+
+                    <div class="form-group half-width">
+                        <label>Stock Quantity</label>
+                        <div class="view-mode">{{ product.StockQuantity }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - QR Code -->
+            <div class="register-column qr-column">
+                <div class="qr-header">
+                    <h3>QR Code</h3>
+                    <div class="form-divider"></div>
+                </div>
+
+                <div class="qr-preview-container">
+                    {% if product.QRcode %}
+                        <img src="data:image/png;base64,{{ product.QRcode }}"
+                             alt="Product QR Code">
+                    {% else %}
+                        <div class="qr-placeholder">
+                            <i class="fas fa-qrcode"></i>
+                            <p>No QR Code generated</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
-
-<script>
-    // Print QR Code
-    document.querySelector('.print-qr')?.addEventListener('click', () => {
-        window.open(`/print-qr/{{ product.ProductID }}`, '_blank');
-    });
-</script>
 {% endblock %}
