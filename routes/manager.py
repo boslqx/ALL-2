@@ -2,14 +2,13 @@ from flask import Blueprint, render_template, session, current_app, request, jso
 import sqlite3, os
 import secrets
 import string
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 import base64
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from flask_mail import Message
 from extensions import mail
 from flask import url_for
+from flask_mail import Message
+
+manager_bp = Blueprint('manager', __name__, template_folder='../templates')
 
 def send_account_email(name, email, username, password, role):
     try:
@@ -64,31 +63,66 @@ def get_manager_name(user_id):
 @manager_bp.route('/manager')
 @manager_bp.route('/manager/dashboard')
 def dashboard():
-    return render_template('manager.html',
+    return render_template('manager_dashboard.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='Dashboard')
 
+@manager_bp.route('/manager/dashboard-data')
+def dashboard_data():
+    try:
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Get total products count
+        cursor.execute("SELECT COUNT(*) FROM Product")
+        total_products = cursor.fetchone()[0]
+
+        # Get low stock items count (less than 10)
+        cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity < 10")
+        low_stock_items = cursor.fetchone()[0]
+
+        # Get recent sales count (last 7 days)
+        cursor.execute("""
+            SELECT COUNT(*) FROM Sale 
+            WHERE Timestamp >= DATE('now', '-7 days')
+        """)
+        recent_sales = cursor.fetchone()[0]
+
+        return jsonify({
+            'total_products': total_products,
+            'low_stock_items': low_stock_items,
+            'recent_sales': recent_sales
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
 @manager_bp.route('/manager/all-products')
 def all_products():
-    return render_template('manager.html',
+    return render_template('manager_allproducts.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='All Products')
 
 @manager_bp.route('/manager/inventory-report')
 def inventory_report():
-    return render_template('manager.html',
+    return render_template('manager_inventory.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='Inventory Report')
 
 @manager_bp.route('/manager/sales-report')
 def sales_report():
-    return render_template('manager.html',
+    return render_template('manager_sales.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='Sales Report')
 
 @manager_bp.route('/manager/employee')
 def employee():
-    return render_template('manager.html',
+    return render_template('manager_employee.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='Employee')
 

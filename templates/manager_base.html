@@ -6,13 +6,15 @@
     <title>{% block title %}Manager Dashboard{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/manager.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-    <h2>{{ manager_name or 'Manager Dashboard' }}</h2>
-</div>
+            <h2>{{ manager_name or 'Manager Dashboard' }}</h2>
+        </div>
         <ul class="nav-menu">
             <li class="nav-item {% if active_tab == 'Dashboard' %}active{% endif %}">
                 <a href="{{ url_for('manager.dashboard') }}" class="nav-link">
@@ -69,8 +71,26 @@
         </div>
     </div>
 
-    <!-- Include JavaScript files -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Common JavaScript functions -->
+    <script>
+    function showLogoutModal() {
+        document.getElementById('logoutModal').style.display = 'flex';
+    }
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        const modal = document.getElementById('logoutModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    // Close modal with cancel button
+    document.getElementById('cancelLogout')?.addEventListener('click', function() {
+        document.getElementById('logoutModal').style.display = 'none';
+    });
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

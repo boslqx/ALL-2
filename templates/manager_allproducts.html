@@ -1,140 +1,143 @@
 {% extends "manager_base.html" %}
+
 {% block content %}
-<div id="products" class="section">
-    <div class="products-container">
-        <!-- Header with title and search -->
-        <div class="products-header">
-            <h2 class="products-title">Products</h2>
-            <div class="search-container">
-                <input type="text" placeholder="Search by brand or name..." class="search-input">
-                <button class="search-button">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Filter options -->
-        <div class="filter-options">
-            <div class="filter-group">
-                <label for="category-filter">Category</label>
-                <select class="filter-select" id="category-filter">
-                    <option value="all">All Categories</option>
-                    <option value="Food & Beverages">Food & Beverages</option>
-                    <option value="Health & Personal">Health & Personal</option>
-                    <option value="Home & Living">Home & Living</option>
-                    <option value="Clothing & Accessories">Clothing & Accessories</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="brand-filter">Brand</label>
-                <select class="filter-select" id="brand-filter">
-                    <option value="default">Default</option>
-                    <option value="a-z">A-Z</option>
-                    <option value="z-a">Z-A</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="price-filter">Price</label>
-                <select class="filter-select" id="price-filter">
-                    <option value="default">Default</option>
-                    <option value="low-high">Low to High</option>
-                    <option value="high-low">High to Low</option>
-                </select>
-            </div>
-            
-            <div class="filter-group filter-button-group">
-                <button id="apply-filters" class="action-button">
-                    <i class="fas fa-filter"></i> Apply Filters
-                </button>
-            </div>
-        </div>
-
-        <!-- Products will be loaded here dynamically -->
-        <div class="products-grid" id="products-grid">
-            <!-- Products will be inserted here by JavaScript -->
+<div class="products-container">
+    <div class="products-header">
+        <h2 class="products-title">Products</h2>
+        <div class="search-container">
+            <input type="text" placeholder="Search by brand or name..." class="search-input">
+            <button class="search-button">
+                <i class="fas fa-search"></i>
+            </button>
         </div>
     </div>
+
+    <div class="filter-options">
+        <div class="filter-group">
+            <label for="category-filter">Category</label>
+            <select class="filter-select" id="category-filter">
+                <option value="all">All Categories</option>
+                <option value="Food & Beverages">Food & Beverages</option>
+                <option value="Health & Personal">Health & Personal</option>
+                <option value="Home & Living">Home & Living</option>
+                <option value="Clothing & Accessories">Clothing & Accessories</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="brand-filter">Brand</label>
+            <select class="filter-select" id="brand-filter">
+                <option value="default">Default</option>
+                <option value="a-z">A-Z</option>
+                <option value="z-a">Z-A</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="price-filter">Price</label>
+            <select class="filter-select" id="price-filter">
+                <option value="default">Default</option>
+                <option value="low-high">Low to High</option>
+                <option value="high-low">High to Low</option>
+            </select>
+        </div>
+
+        <div class="filter-group filter-button-group">
+            <button id="apply-filters" class="action-button">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+        </div>
+    </div>
+
+    <div class="products-grid" id="products-grid"></div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const productsGrid = document.getElementById('products-grid');
-    let allProducts = []; // Store products for filtering
+    // Product management functions
+    let allProducts = [];
 
-    const searchInput = document.querySelector('.search-input');
-    const searchButton = document.querySelector('.search-button');
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProducts();
+        
+        // Product search and filter functionality
+        const searchInput = document.querySelector('.search-input');
+        const searchButton = document.querySelector('.search-button');
+        const applyFiltersBtn = document.getElementById('apply-filters');
 
-    // === INITIAL LOAD ===
-    loadProducts();
+        if (searchButton) {
+            searchButton.addEventListener('click', performSearch);
+        }
 
-    // === FILTERS & SEARCH ===
-    document.getElementById('apply-filters').addEventListener('click', applyFilters);
-    searchButton.addEventListener('click', performSearch);
-    searchInput.addEventListener('keyup', e => {
-        if (e.key === 'Enter') performSearch();
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+        }
+
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', applyFilters);
+        }
     });
-
-    // === FUNCTIONS ===
-
-    function loadProducts() {
-        showLoading();
-        fetch('/api/products')
-            .then(handleResponse)
-            .then(products => {
-                allProducts = products;
-                renderProducts(products);
-            })
-            .catch(handleError);
-    }
 
     function performSearch() {
         applyFilters();
     }
 
     function applyFilters() {
-        showLoading();
-        const searchTerm = searchInput.value.trim().toLowerCase();
+        showLoading('products-grid');
+        const searchTerm = document.querySelector('.search-input').value.trim().toLowerCase();
         const categoryFilter = document.getElementById('category-filter').value;
         const brandFilter = document.getElementById('brand-filter').value;
         const priceFilter = document.getElementById('price-filter').value;
 
-        let filtered = [...allProducts];
+        let filteredProducts = [...allProducts];
 
         if (searchTerm) {
-            filtered = filtered.filter(p =>
-                p.ProductName?.toLowerCase().includes(searchTerm) ||
-                p.ProductBrand?.toLowerCase().includes(searchTerm)
-            );
+            filteredProducts = filteredProducts.filter(product => {
+                const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
+                const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
+                return nameMatch || brandMatch;
+            });
         }
 
         if (categoryFilter !== 'all') {
-            filtered = filtered.filter(p => p.Category === categoryFilter);
+            filteredProducts = filteredProducts.filter(product =>
+                product.Category && product.Category === categoryFilter
+            );
         }
 
         if (brandFilter === 'a-z') {
-            filtered.sort((a, b) => (a.ProductBrand || '').localeCompare(b.ProductBrand || ''));
+            filteredProducts.sort((a, b) =>
+                (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
+            );
         } else if (brandFilter === 'z-a') {
-            filtered.sort((a, b) => (b.ProductBrand || '').localeCompare(a.ProductBrand || ''));
+            filteredProducts.sort((a, b) =>
+                (b.ProductBrand || '').localeCompare(a.ProductBrand || '')
+            );
         }
 
         if (priceFilter === 'low-high') {
-            filtered.sort((a, b) => (a.Price || 0) - (b.Price || 0));
+            filteredProducts.sort((a, b) => (a.Price || 0) - (b.Price || 0));
         } else if (priceFilter === 'high-low') {
-            filtered.sort((a, b) => (b.Price || 0) - (a.Price || 0));
+            filteredProducts.sort((a, b) => (b.Price || 0) - (a.Price || 0));
         }
 
-        renderProducts(filtered);
+        renderProducts(filteredProducts);
     }
 
-    function showLoading() {
-        productsGrid.innerHTML = `
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading products...
-            </div>
-        `;
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            `;
+        }
     }
 
     function handleResponse(response) {
@@ -142,27 +145,42 @@ document.addEventListener('DOMContentLoaded', function () {
         return response.json();
     }
 
-    function handleError(error) {
+    function handleError(error, elementId) {
         console.error('Error:', error);
-        productsGrid.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Failed to load products. ${error.message}</p>
-                <button class="retry-button">Retry</button>
-            </div>
-        `;
-        document.querySelector('.retry-button')?.addEventListener('click', loadProducts);
-    }
-
-    function getProductImageUrl(imagePath) {
-        return imagePath ? `/static/product_image/${imagePath}` : '/static/images/placeholder.png';
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load data. ${error.message}</p>
+                    <button class="retry-button">Retry</button>
+                </div>
+            `;
+            document.querySelector('.retry-button')?.addEventListener('click', loadProducts);
+        }
     }
 
     function showProductDetails(productId) {
         window.location.href = `/manager/product/${productId}`;
     }
 
+    function loadProducts() {
+        showLoading('products-grid');
+        fetch('/api/products')
+            .then(handleResponse)
+            .then(products => {
+                allProducts = products;
+                renderProducts(products);
+            })
+            .catch(error => {
+                handleError(error, 'products-grid');
+            });
+    }
+
     function renderProducts(products) {
+        const productsGrid = document.getElementById('products-grid');
+        if (!productsGrid) return;
+
         if (products.length === 0) {
             productsGrid.innerHTML = `
                 <div class="no-products">
@@ -173,53 +191,46 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Sort products - low stock first
-        const sortedProducts = [...products].sort((a, b) => {
-            const aLowStock = (a.StockQuantity || 0) <= 5;
-            const bLowStock = (b.StockQuantity || 0) <= 5;
-            if (aLowStock && !bLowStock) return -1;
-            if (!aLowStock && bLowStock) return 1;
-            return 0;
-        });
-
-        productsGrid.innerHTML = sortedProducts.map(product => {
-            const isLowStock = (product.StockQuantity || 0) <= 5;
-            return `
-                <div class="product-card ${isLowStock ? 'low-stock' : ''}" data-id="${product.ProductID}">
-                    <div class="product-image">
-                        <img src="${getProductImageUrl(product.Image)}" 
-                            alt="${product.ProductName}"
-                            onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+        productsGrid.innerHTML = products.map(product => `
+            <div class="product-card" data-id="${product.ProductID}">
+                <div class="product-image">
+                    <img src="${getProductImageUrl(product.Image)}"
+                        alt="${product.ProductName}"
+                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                </div>
+                <div class="product-info">
+                    <div class="product-brand-name">
+                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                        <span class="product-name">${product.ProductName}</span>
                     </div>
-                    <div class="product-info">
-                        <div class="product-brand-name">
-                            <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
-                            <span class="product-name">${product.ProductName}</span>
-                        </div>
-                        <div class="product-meta">
-                            <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                            <span class="product-stock ${isLowStock ? 'text-danger' : ''}">
-                                ${product.StockQuantity || 0} in stock
-                                ${isLowStock ? ' <i class="fas fa-exclamation-circle"></i>' : ''}
-                            </span>
-                        </div>
-                        <div class="product-actions">
-                            <button class="action-button details-button" data-id="${product.ProductID}">
-                                <i class="fas fa-info-circle"></i> Details
-                            </button>
-                        </div>
+                    <div class="product-meta">
+                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                            ${product.StockQuantity || 0} in stock
+                        </span>
+                    </div>
+                    <div class="product-actions">
+                        <button class="action-button details-button" data-id="${product.ProductID}">
+                            <i class="fas fa-eye"></i> View Details
+                        </button>
                     </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `).join('');
 
-        // Attach details buttons
         document.querySelectorAll('.details-button').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                 showProductDetails(this.getAttribute('data-id'));
             });
         });
     }
-});
+
+    function getProductImageUrl(imagePath) {
+        if (!imagePath) return '/static/images/placeholder.png';
+        if (imagePath.includes('static/')) {
+            return imagePath;
+        }
+        return `/static/product_image/${imagePath}`;
+    }
 </script>
 {% endblock %}
