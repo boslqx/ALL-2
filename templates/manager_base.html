@@ -13,8 +13,9 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
-            <h2>{{ manager_name or 'Manager Dashboard' }}</h2>
+            <img src="{{ url_for('static', filename='cover.png') }}" alt="Admin Logo" class="sidebar-logo">
         </div>
+        
         <ul class="nav-menu">
             <li class="nav-item {% if active_tab == 'Dashboard' %}active{% endif %}">
                 <a href="{{ url_for('manager.dashboard') }}" class="nav-link">
@@ -46,13 +47,14 @@
                     <span>Employee</span>
                 </a>
             </li>
-            <li class="nav-item logout">
-                <a href="#" class="nav-link" onclick="confirmLogout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </li>
         </ul>
+
+        <div class="logout-container">
+            <div class="nav-item logout" onclick="confirmLogout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </div>
+        </div>
     </div>
 
     <!-- Main Content -->
