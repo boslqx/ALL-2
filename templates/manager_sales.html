@@ -1,0 +1,269 @@
+{% extends "manager_base.html" %}
+
+{% block title %}Sales Report - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="sales-report-container">
+    <h2>Sales Report</h2>
+
+    <div class="report-filters">
+        <div class="filter-group">
+            <label for="time-period">Time Period:</label>
+            <select id="time-period" class="filter-select">
+                <option value="7">Last 7 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="365">Last Year</option>
+            </select>
+        </div>
+        <button id="refresh-sales" class="action-button">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+
+    <div class="sales-summary">
+        <div class="summary-card">
+            <h3>Total Revenue</h3>
+            <p class="summary-value" id="total-revenue">RM0.00</p>
+        </div>
+        <div class="summary-card">
+            <h3>Transactions</h3>
+            <p class="summary-value" id="total-transactions">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Items Sold</h3>
+            <p class="summary-value" id="total-items">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Avg. Sale</h3>
+            <p class="summary-value" id="avg-sale">RM0.00</p>
+        </div>
+    </div>
+
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Daily Sales</h3>
+            <canvas id="dailySalesChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Sales by Category</h3>
+            <canvas id="categorySalesChart"></canvas>
+        </div>
+    </div>
+
+    <div class="tables-container">
+        <div class="table-card">
+            <h3>Top Selling Products</h3>
+            <table id="topProductsTable">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity Sold</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody id="topProductsBody">
+                    <!-- Top products will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let dailySalesChart, categorySalesChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load sales data when page loads
+    loadSalesData();
+
+    // Set up refresh button
+    const refreshSalesBtn = document.getElementById('refresh-sales');
+    if (refreshSalesBtn) {
+        refreshSalesBtn.addEventListener('click', loadSalesData);
+    }
+
+    // Logout modal handling
+    setupLogoutModal();
+});
+
+function loadSalesData() {
+    showLoading('Sales Report');
+    const timePeriod = document.getElementById('time-period').value;
+
+    fetch(`/manager/sales-data?days=${timePeriod}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            renderSalesData(data);
+        })
+        .catch(error => {
+            console.error('Error loading sales data:', error);
+            handleError(error, 'Sales Report');
+        });
+}
+
+function renderSalesData(data) {
+    // Update summary cards
+    const totalRevenue = data.daily_sales.reduce((sum, day) => sum + day.total_sales, 0);
+    const totalTransactions = data.daily_sales.reduce((sum, day) => sum + day.transaction_count, 0);
+    const totalItems = data.daily_sales.reduce((sum, day) => sum + day.items_sold, 0);
+    const avgSale = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+
+    document.getElementById('total-revenue').textContent = `RM${totalRevenue.toFixed(2)}`;
+    document.getElementById('total-transactions').textContent = totalTransactions;
+    document.getElementById('total-items').textContent = totalItems;
+    document.getElementById('avg-sale').textContent = `RM${avgSale.toFixed(2)}`;
+
+    // Render top products table
+    const topProductsBody = document.getElementById('topProductsBody');
+    topProductsBody.innerHTML = data.top_products.map(product => `
+        <tr>
+            <td>${product.ProductName}</td>
+            <td>${product.total_quantity}</td>
+            <td>RM${product.total_revenue.toFixed(2)}</td>
+        </tr>
+    `).join('');
+
+    // Initialize or update charts
+    renderCharts(data);
+}
+
+function renderCharts(data) {
+    const dailyCtx = document.getElementById('dailySalesChart').getContext('2d');
+    const categoryCtx = document.getElementById('categorySalesChart').getContext('2d');
+
+    // Destroy existing charts if they exist
+    if (dailySalesChart) dailySalesChart.destroy();
+    if (categorySalesChart) categorySalesChart.destroy();
+
+    // Daily sales chart (line chart)
+    dailySalesChart = new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: data.daily_sales.map(day => day.sale_date),
+            datasets: [{
+                label: 'Daily Sales (RM)',
+                data: data.daily_sales.map(day => day.total_sales),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `RM${context.raw.toFixed(2)} (${data.daily_sales[context.dataIndex].transaction_count} transactions)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Category sales chart (doughnut chart)
+    categorySalesChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: data.category_sales.map(cat => cat.Category),
+            datasets: [{
+                data: data.category_sales.map(cat => cat.total_sales),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const category = data.category_sales[context.dataIndex];
+                            const percentage = Math.round((category.total_sales /
+                                data.category_sales.reduce((sum, cat) => sum + cat.total_sales, 0)) * 100);
+                            return `${context.label}: RM${context.raw.toFixed(2)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function showLoading(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </div>
+        `;
+    }
+}
+
+function handleError(error, elementId) {
+    console.error('Error:', error);
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load data. ${error.message}</p>
+                <button class="retry-button">Retry</button>
+            </div>
+        `;
+        document.querySelector('.retry-button')?.addEventListener('click', () => {
+            if (elementId === 'Sales Report') loadSalesData();
+        });
+    }
+}
+
+function setupLogoutModal() {
+    const logoutBtn = document.querySelector('.logout a');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    if (logoutBtn && logoutModal && cancelLogout) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logoutModal.style.display = 'flex';
+        });
+
+        cancelLogout.addEventListener('click', () => {
+            logoutModal.style.display = 'none';
+        });
+    }
+}
+</script>
+{% endblock %}

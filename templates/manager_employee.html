@@ -1,0 +1,229 @@
+{% extends "manager_base.html" %}
+
+{% block title %}Employee Management - Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="employee-management">
+    <h2>Employee Management</h2>
+    <div class="add-employee-form">
+        <h3>Add New Employee</h3>
+        <form id="addEmployeeForm">
+            <div class="form-group">
+                <label for="employeeName">Full Name:</label>
+                <input type="text" id="employeeName" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="employeeEmail">Email:</label>
+                <input type="email" id="employeeEmail" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="employeeUsername">Username:</label>
+                <input type="text" id="employeeUsername" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="employeeRole">Role:</label>
+                <select id="employeeRole" name="role" required>
+                    <option value="cashier">Cashier</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Create Account</button>
+        </form>
+        <div id="employeeMessage" class="message"></div>
+    </div>
+
+    <div class="employee-list">
+        <h3>Current Employees</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="employeesBody">
+                <!-- Employees will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load employees when page loads
+    loadEmployees();
+
+    // Employee form submission
+    const addEmployeeForm = document.getElementById('addEmployeeForm');
+    if (addEmployeeForm) {
+        addEmployeeForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('employeeName').value,
+                email: document.getElementById('employeeEmail').value,
+                username: document.getElementById('employeeUsername').value,
+                role: document.getElementById('employeeRole').value
+            };
+
+            try {
+                const response = await fetch('/manager/add-employee', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    showEmployeeMessage('Employee added successfully! Account details sent to their email.', 'success');
+                    addEmployeeForm.reset();
+                    loadEmployees();
+                } else {
+                    showEmployeeMessage(result.error || 'Failed to add employee', 'error');
+                }
+            } catch (error) {
+                showEmployeeMessage('Error: ' + error.message, 'error');
+            }
+        });
+    }
+
+    // Logout modal handling
+    setupLogoutModal();
+});
+
+async function loadEmployees() {
+    try {
+        const response = await fetch('/manager/get-employees');
+        const employees = await response.json();
+
+        if (response.ok) {
+            renderEmployees(employees);
+        } else {
+            throw new Error(employees.error || 'Failed to load employees');
+        }
+    } catch (error) {
+        console.error('Error loading employees:', error);
+        handleError(error, 'employeesBody');
+    }
+}
+
+function renderEmployees(employees) {
+    const tbody = document.getElementById('employeesBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No employees found</td></tr>';
+        return;
+    }
+
+    employees.forEach(employee => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${employee.Name}</td>
+            <td>${employee.Username}</td>
+            <td>${employee.Email || 'N/A'}</td>
+            <td>${employee.Role === 'admin' ? 'Admin' : 'Cashier'}</td>
+            <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>
+            <td>
+                <button class="action-button remove-button" data-id="${employee.UserID}">
+                    <i class="fas fa-trash-alt"></i> Remove
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Add event listeners for remove buttons
+    document.querySelectorAll('.remove-button').forEach(button => {
+        button.addEventListener('click', function() {
+            removeEmployee(this.getAttribute('data-id'));
+        });
+    });
+}
+
+async function removeEmployee(userId) {
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, remove it!'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            const response = await fetch('/manager/remove-employee', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire('Removed!', data.message, 'success');
+                loadEmployees();
+            } else {
+                throw new Error(data.error || 'Failed to remove employee');
+            }
+        } catch (error) {
+            Swal.fire('Error', error.message, 'error');
+        }
+    }
+}
+
+function showEmployeeMessage(message, type) {
+    const messageElement = document.getElementById('employeeMessage');
+    if (messageElement) {
+        messageElement.textContent = message;
+        messageElement.className = `message ${type}`;
+        setTimeout(() => {
+            messageElement.textContent = '';
+            messageElement.className = 'message';
+        }, 5000);
+    }
+}
+
+function handleError(error, elementId) {
+    console.error('Error:', error);
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load data. ${error.message}</p>
+                <button class="retry-button">Retry</button>
+            </div>
+        `;
+        document.querySelector('.retry-button')?.addEventListener('click', () => {
+            if (elementId === 'employeesBody') loadEmployees();
+        });
+    }
+}
+
+function setupLogoutModal() {
+    const logoutBtn = document.querySelector('.logout a');
+    const logoutModal = document.getElementById('logoutModal');
+    const cancelLogout = document.getElementById('cancelLogout');
+
+    if (logoutBtn && logoutModal && cancelLogout) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            logoutModal.style.display = 'flex';
+        });
+
+        cancelLogout.addEventListener('click', () => {
+            logoutModal.style.display = 'none';
+        });
+    }
+}
+</script>
+{% endblock %}

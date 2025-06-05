@@ -1,0 +1,37 @@
+{% extends "manager_base.html" %}
+{% block content %}
+<div id="Dashboard" class="section">
+    <h2>Manager Dashboard</h2>
+    <!-- Add your dashboard content here -->
+    <div class="dashboard-summary">
+        <div class="summary-card">
+            <h3>Total Products</h3>
+            <p class="summary-value" id="total-products">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Low Stock Items</h3>
+            <p class="summary-value" id="low-stock-items">0</p>
+        </div>
+        <div class="summary-card">
+            <h3>Recent Sales</h3>
+            <p class="summary-value" id="recent-sales">0</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load dashboard data
+    fetch('/manager/dashboard-data')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('total-products').textContent = data.total_products;
+            document.getElementById('low-stock-items').textContent = data.low_stock_items;
+            document.getElementById('recent-sales').textContent = data.recent_sales;
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+        });
+});
+</script>
+{% endblock %}
