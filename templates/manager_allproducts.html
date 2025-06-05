@@ -110,6 +110,18 @@
             );
         }
 
+        // First sort by stock (low stock first)
+        filteredProducts.sort((a, b) => {
+            const aIsLowStock = (a.StockQuantity || 0) <= 5;
+            const bIsLowStock = (b.StockQuantity || 0) <= 5;
+            
+            // If both are low stock or both are not, maintain current order
+            if (aIsLowStock === bIsLowStock) return 0;
+            // Put low stock items first
+            return aIsLowStock ? -1 : 1;
+        });
+
+        // Then apply other sorts
         if (brandFilter === 'a-z') {
             filteredProducts.sort((a, b) =>
                 (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
@@ -170,7 +182,8 @@
             .then(handleResponse)
             .then(products => {
                 allProducts = products;
-                renderProducts(products);
+                // Apply initial sorting with low stock first
+                applyFilters(); // This will now handle the sorting
             })
             .catch(error => {
                 handleError(error, 'products-grid');
@@ -192,7 +205,7 @@
         }
 
         productsGrid.innerHTML = products.map(product => `
-            <div class="product-card" data-id="${product.ProductID}">
+            <div class="product-card ${product.StockQuantity <= 5 ? 'low-stock' : ''}" data-id="${product.ProductID}">
                 <div class="product-image">
                     <img src="${getProductImageUrl(product.Image)}"
                         alt="${product.ProductName}"
@@ -205,7 +218,7 @@
                     </div>
                     <div class="product-meta">
                         <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                        <span class="product-stock ${product.StockQuantity <= 10 ? 'low-stock' : ''}">
+                        <span class="product-stock ${product.StockQuantity <= 5 ? 'low-stock' : ''}">
                             ${product.StockQuantity || 0} in stock
                         </span>
                     </div>
