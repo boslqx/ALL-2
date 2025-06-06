@@ -5,27 +5,72 @@
 {% block content %}
 <div class="activity-logs-container">
     <h2>Inventory Activity Log</h2>
-    <div class="log-filters">
-        <select id="log-filter">
-            <option value="all">All Activities</option>
-            <option value="ADD_PRODUCT">Product Additions</option>
-            <option value="UPDATE_STOCK">Stock Updates</option>
-        </select>
-        <button id="refresh-logs">Refresh</button>
-        <span id="log-status"></span>
+    <span id="log-status" class="status-message"></span>
+    
+    <!-- Enhanced Filter Options -->
+    <div class="activity-filter-options">
+        <div class="activity-filter-group">
+            <label for="action-filter">Action Type</label>
+            <select class="activity-filter-select" id="action-filter">
+                <option value="all">All Actions</option>
+                <option value="ADD_PRODUCT">Add Product</option>
+                <option value="UPDATE_STOCK">Stock Update</option>
+                <option value="EDIT_PRODUCT">Edit Product</option>
+                <option value="DELETE_PRODUCT">Delete Product</option>
+            </select>
+        </div>
+
+        <div class="activity-filter-group">
+            <label for="user-filter">User</label>
+            <select class="activity-filter-select" id="user-filter">
+                <option value="all">All Users</option>
+                <!-- Dynamically filled -->
+            </select>
+        </div>
+
+        <div class="activity-filter-group">
+            <label for="role-filter">User Role</label>
+            <select class="activity-filter-select" id="role-filter">
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="cashier">Cashier</option>
+            </select>
+        </div>
+
+        <div class="activity-filter-group">
+            <label for="date-from">From</label>
+            <input type="date" class="activity-filter-select" id="date-from">
+        </div>
+
+        <div class="activity-filter-group">
+            <label for="date-to">To</label>
+            <input type="date" class="activity-filter-select" id="date-to">
+        </div>
+
+        <div class="activity-filter-button-group">
+            <button class="activity-action-button" id="apply-filters">
+                <i class="fas fa-filter"></i> Apply
+            </button>
+            <button class="activity-action-button reset" id="reset-filters">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
     </div>
+
     <div class="log-table-container">
         <table id="activity-logs-table">
             <thead>
                 <tr>
                     <th>Timestamp</th>
                     <th>User</th>
+                    <th>Role</th>
                     <th>Action</th>
                     <th>Description</th>
                 </tr>
             </thead>
             <tbody id="logs-body">
-                <!-- Logs will be loaded here -->
+                <!-- Logs will be loaded here dynamically -->
             </tbody>
         </table>
     </div>
@@ -34,110 +79,145 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Load logs when page loads
-    loadActivityLogs();
+document.addEventListener('DOMContentLoaded', function () {
+    let allUsers = [];
 
-    // Set up refresh button
-    const refreshBtn = document.getElementById('refresh-logs');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadActivityLogs);
+    // Initialize
+    loadUsers().then(loadActivityLogs);
+
+    // Event Listeners
+    document.getElementById('apply-filters').addEventListener('click', loadActivityLogs);
+    document.getElementById('reset-filters').addEventListener('click', resetFilters);
+
+    async function loadUsers() {
+        try {
+            const response = await fetch('/manager/get-all-users');  // Changed endpoint
+            if (!response.ok) throw new Error('Failed to fetch users');
+            
+            allUsers = await response.json();
+            const userFilter = document.getElementById('user-filter');
+            userFilter.innerHTML = '<option value="all">All Users</option>';
+
+            allUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.UserID;
+                option.textContent = user.Name || user.Username || user.Email || `User ${user.UserID}`;
+                userFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load users:', error);
+            // Show error message to user
+            document.getElementById('log-status').textContent = 'Error loading user list';
+        }
     }
 
-    // Logout modal handling
-    setupLogoutModal();
-});
-
-async function loadActivityLogs() {
-    try {
-        const statusElement = document.getElementById('log-status');
+    async function loadActivityLogs() {
         const tbody = document.getElementById('logs-body');
-
-        if (statusElement) statusElement.textContent = 'Loading...';
-        if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Loading logs...</td></tr>';
-
-        const filter = document.getElementById('log-filter').value;
-        const url = filter === 'all'
-            ? '/manager/activity-logs'
-            : `/manager/activity-logs?action=${filter}`;
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        const logs = await response.json();
-        if (logs.error) throw new Error(logs.error);
-
-        renderLogs(logs);
-        if (statusElement) statusElement.textContent = '';
-    } catch (error) {
-        console.error('Error loading logs:', error);
-        handleError(error, 'logs-body');
-    }
-}
-
-function renderLogs(logs) {
-    const tbody = document.getElementById('logs-body');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-    if (logs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No activity logs found</td></tr>';
-        return;
-    }
-
-    logs.forEach(log => {
-        const row = document.createElement('tr');
-        const timestamp = new Date(log.Timestamp).toLocaleString();
-        row.innerHTML = `
-            <td>${timestamp}</td>
-            <td>${log.UserName || 'System'}</td>
-            <td>${formatActionType(log.ActionType)}</td>
-            <td>${log.Description || 'No description'}</td>
+        const statusElement = document.getElementById('log-status');
+        tbody.innerHTML = `
+            <tr class="loading-row">
+                <td colspan="5">
+                    <i class="fas fa-spinner fa-spin"></i> Loading activity logs...
+                </td>
+            </tr>
         `;
-        tbody.appendChild(row);
-    });
-}
+        statusElement.textContent = 'Fetching latest logs...';
 
-function formatActionType(action) {
-    const actions = {
-        'ADD_PRODUCT': 'Add Product',
-        'UPDATE_STOCK': 'Update Stock'
-    };
-    return actions[action] || action;
-}
+        const filters = {
+            action: document.getElementById('action-filter').value,
+            user: document.getElementById('user-filter').value,
+            role: document.getElementById('role-filter').value,
+            dateFrom: document.getElementById('date-from').value,
+            dateTo: document.getElementById('date-to').value
+        };
 
-function handleError(error, elementId) {
-    console.error('Error:', error);
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Failed to load data. ${error.message}</p>
-                <button class="retry-button">Retry</button>
-            </div>
-        `;
-        document.querySelector('.retry-button')?.addEventListener('click', () => {
-            if (elementId === 'logs-body') loadActivityLogs();
+        try {
+            const params = new URLSearchParams();
+            if (filters.action !== 'all') params.append('action', filters.action);
+            if (filters.user !== 'all') params.append('user', filters.user);
+            if (filters.role !== 'all') params.append('role', filters.role);
+            if (filters.dateFrom) params.append('from', filters.dateFrom);
+            if (filters.dateTo) params.append('to', filters.dateTo);
+
+            const response = await fetch(`/manager/activity-logs?${params.toString()}`);
+
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+
+            const logs = await response.json();
+            if (logs.error) throw new Error(logs.error);
+
+            renderLogs(logs);
+            statusElement.textContent = `Loaded ${logs.length} activities`;
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            tbody.innerHTML = `
+                <tr class="error-row">
+                    <td colspan="5">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Error loading logs: ${error.message}
+                    </td>
+                </tr>
+            `;
+            statusElement.textContent = 'Failed to load logs';
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('action-filter').value = 'all';
+        document.getElementById('user-filter').value = 'all';
+        document.getElementById('role-filter').value = 'all';
+        document.getElementById('date-from').value = '';
+        document.getElementById('date-to').value = '';
+        loadActivityLogs();
+    }
+
+    function renderLogs(logs) {
+        const tbody = document.getElementById('logs-body');
+        tbody.innerHTML = '';
+
+        if (!logs.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #7f8c8d;">
+                        No activity logs found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        logs.forEach(log => {
+            const row = document.createElement('tr');
+
+            const timestamp = new Date(log.Timestamp).toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+
+            // Improved user display - show name if available, otherwise username
+            const userDisplay = log.UserName || log.Username || 'System';
+
+            row.innerHTML = `
+                <td>${timestamp}</td>
+                <td>${userDisplay}</td>
+                <td>${log.Role || 'Unknown'}</td>
+                <td>${formatActionWithIcon(log.ActionType)}</td>
+                <td>${log.Description || 'No description available'}</td>
+            `;
+
+            tbody.appendChild(row);
         });
     }
-}
 
-function setupLogoutModal() {
-    const logoutBtn = document.querySelector('.logout a');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
-
-    if (logoutBtn && logoutModal && cancelLogout) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutModal.style.display = 'flex';
-        });
-
-        cancelLogout.addEventListener('click', () => {
-            logoutModal.style.display = 'none';
-        });
+    function formatActionWithIcon(actionType) {
+        const actions = {
+            'ADD_PRODUCT': '<i class="fas fa-plus-circle text-success"></i> Add Product',
+            'UPDATE_STOCK': '<i class="fas fa-boxes text-primary"></i> Stock Update',
+            'DELETE_PRODUCT': '<i class="fas fa-trash-alt text-danger"></i> Delete Product',
+            'EDIT_PRODUCT': '<i class="fas fa-edit text-warning"></i> Edit Product'
+        };
+        return actions[actionType] || actionType;
     }
-}
+});
 </script>
 {% endblock %}

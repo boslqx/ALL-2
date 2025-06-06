@@ -8,7 +8,7 @@
 body {
     display: flex;
     min-height: 100vh;
-    background-color: #e8eccc;
+    background-color: #f0f0ef;
 }
 
 
@@ -241,6 +241,103 @@ body {
 #activity-logs-table tr:hover {
     background-color: #f9f9f9;
 }
+
+/* Activity Log Filters */
+.activity-filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+}
+
+.activity-filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    flex: 1;
+}
+
+.activity-filter-group label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.activity-filter-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    font-size: 0.9rem;
+}
+
+.activity-filter-button-group {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.activity-action-button {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.activity-action-button:hover {
+    background-color: #2980b9;
+}
+
+.activity-action-button.reset {
+    background-color: #95a5a6;
+}
+
+.activity-action-button.reset:hover {
+    background-color: #7f8c8d;
+}
+
+/* Status Message */
+.status-message {
+    display: block;
+    margin-bottom: 15px;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* Table Enhancements */
+#activity-logs-table th {
+    white-space: nowrap;
+}
+
+#activity-logs-table td {
+    vertical-align: middle;
+}
+
+/* Loading and Error States */
+.loading-row td, .error-row td {
+    text-align: center;
+    padding: 20px !important;
+    color: #7f8c8d;
+}
+
+.error-row {
+    color: #e74c3c;
+}
+
+/* Action Icons */
+.text-success { color: #2ecc71; }
+.text-primary { color: #3498db; }
+.text-danger { color: #e74c3c; }
+.text-warning { color: #f39c12; }
 
 /* Employee Management */
 .employee-management {

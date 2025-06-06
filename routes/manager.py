@@ -134,28 +134,83 @@ def get_activity_logs():
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
+        # Get filter parameters
         action_filter = request.args.get('action', 'all')
+        user_filter = request.args.get('user', 'all')
+        role_filter = request.args.get('role', 'all')
+        date_from = request.args.get('from')
+        date_to = request.args.get('to')
+
+        # Build query
         query = """
-            SELECT ActivityLog.*, User.Name as UserName 
+            SELECT 
+                ActivityLog.*, 
+                User.Name as UserName,
+                User.Role as Role,
+                User.Username as Username
             FROM ActivityLog 
             LEFT JOIN User ON ActivityLog.UserID = User.UserID
+            WHERE 1=1
         """
         params = []
+
+        # Add filters
         if action_filter != 'all':
-            query += " WHERE ActionType = ?"
+            query += " AND ActionType = ?"
             params.append(action_filter)
-        query += " ORDER BY Timestamp DESC LIMIT 100"
+        
+        if user_filter != 'all':
+            query += " AND ActivityLog.UserID = ?"
+            params.append(user_filter)
+        
+        if role_filter != 'all':
+            query += " AND User.Role = ?"
+            params.append(role_filter)
+        
+        if date_from:
+            query += " AND DATE(ActivityLog.Timestamp) >= ?"
+            params.append(date_from)
+        
+        if date_to:
+            query += " AND DATE(ActivityLog.Timestamp) <= ?"
+            params.append(date_to)
+
+        query += " ORDER BY ActivityLog.Timestamp DESC LIMIT 100"
 
         cursor.execute(query, params)
-        return jsonify([dict(log) for log in cursor.fetchall()])
+        logs = [dict(log) for log in cursor.fetchall()]
+        
+        return jsonify(logs)
 
     except Exception as e:
-        print(f"Error fetching logs: {str(e)}")
+        current_app.logger.error(f"Error fetching logs: {str(e)}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'conn' in locals():
             conn.close()
+            
+@manager_bp.route('/manager/get-all-users')
+def get_all_users():
+    try:
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
+        # Get all users, not just cashiers
+        cursor.execute("""
+            SELECT UserID, Name, Username, Email, Role 
+            FROM User
+            ORDER BY Name
+        """)
+        users = [dict(user) for user in cursor.fetchall()]
+        return jsonify(users)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @manager_bp.route('/manager/add-employee', methods=['POST'])
 def add_employee():
