@@ -108,6 +108,12 @@ def all_products():
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='All Products')
 
+@manager_bp.route('/manager/activity-page')
+def activity_page():
+    return render_template('manager_activity.html',
+                       manager_name=get_manager_name(session.get('user_id')),
+                       active_tab='Activity')
+
 @manager_bp.route('/manager/inventory-report')
 def inventory_report():
     return render_template('manager_inventory.html',
@@ -474,6 +480,60 @@ def get_sales_data():
             'top_products': top_products,
             'category_sales': category_sales
         })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/inventory-report-data')
+def inventory_report_data():
+    try:
+        category_filter = request.args.get('category', 'all')
+        stock_filter = request.args.get('stock', 'all')
+
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        query = "SELECT ProductID, ProductName, Category, Price, StockQuantity FROM Product WHERE 1=1"
+        params = []
+
+        if category_filter != 'all':
+            query += " AND Category = ?"
+            params.append(category_filter)
+
+        if stock_filter == 'low':
+            query += " AND StockQuantity > 0 AND StockQuantity < 10"
+        elif stock_filter == 'out':
+            query += " AND StockQuantity <= 0"
+        elif stock_filter == 'sufficient':
+            query += " AND StockQuantity >= 10"
+
+        query += " ORDER BY StockQuantity ASC, ProductName"
+
+        cursor.execute(query, params)
+        products = [dict(product) for product in cursor.fetchall()]
+        return jsonify(products)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/api/product-categories')
+def get_product_categories():
+    try:
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT DISTINCT Category FROM Product WHERE Category IS NOT NULL ORDER BY Category")
+        categories = [row[0] for row in cursor.fetchall()]
+        return jsonify(categories)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

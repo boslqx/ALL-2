@@ -791,3 +791,32 @@ body {
     justify-content: space-between;
     margin-top: auto;
 }
+
+/* Receipt Modal Styles */
+.receipt-modal {
+    max-width: 500px;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.receipt-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.receipt-actions .action-button {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.receipt-actions .action-button i {
+    font-size: 1rem;
+}

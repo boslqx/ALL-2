@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from io import BytesIO
-import os
+import base64
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 import cv2
@@ -19,7 +19,6 @@ import numpy as np
 
 cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
 
-cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
 
 @cashier_bp.route('/cashier')
 def dashboard():
@@ -256,47 +255,32 @@ def complete_transaction():
         db.session.commit()
 
         # Generate PDF receipt
-        pdf_buffer = generate_receipt(new_transaction, details, cashier_name)
+        pdf_base64 = generate_receipt(new_transaction, details, cashier_name)
         
-        # Save PDF to server (optional)
-        receipt_dir = os.path.join(current_app.static_folder, 'receipts')
-        os.makedirs(receipt_dir, exist_ok=True)
-        receipt_path = os.path.join(receipt_dir, f'receipt_{new_transaction.TransactionID}.pdf')
-        with open(receipt_path, 'wb') as f:
-            f.write(pdf_buffer.getvalue())
-
-        # Return both JSON response and PDF
-        response = jsonify({
+        return jsonify({
             'success': True,
             'transactionId': new_transaction.TransactionID,
             'totalAmount': new_transaction.TotalAmount,
-            'receiptUrl': f'/static/receipts/receipt_{new_transaction.TransactionID}.pdf'
+            'receiptPdf': pdf_base64
         })
-        
-        return response
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Transaction error: {str(e)}')
         return jsonify({'error': 'Failed to process transaction'}), 500
-    
 
+# Add this function to generate PDF receipts
 def generate_receipt(transaction, transaction_details, cashier_name):
-    # Create a buffer for the PDF
     buffer = BytesIO()
-    
-    # Create the PDF object
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Set up receipt styling
+    # Receipt styling
     p.setFont("Helvetica-Bold", 16)
     p.drawString(1*inch, height-1*inch, "Your Store Name")
     p.setFont("Helvetica", 12)
     p.drawString(1*inch, height-1.25*inch, "123 Store Address")
     p.drawString(1*inch, height-1.5*inch, "Phone: (123) 456-7890")
-    
-    # Draw a line
     p.line(1*inch, height-1.6*inch, width-1*inch, height-1.6*inch)
     
     # Transaction info
@@ -327,7 +311,6 @@ def generate_receipt(transaction, transaction_details, cashier_name):
         p.drawString(6.5*inch, y_position, f"RM{item.Price * item.Quantity:.2f}")
         y_position -= 0.25*inch
         
-        # New page if we're running out of space
         if y_position < 1*inch:
             p.showPage()
             y_position = height - 1*inch
@@ -342,18 +325,12 @@ def generate_receipt(transaction, transaction_details, cashier_name):
     p.drawString(5*inch, y_position-0.9*inch, "Total:")
     p.drawString(6.5*inch, y_position-0.9*inch, f"RM{transaction.TotalAmount:.2f}")
     
-    # Thank you message
     p.setFont("Helvetica", 10)
     p.drawString(1*inch, y_position-1.5*inch, "Thank you for shopping with us!")
     
-    # Save the PDF
     p.showPage()
     p.save()
     
-    # Get PDF content from buffer
     buffer.seek(0)
-    return buffer
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-@cashier_bp.route('/static/receipts/<filename>')
-def serve_receipt(filename):
-    return send_from_directory(os.path.join(current_app.static_folder, 'receipts'), filename)
