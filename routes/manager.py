@@ -246,6 +246,7 @@ def add_employee():
 
         conn.commit()
 
+        # Generate proper registration URL - UPDATED ENDPOINT NAME
         registration_url = url_for('register.register_with_token', token=token, _external=True)
 
         try:
@@ -290,18 +291,17 @@ def add_employee():
 def send_registration_email(name, email, token, temp_password=None):
     try:
         subject = "Complete Your Account Registration"
+        # UPDATED ENDPOINT NAME
         registration_url = url_for('register.register_with_token', token=token, _external=True)
 
         html = f"""
         <h2>Welcome to the System, {name}!</h2>
         <p>Your manager has created an account for you.</p>
         """
-
         if temp_password:
             html += f"""
             <p>Your temporary password is: <strong>{temp_password}</strong></p>
             """
-
         html += f"""
         <p>Please complete your registration by clicking the link below:</p>
         <p><a href="{registration_url}">{registration_url}</a></p>
@@ -321,6 +321,7 @@ def send_registration_email(name, email, token, temp_password=None):
 
     except Exception as e:
         current_app.logger.error(f"Error sending email to {email}: {str(e)}")
+        
 @manager_bp.route('/manager/get-employees')
 def get_employees():
     try:
