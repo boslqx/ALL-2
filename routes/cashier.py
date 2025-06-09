@@ -19,7 +19,6 @@ import numpy as np
 
 cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
 
-cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
 
 @cashier_bp.route('/cashier')
 def dashboard():
@@ -256,30 +255,19 @@ def complete_transaction():
         db.session.commit()
 
         # Generate PDF receipt
-        pdf_buffer = generate_receipt(new_transaction, details, cashier_name)
+        pdf_base64 = generate_receipt(new_transaction, details, cashier_name)
         
-        # Save PDF to server (optional)
-        receipt_dir = os.path.join(current_app.static_folder, 'receipts')
-        os.makedirs(receipt_dir, exist_ok=True)
-        receipt_path = os.path.join(receipt_dir, f'receipt_{new_transaction.TransactionID}.pdf')
-        with open(receipt_path, 'wb') as f:
-            f.write(pdf_buffer.getvalue())
-
-        # Return both JSON response and PDF
-        response = jsonify({
+        return jsonify({
             'success': True,
             'transactionId': new_transaction.TransactionID,
             'totalAmount': new_transaction.TotalAmount,
-            'receiptUrl': f'/static/receipts/receipt_{new_transaction.TransactionID}.pdf'
+            'receiptPdf': pdf_base64
         })
-        
-        return response
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Transaction error: {str(e)}')
         return jsonify({'error': 'Failed to process transaction'}), 500
-    
 
 # Add this function to generate PDF receipts
 def generate_receipt(transaction, transaction_details, cashier_name):
@@ -346,62 +334,3 @@ def generate_receipt(transaction, transaction_details, cashier_name):
     buffer.seek(0)
     return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-# Update the complete transaction route
-@cashier_bp.route('/cashier/complete-transaction', methods=['POST'])
-def complete_transaction():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'User not logged in'}), 401
-
-    data = request.get_json()
-    if not data or 'items' not in data:
-        return jsonify({'error': 'Invalid request data'}), 400
-
-    try:
-        cashier = User.query.get(user_id)
-        cashier_name = cashier.Name if cashier else "Unknown"
-
-        new_transaction = Transaction(
-            CashierID=user_id,
-            TotalAmount=data['totalAmount'],
-            Datetime=datetime.utcnow()
-        )
-        db.session.add(new_transaction)
-        db.session.flush()
-
-        details = []
-        for item in data['items']:
-            product = Product.query.get(item['productId'])
-            if not product:
-                return jsonify({'error': f'Product {item["productId"]} not found'}), 404
-            
-            if product.StockQuantity < item['quantity']:
-                return jsonify({'error': f'Not enough stock for {product.ProductName}'}), 400
-            
-            detail = TransactionDetails(
-                TransactionID=new_transaction.TransactionID,
-                ProductID=item['productId'],
-                Quantity=item['quantity'],
-                Price=item['price']
-            )
-            db.session.add(detail)
-            details.append(detail)
-            
-            product.StockQuantity -= item['quantity']
-            db.session.add(product)
-
-        db.session.commit()
-
-        pdf_base64 = generate_receipt(new_transaction, details, cashier_name)
-        
-        return jsonify({
-            'success': True,
-            'transactionId': new_transaction.TransactionID,
-            'totalAmount': new_transaction.TotalAmount,
-            'receiptPdf': pdf_base64
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Transaction error: {str(e)}')
-        return jsonify({'error': 'Failed to process transaction'}), 500
