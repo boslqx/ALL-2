@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from io import BytesIO
-import os
+import base64
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 import cv2
@@ -281,22 +281,18 @@ def complete_transaction():
         return jsonify({'error': 'Failed to process transaction'}), 500
     
 
+# Add this function to generate PDF receipts
 def generate_receipt(transaction, transaction_details, cashier_name):
-    # Create a buffer for the PDF
     buffer = BytesIO()
-    
-    # Create the PDF object
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Set up receipt styling
+    # Receipt styling
     p.setFont("Helvetica-Bold", 16)
     p.drawString(1*inch, height-1*inch, "Your Store Name")
     p.setFont("Helvetica", 12)
     p.drawString(1*inch, height-1.25*inch, "123 Store Address")
     p.drawString(1*inch, height-1.5*inch, "Phone: (123) 456-7890")
-    
-    # Draw a line
     p.line(1*inch, height-1.6*inch, width-1*inch, height-1.6*inch)
     
     # Transaction info
@@ -327,7 +323,6 @@ def generate_receipt(transaction, transaction_details, cashier_name):
         p.drawString(6.5*inch, y_position, f"RM{item.Price * item.Quantity:.2f}")
         y_position -= 0.25*inch
         
-        # New page if we're running out of space
         if y_position < 1*inch:
             p.showPage()
             y_position = height - 1*inch
@@ -342,18 +337,71 @@ def generate_receipt(transaction, transaction_details, cashier_name):
     p.drawString(5*inch, y_position-0.9*inch, "Total:")
     p.drawString(6.5*inch, y_position-0.9*inch, f"RM{transaction.TotalAmount:.2f}")
     
-    # Thank you message
     p.setFont("Helvetica", 10)
     p.drawString(1*inch, y_position-1.5*inch, "Thank you for shopping with us!")
     
-    # Save the PDF
     p.showPage()
     p.save()
     
-    # Get PDF content from buffer
     buffer.seek(0)
-    return buffer
+    return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-@cashier_bp.route('/static/receipts/<filename>')
-def serve_receipt(filename):
-    return send_from_directory(os.path.join(current_app.static_folder, 'receipts'), filename)
+# Update the complete transaction route
+@cashier_bp.route('/cashier/complete-transaction', methods=['POST'])
+def complete_transaction():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    data = request.get_json()
+    if not data or 'items' not in data:
+        return jsonify({'error': 'Invalid request data'}), 400
+
+    try:
+        cashier = User.query.get(user_id)
+        cashier_name = cashier.Name if cashier else "Unknown"
+
+        new_transaction = Transaction(
+            CashierID=user_id,
+            TotalAmount=data['totalAmount'],
+            Datetime=datetime.utcnow()
+        )
+        db.session.add(new_transaction)
+        db.session.flush()
+
+        details = []
+        for item in data['items']:
+            product = Product.query.get(item['productId'])
+            if not product:
+                return jsonify({'error': f'Product {item["productId"]} not found'}), 404
+            
+            if product.StockQuantity < item['quantity']:
+                return jsonify({'error': f'Not enough stock for {product.ProductName}'}), 400
+            
+            detail = TransactionDetails(
+                TransactionID=new_transaction.TransactionID,
+                ProductID=item['productId'],
+                Quantity=item['quantity'],
+                Price=item['price']
+            )
+            db.session.add(detail)
+            details.append(detail)
+            
+            product.StockQuantity -= item['quantity']
+            db.session.add(product)
+
+        db.session.commit()
+
+        pdf_base64 = generate_receipt(new_transaction, details, cashier_name)
+        
+        return jsonify({
+            'success': True,
+            'transactionId': new_transaction.TransactionID,
+            'totalAmount': new_transaction.TotalAmount,
+            'receiptPdf': pdf_base64
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Transaction error: {str(e)}')
+        return jsonify({'error': 'Failed to process transaction'}), 500

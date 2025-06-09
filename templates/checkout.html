@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Additional styles for checkout page */
+        .checkout-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        .checkout-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .checkout-header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .checkout-body {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* Order Items */
+        .order-items {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+        }
+
+        .item-info h3 {
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .item-info p {
+            font-size: 0.9rem;
+            color: #666;
+            margin: 3px 0;
+        }
+
+        .item-price {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 10px 0;
+        }
+
+        /* Payment Method */
+        .payment-method {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .payment-method h2 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .payment-option {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .payment-option.active {
+            border-color: #1abc9c;
+            background-color: rgba(26, 188, 156, 0.05);
+        }
+
+        .payment-option:hover {
+            border-color: #bbb;
+        }
+
+        .option-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .option-header i {
+            font-size: 1.2rem;
+            color: #2a3f54;
+        }
+
+        .option-header h3 {
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .option-details {
+            display: none;
+            padding-top: 10px;
+        }
+
+        .payment-option.active .option-details {
+            display: block;
+        }
+
+        .payment-field {
+            margin-bottom: 10px;
+        }
+
+        .payment-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .payment-field input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        /* Order Summary */
+        .order-summary {
+            flex: 0 0 250px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .summary-row.total {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .complete-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #1abc9c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .complete-button:hover {
+            background-color: #16a085;
+        }
+
+        /* Receipt Modal */
+        .receipt-modal {
+            max-width: 500px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .receipt-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            gap: 10px;
+        }
+
+        .receipt-actions .action-button {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .receipt-actions .action-button i {
+            font-size: 1rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .checkout-body {
+                flex-direction: column;
+            }
+            
+            .order-summary {
+                flex: 0 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>{{ cashier_name }}</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item active">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </li>
+            <li class="nav-item" onclick="window.location.href='#'">
+                <i class="fas fa-history"></i>
+                <span>Recent Sales</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content checkout-content">
+        <div class="checkout-header">
+            <button class="back-button" onclick="window.history.back()">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h1>Checkout</h1>
+        </div>
+
+        <div class="checkout-body">
+            <!-- Order Items -->
+            <div class="order-items" id="order-items">
+                <!-- Items will be populated by JavaScript -->
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>Loading order items...</p>
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="payment-method">
+                <h2>Payment Method</h2>
+                
+                <div class="payment-options">
+                    <div class="payment-option active" data-method="cash">
+                        <div class="option-header">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <h3>Cash</h3>
+                        </div>
+                        <div class="option-details">
+                            <div class="payment-field">
+                                <label>Amount Received</label>
+                                <input type="number" id="cash-received" placeholder="Enter amount">
+                            </div>
+                            <div class="payment-field">
+                                <label>Change</label>
+                                <input type="text" id="cash-change" placeholder="0.00" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-option" data-method="card">
+                        <div class="option-header">
+                            <i class="fas fa-credit-card"></i>
+                            <h3>Debit/Credit Card</h3>
+                        </div>
+                        <div class="option-details">
+                            <div class="payment-field">
+                                <label>Card Number</label>
+                                <input type="text" placeholder="Enter card number">
+                            </div>
+                            <div class="payment-field">
+                                <label>Expiry Date</label>
+                                <input type="text" placeholder="MM/YY">
+                            </div>
+                            <div class="payment-field">
+                                <label>CVV</label>
+                                <input type="text" placeholder="CVV">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">RM0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (6%):</span>
+                    <span id="tax">RM0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span id="total">RM0.00</span>
+                </div>
+                
+                <button class="complete-button" id="complete-button" onclick="processPayment()">
+                    Complete Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Transaction Successful!</h3>
+            <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>
+            Total Amount: <span id="transaction-amount"></span></p>
+            <div class="modal-buttons">
+                <button class="action-button primary" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
+                    New Transaction
+                </button>
+                <button class="action-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                    Back to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal">
+        <div class="modal-content receipt-modal">
+            <iframe id="receiptFrame" style="width:100%; height:80%; border:none;"></iframe>
+            <div class="receipt-actions">
+                <button class="action-button" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+                <button class="action-button primary" onclick="closeReceiptModal()">
+                    <i class="fas fa-check"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load cart items from sessionStorage
+            const cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+            
+            if (cart.length === 0) {
+                window.location.href = '/cashier/new-transaction';
+            } else {
+                renderOrderItems(cart);
+                updateTotals(cart);
+            }
+            
+            // Payment method selection
+            const paymentOptions = document.querySelectorAll('.payment-option');
+            paymentOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    paymentOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Calculate change when cash received changes
+            const cashReceived = document.getElementById('cash-received');
+            const cashChange = document.getElementById('cash-change');
+            
+            cashReceived.addEventListener('input', function() {
+                const totalAmount = parseFloat(document.getElementById('total').textContent.replace('RM', ''));
+                const received = parseFloat(this.value) || 0;
+                const change = received - totalAmount;
+                cashChange.value = change >= 0 ? 'RM' + change.toFixed(2) : 'RM0.00';
+            });
+        });
+        
+        function renderOrderItems(cart) {
+            const orderItemsContainer = document.getElementById('order-items');
+            orderItemsContainer.innerHTML = '';
+            
+            if (cart.length === 0) {
+                orderItemsContainer.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>No items in cart</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            cart.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'order-item';
+                itemElement.innerHTML = `
+                    <div class="item-info">
+                        <h3>${item.name}</h3>
+                        <p>Quantity: ${item.quantity}</p>
+                    </div>
+                    <div class="item-price">RM${(item.price * item.quantity).toFixed(2)}</div>
+                `;
+                orderItemsContainer.appendChild(itemElement);
+                
+                if (index < cart.length - 1) {
+                    const divider = document.createElement('div');
+                    divider.className = 'divider';
+                    orderItemsContainer.appendChild(divider);
+                }
+            });
+        }
+        
+        function updateTotals(cart) {
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.06;
+            const total = subtotal + tax;
+            
+            document.getElementById('subtotal').textContent = `RM${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `RM${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `RM${total.toFixed(2)}`;
+        }
+        
+        async function processPayment() {
+            const activeOption = document.querySelector('.payment-option.active');
+            const method = activeOption.dataset.method;
+            const totalAmount = parseFloat(document.getElementById('total').textContent.replace('RM', ''));
+            
+            if (method === 'cash') {
+                const received = parseFloat(document.getElementById('cash-received').value) || 0;
+                if (received < totalAmount) {
+                    alert('Amount received is less than total amount');
+                    return;
+                }
+            }
+            
+            const cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.06;
+            const total = subtotal + tax;
+            
+            const transactionData = {
+                cashierId: getCashierId(),
+                totalAmount: total,
+                paymentMethod: method,
+                items: cart.map(item => ({
+                    productId: item.id,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
+            };
+            
+            try {
+                const response = await fetch('/cashier/complete-transaction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(transactionData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showReceiptModal(data.receiptPdf);
+                    document.getElementById('transaction-id').textContent = data.transactionId;
+                    document.getElementById('transaction-amount').textContent = `RM${data.totalAmount.toFixed(2)}`;
+                    sessionStorage.removeItem('cart');
+                } else {
+                    alert(data.error || 'Failed to process transaction');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to process transaction');
+            }
+        }
+        
+        function showReceiptModal(pdfBase64) {
+            const modal = document.getElementById('receiptModal');
+            const frame = document.getElementById('receiptFrame');
+            
+            const pdfBlob = base64ToBlob(pdfBase64, 'application/pdf');
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            frame.src = pdfUrl;
+            
+            modal.style.display = 'flex';
+        }
+        
+        function closeReceiptModal() {
+            const modal = document.getElementById('receiptModal');
+            const frame = document.getElementById('receiptFrame');
+            
+            if (frame.src) {
+                URL.revokeObjectURL(frame.src);
+                frame.src = '';
+            }
+            
+            modal.style.display = 'none';
+            document.getElementById('successModal').style.display = 'flex';
+        }
+        
+        function printReceipt() {
+            const frame = document.getElementById('receiptFrame');
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        }
+        
+        function base64ToBlob(base64, contentType) {
+            contentType = contentType || '';
+            const sliceSize = 1024;
+            const byteCharacters = atob(base64);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            
+            return new Blob(byteArrays, {type: contentType});
+        }
+        
+        function getCashierId() {
+            // Implement this to get the actual cashier ID
+            return 1; // Replace with your implementation
+        }
+        
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
