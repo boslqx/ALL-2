@@ -246,8 +246,7 @@ def add_employee():
 
         conn.commit()
 
-        # Generate proper registration URL
-        registration_url = url_for('register.register', token=token, _external=True)
+        registration_url = url_for('register.register_with_token', token=token, _external=True)
 
         try:
             msg = Message(
@@ -291,7 +290,7 @@ def add_employee():
 def send_registration_email(name, email, token, temp_password=None):
     try:
         subject = "Complete Your Account Registration"
-        registration_url = url_for('register.register', token=token, _external=True)
+        registration_url = url_for('register.register_with_token', token=token, _external=True)
 
         html = f"""
         <h2>Welcome to the System, {name}!</h2>
