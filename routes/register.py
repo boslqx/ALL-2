@@ -56,10 +56,13 @@ class RegisterView(MethodView):
 
 @register_bp.route('/set-password', methods=['GET', 'POST'])
 def set_password():
+    print("Set password route hit")  # Add this line
     if 'register_user_id' not in session:
+        print("No user ID in session")  # Add this line
         return redirect(url_for('login.login'))
 
     if request.method == 'POST':
+        print("POST request received")  # Add this line
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
