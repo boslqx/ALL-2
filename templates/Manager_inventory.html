@@ -3,74 +3,47 @@
 {% block title %}Inventory Report - Manager Dashboard{% endblock %}
 
 {% block content %}
-<div class="activity-logs-container">
-    <h2>Inventory Activity Log</h2>
-    <span id="log-status" class="status-message"></span>
+<div class="inventory-report-container">
+    <h2>Inventory Report</h2>
     
-    <!-- Enhanced Filter Options -->
-    <div class="activity-filter-options">
-        <div class="activity-filter-group">
-            <label for="action-filter">Action Type</label>
-            <select class="activity-filter-select" id="action-filter">
-                <option value="all">All Actions</option>
-                <option value="ADD_PRODUCT">Add Product</option>
-                <option value="UPDATE_STOCK">Stock Update</option>
-                <option value="EDIT_PRODUCT">Edit Product</option>
-                <option value="DELETE_PRODUCT">Delete Product</option>
+    <div class="report-filters">
+        <div class="filter-group">
+            <label for="category-filter">Category</label>
+            <select id="category-filter" class="report-filter-select">
+                <option value="all">All Categories</option>
+                <!-- Will be populated dynamically -->
             </select>
         </div>
-
-        <div class="activity-filter-group">
-            <label for="user-filter">User</label>
-            <select class="activity-filter-select" id="user-filter">
-                <option value="all">All Users</option>
-                <!-- Dynamically filled -->
+        
+        <div class="filter-group">
+            <label for="stock-filter">Stock Status</label>
+            <select id="stock-filter" class="report-filter-select">
+                <option value="all">All Items</option>
+                <option value="low">Low Stock (<10)</option>
+                <option value="out">Out of Stock</option>
+                <option value="sufficient">Sufficient Stock</option>
             </select>
         </div>
-
-        <div class="activity-filter-group">
-            <label for="role-filter">User Role</label>
-            <select class="activity-filter-select" id="role-filter">
-                <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="manager">Manager</option>
-                <option value="cashier">Cashier</option>
-            </select>
-        </div>
-
-        <div class="activity-filter-group">
-            <label for="date-from">From</label>
-            <input type="date" class="activity-filter-select" id="date-from">
-        </div>
-
-        <div class="activity-filter-group">
-            <label for="date-to">To</label>
-            <input type="date" class="activity-filter-select" id="date-to">
-        </div>
-
-        <div class="activity-filter-button-group">
-            <button class="activity-action-button" id="apply-filters">
-                <i class="fas fa-filter"></i> Apply
-            </button>
-            <button class="activity-action-button reset" id="reset-filters">
-                <i class="fas fa-redo"></i> Reset
-            </button>
-        </div>
+        
+        <button id="generate-report" class="report-button">
+            <i class="fas fa-file-export"></i> Generate Report
+        </button>
     </div>
-
-    <div class="log-table-container">
-        <table id="activity-logs-table">
+    
+    <div class="report-results">
+        <table id="inventory-report-table">
             <thead>
                 <tr>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Role</th>
-                    <th>Action</th>
-                    <th>Description</th>
+                    <th>Product ID</th>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Price</th>
+                    <th>Status</th>
                 </tr>
             </thead>
-            <tbody id="logs-body">
-                <!-- Logs will be loaded here dynamically -->
+            <tbody id="report-body">
+                <!-- Will be populated dynamically -->
             </tbody>
         </table>
     </div>
@@ -79,145 +52,87 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    let allUsers = [];
-
-    // Initialize
-    loadUsers().then(loadActivityLogs);
-
-    // Event Listeners
-    document.getElementById('apply-filters').addEventListener('click', loadActivityLogs);
-    document.getElementById('reset-filters').addEventListener('click', resetFilters);
-
-    async function loadUsers() {
-        try {
-            const response = await fetch('/manager/get-all-users');  // Changed endpoint
-            if (!response.ok) throw new Error('Failed to fetch users');
-            
-            allUsers = await response.json();
-            const userFilter = document.getElementById('user-filter');
-            userFilter.innerHTML = '<option value="all">All Users</option>';
-
-            allUsers.forEach(user => {
+document.addEventListener('DOMContentLoaded', function() {
+    // Load categories
+    fetch('/api/product-categories')
+        .then(response => response.json())
+        .then(categories => {
+            const select = document.getElementById('category-filter');
+            categories.forEach(category => {
                 const option = document.createElement('option');
-                option.value = user.UserID;
-                option.textContent = user.Name || user.Username || user.Email || `User ${user.UserID}`;
-                userFilter.appendChild(option);
+                option.value = category;
+                option.textContent = category;
+                select.appendChild(option);
             });
-        } catch (error) {
-            console.error('Failed to load users:', error);
-            // Show error message to user
-            document.getElementById('log-status').textContent = 'Error loading user list';
-        }
+        });
+    
+    // Generate report button handler
+    document.getElementById('generate-report').addEventListener('click', generateReport);
+    
+    function generateReport() {
+        const category = document.getElementById('category-filter').value;
+        const stockStatus = document.getElementById('stock-filter').value;
+        
+        // Show loading state
+        const tbody = document.getElementById('report-body');
+        tbody.innerHTML = '<tr><td colspan="6"><i class="fas fa-spinner fa-spin"></i> Loading inventory data...</td></tr>';
+        
+        // Build query params
+        const params = new URLSearchParams();
+        if (category !== 'all') params.append('category', category);
+        if (stockStatus !== 'all') params.append('stock', stockStatus);
+        
+        fetch(`/manager/inventory-report-data?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                renderReport(data);
+            })
+            .catch(error => {
+                tbody.innerHTML = `<tr><td colspan="6">Error loading report: ${error.message}</td></tr>`;
+            });
     }
-
-    async function loadActivityLogs() {
-        const tbody = document.getElementById('logs-body');
-        const statusElement = document.getElementById('log-status');
-        tbody.innerHTML = `
-            <tr class="loading-row">
-                <td colspan="5">
-                    <i class="fas fa-spinner fa-spin"></i> Loading activity logs...
-                </td>
-            </tr>
-        `;
-        statusElement.textContent = 'Fetching latest logs...';
-
-        const filters = {
-            action: document.getElementById('action-filter').value,
-            user: document.getElementById('user-filter').value,
-            role: document.getElementById('role-filter').value,
-            dateFrom: document.getElementById('date-from').value,
-            dateTo: document.getElementById('date-to').value
-        };
-
-        try {
-            const params = new URLSearchParams();
-            if (filters.action !== 'all') params.append('action', filters.action);
-            if (filters.user !== 'all') params.append('user', filters.user);
-            if (filters.role !== 'all') params.append('role', filters.role);
-            if (filters.dateFrom) params.append('from', filters.dateFrom);
-            if (filters.dateTo) params.append('to', filters.dateTo);
-
-            const response = await fetch(`/manager/activity-logs?${params.toString()}`);
-
-            if (!response.ok) throw new Error(`Server returned ${response.status}`);
-
-            const logs = await response.json();
-            if (logs.error) throw new Error(logs.error);
-
-            renderLogs(logs);
-            statusElement.textContent = `Loaded ${logs.length} activities`;
-        } catch (error) {
-            console.error('Error loading logs:', error);
-            tbody.innerHTML = `
-                <tr class="error-row">
-                    <td colspan="5">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        Error loading logs: ${error.message}
-                    </td>
-                </tr>
-            `;
-            statusElement.textContent = 'Failed to load logs';
-        }
-    }
-
-    function resetFilters() {
-        document.getElementById('action-filter').value = 'all';
-        document.getElementById('user-filter').value = 'all';
-        document.getElementById('role-filter').value = 'all';
-        document.getElementById('date-from').value = '';
-        document.getElementById('date-to').value = '';
-        loadActivityLogs();
-    }
-
-    function renderLogs(logs) {
-        const tbody = document.getElementById('logs-body');
+    
+    function renderReport(products) {
+        const tbody = document.getElementById('report-body');
         tbody.innerHTML = '';
-
-        if (!logs.length) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center; color: #7f8c8d;">
-                        No activity logs found
-                    </td>
-                </tr>
-            `;
+        
+        if (products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No products match the selected criteria</td></tr>';
             return;
         }
-
-        logs.forEach(log => {
+        
+        products.forEach(product => {
             const row = document.createElement('tr');
-
-            const timestamp = new Date(log.Timestamp).toLocaleString('en-US', {
-                month: 'short', day: 'numeric', year: 'numeric',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-
-            // Improved user display - show name if available, otherwise username
-            const userDisplay = log.UserName || log.Username || 'System';
-
+            
+            // Determine stock status
+            let status = '';
+            let statusClass = '';
+            if (product.StockQuantity <= 0) {
+                status = 'Out of Stock';
+                statusClass = 'status-out';
+            } else if (product.StockQuantity < 10) {
+                status = 'Low Stock';
+                statusClass = 'status-low';
+            } else {
+                status = 'In Stock';
+                statusClass = 'status-ok';
+            }
+            
             row.innerHTML = `
-                <td>${timestamp}</td>
-                <td>${userDisplay}</td>
-                <td>${log.Role || 'Unknown'}</td>
-                <td>${formatActionWithIcon(log.ActionType)}</td>
-                <td>${log.Description || 'No description available'}</td>
+                <td>${product.ProductID}</td>
+                <td>${product.ProductName}</td>
+                <td>${product.Category}</td>
+                <td>${product.StockQuantity}</td>
+                <td>$${product.Price.toFixed(2)}</td>
+                <td class="${statusClass}">${status}</td>
             `;
-
+            
             tbody.appendChild(row);
         });
     }
-
-    function formatActionWithIcon(actionType) {
-        const actions = {
-            'ADD_PRODUCT': '<i class="fas fa-plus-circle text-success"></i> Add Product',
-            'UPDATE_STOCK': '<i class="fas fa-boxes text-primary"></i> Stock Update',
-            'DELETE_PRODUCT': '<i class="fas fa-trash-alt text-danger"></i> Delete Product',
-            'EDIT_PRODUCT': '<i class="fas fa-edit text-warning"></i> Edit Product'
-        };
-        return actions[actionType] || actionType;
-    }
+    
+    // Load initial report
+    generateReport();
 });
 </script>
 {% endblock %}
