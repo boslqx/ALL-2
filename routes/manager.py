@@ -212,6 +212,7 @@ def get_all_users():
         if 'conn' in locals():
             conn.close()
 
+
 @manager_bp.route('/manager/add-employee', methods=['POST'])
 def add_employee():
     try:
@@ -229,6 +230,10 @@ def add_employee():
         expiry = datetime.utcnow() + timedelta(hours=24)
         temp_password = generate_temp_password()
 
+        # Hash the temporary password
+        from werkzeug.security import generate_password_hash
+        hashed_temp_password = generate_password_hash(temp_password)
+
         db_path = os.path.join(current_app.instance_path, 'site.db')
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -238,11 +243,11 @@ def add_employee():
         if cursor.fetchone():
             return jsonify({'error': 'Username or email already exists'}), 400
 
-        # Insert new employee with inactive status and temp password
+        # Insert new employee with inactive status and hashed temp password
         cursor.execute("""
             INSERT INTO User (Name, Username, Email, Role, Password, registration_token, token_expiry, IsActive)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (name, username, email, role, temp_password, token, expiry, False))
+        """, (name, username, email, role, hashed_temp_password, token, expiry, False))
 
         conn.commit()
 
