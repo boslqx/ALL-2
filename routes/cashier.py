@@ -56,7 +56,7 @@ def dashboard():
 
         time_threshold = datetime.utcnow() - timedelta(hours=4)
         cursor.execute("""
-            SELECT * FROM Transaction
+            SELECT * FROM "Transaction"
             WHERE Datetime >= ?
             ORDER BY Datetime DESC
             LIMIT 4
@@ -74,6 +74,7 @@ def dashboard():
         recent_transactions=recent_transactions,
         active_tab='dashboard'
     )
+
 
 
 @cashier_bp.route('/cashier/new-transaction')
