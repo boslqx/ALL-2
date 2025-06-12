@@ -8,6 +8,7 @@ from extensions import mail
 from flask import url_for
 from flask_mail import Message
 
+
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
 
 def send_account_email(name, email, username, password, role):
@@ -419,73 +420,117 @@ def get_products():
             conn.close()
 
 
+def get_db():
+    """Connect to the SQLite database"""
+    conn = sqlite3.connect('site.db')
+    conn.row_factory = sqlite3.Row  # Enable dictionary-style access
+    return conn
+
+
 @manager_bp.route('/manager/sales-data')
-def get_sales_data():
+def sales_data():
     try:
-        days = request.args.get('days', '30')
-        try:
-            days = int(days)
-        except ValueError:
-            days = 30
+        # Get date parameters
+        days = request.args.get('days')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
 
         db_path = os.path.join(current_app.instance_path, 'site.db')
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Get sales data by date
-        cursor.execute("""
+        # Build the date filter part of the query
+        date_filter = ""
+        params = []
+
+        if days:
+            # Use relative day filter (last X days)
+            date_filter = "WHERE t.Datetime >= DATE('now', ? || ' days')"
+            params = [f'-{days}']
+        elif start_date and end_date:
+            # Use absolute date range filter
+            date_filter = "WHERE DATE(t.Datetime) BETWEEN ? AND ?"
+            params = [start_date, end_date]
+        else:
+            # Default to last 30 days if no filter specified
+            date_filter = "WHERE t.Datetime >= DATE('now', '-30 days')"
+
+        # Get daily sales data from Transaction table
+        cursor.execute(f"""
             SELECT 
-                DATE(Sale.Timestamp) as sale_date,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
-                COUNT(DISTINCT Sale.SaleID) as transaction_count,
-                SUM(SaleItem.Quantity) as items_sold
-            FROM Sale
-            JOIN SaleItem ON Sale.SaleID = SaleItem.SaleID
-            WHERE Sale.Timestamp >= DATE('now', ? || ' days')
-            GROUP BY DATE(Sale.Timestamp)
-            ORDER BY sale_date DESC
-        """, (f'-{days}',))
+                DATE(t.Datetime) as sale_date,
+                SUM(t.TotalAmount) as total_sales,
+                COUNT(DISTINCT t.TransactionID) as transaction_count
+            FROM "Transaction" t
+            {date_filter}
+            GROUP BY DATE(t.Datetime)
+            ORDER BY sale_date
+        """, params)
+
         daily_sales = [dict(row) for row in cursor.fetchall()]
 
-        # Get top selling products
-        cursor.execute("""
+        # Calculate period totals
+        period_total = sum(day['total_sales'] for day in daily_sales)
+        period_transactions = sum(day['transaction_count'] for day in daily_sales)
+
+        # Get category sales data
+        cursor.execute(f"""
             SELECT 
-                Product.ProductName,
-                SUM(SaleItem.Quantity) as total_quantity,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_revenue
-            FROM SaleItem
-            JOIN Product ON SaleItem.ProductID = Product.ProductID
-            GROUP BY Product.ProductID
+                p.Category,
+                SUM(td.Quantity * td.Price) as total_sales,
+                SUM(td.Quantity) as items_sold
+            FROM TransactionDetails td
+            JOIN Product p ON td.ProductID = p.ProductID
+            JOIN "Transaction" t ON td.TransactionID = t.TransactionID
+            {date_filter}
+            GROUP BY p.Category
+            ORDER BY total_sales DESC
+        """, params)
+
+        category_sales = [dict(row) for row in cursor.fetchall()]
+
+        # Get top products
+        cursor.execute(f"""
+            SELECT 
+                p.ProductName,
+                SUM(td.Quantity) as total_quantity,
+                SUM(td.Quantity * td.Price) as total_revenue
+            FROM TransactionDetails td
+            JOIN Product p ON td.ProductID = p.ProductID
+            JOIN "Transaction" t ON td.TransactionID = t.TransactionID
+            {date_filter}
+            GROUP BY p.ProductID
             ORDER BY total_quantity DESC
             LIMIT 10
-        """)
+        """, params)
+
         top_products = [dict(row) for row in cursor.fetchall()]
 
-        # Get sales by category
-        cursor.execute("""
-            SELECT 
-                Product.Category,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
-                SUM(SaleItem.Quantity) as items_sold
-            FROM SaleItem
-            JOIN Product ON SaleItem.ProductID = Product.ProductID
-            GROUP BY Product.Category
-            ORDER BY total_sales DESC
-        """)
-        category_sales = [dict(row) for row in cursor.fetchall()]
+        # Calculate total items sold
+        total_items = sum(product['total_quantity'] for product in top_products)
 
         return jsonify({
             'daily_sales': daily_sales,
+            'category_sales': category_sales,
             'top_products': top_products,
-            'category_sales': category_sales
+            'period_total': period_total,
+            'period_transactions': period_transactions,
+            'total_items': total_items,
+            'date_filter': {
+                'start_date': start_date if start_date else None,
+                'end_date': end_date if end_date else None,
+                'days': days if days else None
+            }
         })
 
     except Exception as e:
+        current_app.logger.error(f"Error fetching sales data: {str(e)}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 @manager_bp.route('/manager/inventory-report-data')
 def inventory_report_data():
