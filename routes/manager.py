@@ -345,11 +345,46 @@ def get_employees():
         cursor.execute("""
             SELECT UserID, Name, Username, Email, Role, IsActive 
             FROM User 
-            WHERE Role = 'cashier'
+            WHERE Role != 'manager'
             ORDER BY Name
         """)
         return jsonify([dict(emp) for emp in cursor.fetchall()])
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/remove-employee', methods=['POST'])
+def remove_employee():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID is required'}), 400
+            
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # First check if the user exists and is not a manager
+        cursor.execute("SELECT Role FROM User WHERE UserID = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if user[0] == 'manager':
+            return jsonify({'error': 'Cannot remove manager accounts'}), 403
+            
+        # Delete the user
+        cursor.execute("DELETE FROM User WHERE UserID = ?", (user_id,))
+        conn.commit()
+        
+        return jsonify({'message': 'Employee removed successfully'})
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
