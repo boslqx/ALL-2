@@ -401,8 +401,8 @@ body {
 
 .btn-cancel {
     padding: 10px 15px;
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: #d62929;
+    color: white;
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
@@ -411,7 +411,7 @@ body {
 }
 
 .btn-cancel:hover {
-    background-color: #e0e0e0;
+    background-color: #a10e0e;
 }
 
 /* Responsive adjustments */
@@ -610,7 +610,7 @@ body {
 
 .action-button {
     padding: 8px 20px;
-    background-color: #4CAF50; /* Manager's medium blue */
+    background-color: #3498db; 
     color: white;
     border: none;
     border-radius: 4px;
@@ -625,7 +625,7 @@ body {
 }
 
 .action-button:hover {
-    background-color: #308034; /* Darker shade */
+    background-color: #16547e; 
 }
 
 /* Products grid */
@@ -1125,7 +1125,7 @@ body {
 }
 
 .btn-primary {
-    background-color: #4CAF50;
+    background-color: #2575fc;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -1136,7 +1136,7 @@ body {
 }
 
 .btn-primary:hover {
-    background-color: #45a049;
+    background-color: #11397e;
 }
 
 .message {

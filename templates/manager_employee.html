@@ -77,8 +77,8 @@
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Load employees when page loads
+document.addEventListener('DOMContentLoaded', function () {
+    // Load employees on page load
     loadEmployees();
 
     // Toggle employee form visibility
@@ -86,19 +86,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const employeeForm = document.getElementById('employee-form');
     const cancelBtn = document.getElementById('cancel-add-employee');
 
-    toggleFormBtn.addEventListener('click', function() {
-        employeeForm.style.display = employeeForm.style.display === 'none' ? 'block' : 'none';
-    });
+    if (toggleFormBtn && employeeForm) {
+        toggleFormBtn.addEventListener('click', function () {
+            employeeForm.style.display = employeeForm.style.display === 'none' ? 'block' : 'none';
+        });
+    }
 
-    cancelBtn.addEventListener('click', function() {
-        employeeForm.style.display = 'none';
-    });
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function () {
+            employeeForm.style.display = 'none';
+        });
+    }
 
-    // Employee form submission
+    // Form submission
     const addEmployeeForm = document.getElementById('addEmployeeForm');
     if (addEmployeeForm) {
-        addEmployeeForm.addEventListener('submit', async function(e) {
+        addEmployeeForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+
             const formData = {
                 name: document.getElementById('employeeName').value,
                 email: document.getElementById('employeeEmail').value,
@@ -112,6 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
+
                 const result = await response.json();
 
                 if (response.ok) {
@@ -127,48 +133,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Load employees when page loads
-    loadEmployees();
-
-    // Employee form submission
-    const addEmployeeForm = document.getElementById('addEmployeeForm');
-    if (addEmployeeForm) {
-        addEmployeeForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const formData = {
-                name: document.getElementById('employeeName').value,
-                email: document.getElementById('employeeEmail').value,
-                username: document.getElementById('employeeUsername').value,
-                role: document.getElementById('employeeRole').value
-            };
-
-            try {
-                const response = await fetch('/manager/add-employee', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                const result = await response.json();
-
-                if (response.ok) {
-                    showEmployeeMessage('Employee added successfully! Account details sent to their email.', 'success');
-                    addEmployeeForm.reset();
-                    loadEmployees();
-                } else {
-                    showEmployeeMessage(result.error || 'Failed to add employee', 'error');
-                }
-            } catch (error) {
-                showEmployeeMessage('Error: ' + error.message, 'error');
-            }
-        });
+    // Logout modal
+    if (typeof setupLogoutModal === 'function') {
+        setupLogoutModal();
     }
-
-    // Logout modal handling
-    setupLogoutModal();
 });
+
 
 async function loadEmployees() {
     try {
