@@ -13,7 +13,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.7);get
             color: white;
             padding: 10px 20px;
             border-radius: 5px;
@@ -354,13 +354,29 @@
         // Helper function to get product image URL
         function getProductImageUrl(imagePath) {
             if (!imagePath) return '/static/images/placeholder.png';
+            if (imagePath.includes('static/')) {
+                return imagePath;
+            }
             return `/static/product_image/${imagePath}`;
         }
 
-        // Render products to the page
+        
+        // Render products
         function renderProducts(products) {
             const productList = document.getElementById('product-list');
             
+            // Debug logging
+            console.group("Product Data Debug");
+            products.forEach(product => {
+                console.log("Product:", {
+                    id: product.ProductID,
+                    name: product.ProductName,
+                    image: product.Image,
+                    resolvedUrl: getProductImageUrl(product.Image)
+                });
+            });
+            console.groupEnd();
+
             if (products.length === 0) {
                 productList.innerHTML = `
                     <div class="no-products">
@@ -371,30 +387,36 @@
                 return;
             }
             
-            productList.innerHTML = products.map(product => `
-                <div class="product-card" data-id="${product.id}">
+            productList.innerHTML = products.map(product => {
+                const imageUrl = getProductImageUrl(product.Image);
+                console.log(`Rendering ${product.ProductName} with image: ${imageUrl}`);
+                
+                return `
+                <div class="product-card" data-id="${product.ProductID}">
                     <div class="product-image">
-                        <img src="${getProductImageUrl(product.image)}" 
-                            alt="${product.name}"
+                        <img src="${imageUrl}"
+                            alt="${product.ProductName}"
                             onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
                     </div>
                     <div class="product-info">
-                        <h3>${product.name}</h3>
-                        ${product.brand ? `<p class="product-brand">${product.brand}</p>` : ''}
+                        <div class="product-brand-name">
+                            <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                            <span class="product-name">${product.ProductName}</span>
+                        </div>
                         <div class="product-details">
-                            <span class="price">RM${product.price.toFixed(2)}</span>
-                            <span class="stock ${product.stock < 10 ? 'low-stock' : ''}">
-                                ${product.stock} in stock
+                            <span class="price">RM${product.Price.toFixed(2)}</span>
+                            <span class="stock ${product.StockQuantity < 10 ? 'low-stock' : ''}">
+                                ${product.StockQuantity} in stock
                             </span>
                         </div>
                     </div>
-                    <button class="select-button" onclick="addToCart(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price}, ${product.stock})">
+                    <button class="select-button" onclick="addToCart(${product.ProductID}, '${product.ProductName.replace(/'/g, "\\'")}', ${product.Price}, ${product.StockQuantity})">
                         <i class="fas fa-cart-plus"></i> Select
                     </button>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         }
-
         // Show loading spinner
         function showLoading() {
             document.getElementById('product-list').innerHTML = `
