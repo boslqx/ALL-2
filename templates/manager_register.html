@@ -1,0 +1,90 @@
+{% extends "manager_base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>Register New User</h1>
+</div>
+
+<div class="register-container">
+    <form id="registration-form">
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" name="role" required>
+                <option value="cashier">Cashier</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="submit-btn">Register User</button>
+    </form>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registration-form');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            username: document.getElementById('username').value,
+            role: document.getElementById('role').value
+        };
+        
+        fetch('/manager/add-employee', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                Swal.fire({
+                    title: 'Error',
+                    text: data.error,
+                    icon: 'error'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Success',
+                    text: data.message,
+                    icon: 'success'
+                });
+                form.reset();
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error',
+                text: 'Registration failed',
+                icon: 'error'
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

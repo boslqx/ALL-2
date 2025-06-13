@@ -109,6 +109,18 @@ def all_products():
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='All Products')
 
+@manager_bp.route('/manager/new-transaction')
+def new_transaction():
+    return render_template('manager_transaction.html',
+                         manager_name=get_manager_name(session.get('user_id')),
+                         active_tab='New Transaction')
+
+@manager_bp.route('/manager/register')
+def register_page():
+    return render_template('manager_register.html',
+                         manager_name=get_manager_name(session.get('user_id')),
+                         active_tab='Register')
+
 @manager_bp.route('/manager/activity-page')
 def activity_page():
     return render_template('manager_activity.html',
