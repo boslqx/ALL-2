@@ -140,35 +140,13 @@
             <button id="delete-button" class="action-button danger">
                 <i class="fas fa-trash"></i> Delete Product
             </button>
-            <button id="restock-button" class="action-button">
-                <i class="fas fa-boxes"></i> Restock
-            </button>
         </div>
     </div>
 </div>
 
-<!-- Restock Modal -->
-<div id="restockModal" class="restock-modal">
-  <div class="restock-modal-content">
-    <h3>Restock Product</h3>
-    <div class="restock-form-group">
-      <label>Enter Restock Amount:</label>
-      <input type="number" id="restockQuantity" min="1" step="1" 
-             class="restock-input" placeholder="Quantity">
-    </div>
-    <div class="restock-modal-buttons">
-      <button id="cancelRestock" class="btn restock-cancel-btn">Cancel</button>
-      <button id="confirmRestock" class="btn restock-confirm-btn">Save</button>
-    </div>
-  </div>
-</div>
-
-{% endblock %}
-
-{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const updateUrl = "{{ url_for('manager.update_product', product_id=product.ProductID) }}";
+    const updateUrl = "{{ url_for('admin.update_product', product_id=product.ProductID) }}";
     const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
 
     // DOM Elements
@@ -286,77 +264,54 @@ document.addEventListener('DOMContentLoaded', function () {
                     title: 'Success!',
                     text: 'Product changes saved successfully',
                     icon: 'success',
-                    confirmButtonText
-
-// Delete Product - prevent default form submission
-document.getElementById('delete-button').addEventListener('click', function (e) {
-    e.preventDefault(); // Add this line
-    Swal.fire({
-        title: 'Confirm Delete',
-        text: "This cannot be undone!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/manager/delete-product/{{ product.ProductID }}`, {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = "{{ url_for('manager.all_products') }}";
+                    confirmButtonText: 'OK'
+                });
+                if (data.new_image_url) {
+                    previewImg.src = data.new_image_url + '?t=' + new Date().getTime();
                 }
+                location.reload();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: error.message,
+                icon: 'error',
+                confirmButtonText: 'OK'
             });
         }
     });
-});
 
-// Restock Modal - prevent default behavior
-document.getElementById('confirmRestock').addEventListener('click', function(e) {
-    e.preventDefault(); // Add this line
-    const quantity = parseInt(document.getElementById('restockQuantity').value);
+    // Print QR Code
+    document.querySelector('.print-qr')?.addEventListener('click', function () {
+        window.open(`/print-qr/{{ product.ProductID }}`, '_blank');
+    });
 
-    if (!quantity || quantity < 1) {
-        Swal.fire('Error', 'Please enter a valid quantity', 'error');
-        return;
-    }
-
-    Swal.fire({
-        title: 'Confirm Restock?',
-        text: `You are adding ${quantity} items to inventory`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, proceed',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch('/manager/restock-product', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: {{ product.ProductID }},
-                    quantity: quantity
+    // Delete Product
+    document.getElementById('delete-button').addEventListener('click', function () {
+        Swal.fire({
+            title: 'Confirm Delete',
+            text: "This cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/delete-product/{{ product.ProductID }}`, {
+                    method: 'POST'
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire('Success!', 'Inventory updated', 'success').then(() => {
-                        document.getElementById('restockModal').style.display = 'none';
-                        document.getElementById('restockQuantity').value = '';
-                        location.reload(); // Only reload if you want to refresh the page
-                    });
-                } else {
-                    throw new Error(data.message || 'Update failed');
-                }
-            })
-            .catch(error => {
-                Swal.fire('Error', error.message, 'error');
-            });
-        }
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = "{{ url_for('admin.all_products') }}";
+                    }
+                });
+            }
+        });
     });
 });
 </script>
+
 {% endblock %}
