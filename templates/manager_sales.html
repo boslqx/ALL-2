@@ -581,5 +581,70 @@ function calculateGrowthRate(historical, forecast) {
 
     return ((forecastAvg - historicalAvg) / historicalAvg) * 100;
 }
+
+function updateMonthlySalesChart(dailyData) {
+    if (!monthlySalesChart) return;
+
+    // Group daily data by month
+    const monthlyData = Array(12).fill(0);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    dailyData.forEach(day => {
+        if (day.sale_date) {
+            const date = new Date(day.sale_date);
+            const month = date.getMonth();
+            monthlyData[month] += day.total_sales || 0;
+        }
+    });
+
+    monthlySalesChart.data.datasets[0].data = monthlyData;
+    monthlySalesChart.update();
+}
+
+// Initialize monthly chart with empty data
+function initMonthlyChart() {
+    const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+    monthlySalesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Sales (RM)',
+                data: Array(12).fill(0),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+// Initialize charts on page load
+initMonthlyChart();
 </script>
 {% endblock %}
+
