@@ -1226,3 +1226,50 @@ body {
         flex-grow: 1;
     }
 }
+/* Demand Forecasting Styles */
+.forecast-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.forecast-summary {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.forecast-metric {
+    text-align: center;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2a3f54;
+}
+
+/* Responsive adjustments for forecast section */
+@media (max-width: 768px) {
+    .forecast-options {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .forecast-summary {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

@@ -66,6 +66,47 @@
         <canvas id="monthlySalesChart"></canvas>
     </div>
 
+    <!-- Add Demand Forecasting Section -->
+    <div class="chart-card">
+        <h3>Demand Forecasting</h3>
+        <div class="forecast-options">
+            <div class="filter-group">
+                <label for="forecast-period">Forecast Period:</label>
+                <select id="forecast-period" class="filter-select">
+                    <option value="7">Next 7 Days</option>
+                    <option value="14" selected>Next 14 Days</option>
+                    <option value="30">Next 30 Days</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="forecast-method">Method:</label>
+                <select id="forecast-method" class="filter-select">
+                    <option value="moving-average">Moving Average</option>
+                    <option value="exponential-smoothing">Exponential Smoothing</option>
+                    <option value="linear-regression">Linear Regression</option>
+                </select>
+            </div>
+            <button id="generate-forecast" class="action-button">
+                <i class="fas fa-chart-line"></i> Generate Forecast
+            </button>
+        </div>
+        <canvas id="forecastChart"></canvas>
+        <div class="forecast-summary">
+            <div class="forecast-metric">
+                <span class="metric-label">Projected Revenue:</span>
+                <span class="metric-value" id="projected-revenue">RM0.00</span>
+            </div>
+            <div class="forecast-metric">
+                <span class="metric-label">Growth Rate:</span>
+                <span class="metric-value" id="growth-rate">0%</span>
+            </div>
+            <div class="forecast-metric">
+                <span class="metric-label">Confidence Level:</span>
+                <span class="metric-value" id="confidence-level">Medium</span>
+            </div>
+        </div>
+    </div>
+
     <div class="tables-container">
         <div class="table-card">
             <h3>Top Selling Products</h3>
@@ -88,8 +129,9 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
 <script>
-let dailySalesChart, categorySalesChart, monthlySalesChart;
+let dailySalesChart, categorySalesChart, monthlySalesChart, forecastChart;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize date inputs with today's date
@@ -105,6 +147,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     loadSalesData();
     document.getElementById('refresh-sales').addEventListener('click', loadSalesData);
+    document.getElementById('generate-forecast').addEventListener('click', generateForecast);
+
+    // Initialize forecast chart
+    initForecastChart();
 });
 
 function loadSalesData() {
@@ -144,8 +190,6 @@ function loadSalesData() {
         });
 }
 
-
-
 function renderSalesData(data) {
     // Update summary cards with accurate data
     const totalRevenue = data.period_total || 0;
@@ -157,7 +201,6 @@ function renderSalesData(data) {
     document.getElementById('total-transactions').textContent = totalTransactions;
     document.getElementById('total-items').textContent = totalItems;
     document.getElementById('avg-sale').textContent = `RM${avgSale.toFixed(2)}`;
-
 
     // Render charts
     renderDailySalesChart(data.daily_sales);
@@ -342,7 +385,201 @@ function initMonthlyChart() {
     });
 }
 
-// Initialize charts on page load
-initMonthlyChart();
+// Initialize forecast chart
+function initForecastChart() {
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Historical Sales',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    label: 'Forecast',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: RM${context.raw.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Generate forecast based on selected method
+function generateForecast() {
+    const period = parseInt(document.getElementById('forecast-period').value);
+    const method = document.getElementById('forecast-method').value;
+
+    // Get historical data from the daily sales chart
+    const historicalData = dailySalesChart.data.datasets[0].data;
+    const labels = dailySalesChart.data.labels;
+
+    if (!historicalData || historicalData.length === 0) {
+        alert('Please load sales data first');
+        return;
+    }
+
+    // Convert historical data to time series format
+    const timeSeries = historicalData.map((value, index) => ({
+        x: index,
+        y: value
+    }));
+
+    let forecastData = [];
+    let projectedRevenue = 0;
+    let growthRate = 0;
+    let confidenceLevel = "Medium";
+
+    // Apply selected forecasting method
+    switch(method) {
+        case 'moving-average':
+            forecastData = movingAverageForecast(historicalData, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData);
+            confidenceLevel = "High";
+            break;
+
+        case 'exponential-smoothing':
+            forecastData = exponentialSmoothingForecast(historicalData, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData);
+            confidenceLevel = "Medium";
+            break;
+
+        case 'linear-regression':
+            forecastData = linearRegressionForecast(timeSeries, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val.y, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData.map(d => d.y));
+            confidenceLevel = "Low";
+            break;
+    }
+
+    // Generate forecast dates
+    const lastDate = new Date(labels[labels.length - 1]);
+    const forecastDates = [];
+    for (let i = 1; i <= period; i++) {
+        const nextDate = new Date(lastDate);
+        nextDate.setDate(nextDate.getDate() + i);
+        forecastDates.push(nextDate.toISOString().split('T')[0]);
+    }
+
+    // Update forecast chart
+    forecastChart.data.labels = [...labels, ...forecastDates];
+    forecastChart.data.datasets[0].data = [...historicalData, ...Array(period).fill(null)];
+    forecastChart.data.datasets[1].data = [...Array(historicalData.length).fill(null), ...forecastData.map(d => d.y || d)];
+    forecastChart.update();
+
+    // Update forecast summary
+    document.getElementById('projected-revenue').textContent = `RM${projectedRevenue.toFixed(2)}`;
+    document.getElementById('growth-rate').textContent = `${growthRate.toFixed(2)}%`;
+    document.getElementById('confidence-level').textContent = confidenceLevel;
+}
+
+// Moving average forecast method
+function movingAverageForecast(data, period, windowSize = 3) {
+    if (data.length < windowSize) {
+        windowSize = data.length;
+    }
+
+    const forecast = [];
+    const lastWindow = data.slice(-windowSize);
+    const avg = lastWindow.reduce((sum, val) => sum + val, 0) / windowSize;
+
+    for (let i = 0; i < period; i++) {
+        forecast.push(avg);
+    }
+
+    return forecast;
+}
+
+// Exponential smoothing forecast method
+function exponentialSmoothingForecast(data, period, alpha = 0.3) {
+    if (data.length === 0) return [];
+
+    let forecast = [];
+    let lastSmoothed = data[0];
+
+    // Smooth the historical data
+    for (let i = 1; i < data.length; i++) {
+        lastSmoothed = alpha * data[i] + (1 - alpha) * lastSmoothed;
+    }
+
+    // Forecast future periods
+    for (let i = 0; i < period; i++) {
+        forecast.push(lastSmoothed);
+    }
+
+    return forecast;
+}
+
+// Linear regression forecast method
+function linearRegressionForecast(data, period) {
+    if (data.length < 2) return [];
+
+    const result = regression.linear(data);
+    const forecast = [];
+    const lastX = data[data.length - 1].x;
+
+    for (let i = 1; i <= period; i++) {
+        forecast.push({
+            x: lastX + i,
+            y: result.predict(lastX + i)[1]
+        });
+    }
+
+    return forecast;
+}
+
+// Calculate growth rate between historical and forecast data
+function calculateGrowthRate(historical, forecast) {
+    if (historical.length === 0 || forecast.length === 0) return 0;
+
+    const historicalAvg = historical.reduce((sum, val) => sum + val, 0) / historical.length;
+    const forecastAvg = forecast.reduce((sum, val) => sum + (val.y || val), 0) / forecast.length;
+
+    return ((forecastAvg - historicalAvg) / historicalAvg) * 100;
+}
 </script>
 {% endblock %}
