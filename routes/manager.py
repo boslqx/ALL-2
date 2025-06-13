@@ -420,21 +420,242 @@ def product_details(product_id):
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
-        result = cursor.fetchone()
-        if not result:
-            flash('Product not found', 'danger')
+        
+        cursor.execute("""
+            SELECT * FROM Product 
+            WHERE ProductID = ?
+        """, (product_id,))
+        
+        product = cursor.fetchone()
+        if not product:
+            flash('Product not found', 'error')
             return redirect(url_for('manager.all_products'))
+            
+        return render_template(
+            'manager_productdetails.html',
+            product=dict(product),
+            manager_name=get_manager_name(session.get('user_id'))
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching product: {str(e)}")
+        flash('Error loading product', 'error')
+        return redirect(url_for('manager.all_products'))
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
-        product = dict(result)
+@manager_bp.route('/manager/update-product/<int:product_id>', methods=['POST'])
+def update_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-        return render_template('manager_productdetails.html', product=product)
+        # Fetch old product data
+        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
+        old_product = cursor.fetchone()
+        if not old_product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        # Extract new form values
+        product_name = request.form['product_name']
+        category = request.form['category']
+        brand = request.form['brand']
+        price = request.form['price']
+        quantity = request.form['stock_quantity']
+
+        # Handle image upload or removal
+        image_filename = old_product['Image']
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            if file.filename and '.' in file.filename:
+                filename = secure_filename(file.filename)
+                upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = os.path.join(upload_dir, filename)
+                file.save(file_path)
+                image_filename = filename
+        elif 'remove_image' in request.form:
+            if image_filename:
+                try:
+                    os.remove(os.path.join(current_app.static_folder, 'product_image', image_filename))
+                except:
+                    pass
+                image_filename = None  # remove reference from DB
+
+        # Check if QR needs update
+        qr_needs_update = (
+            product_name != old_product['ProductName'] or
+            category != old_product['Category'] or
+            brand != old_product['ProductBrand'] or
+            price != str(old_product['Price'])  # compare as string to avoid float mismatch
+        )
+
+        # Generate new QR if needed
+        if qr_needs_update:
+            qr_data = (
+                f"Product ID: {product_id}\n"
+                f"Name: {product_name}\n"
+                f"Brand: {brand}\n"
+                f"Price: RM{float(price):.2f}"
+            )
+            qr = qrcode.make(qr_data)
+            buffered = BytesIO()
+            qr.save(buffered, format="PNG")
+            new_qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        else:
+            new_qr_base64 = old_product['QRcode']
+
+        # Update product
+        cursor.execute("""
+            UPDATE Product SET 
+                ProductName = ?, 
+                Category = ?, 
+                ProductBrand = ?, 
+                Price = ?, 
+                StockQuantity = ?, 
+                QRcode = ?, 
+                Image = ?
+            WHERE ProductID = ?
+        """, (product_name, category, brand, price, quantity, new_qr_base64, image_filename, product_id))
+        conn.commit()
+
+        # Log the product update activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='EDIT_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Updated product information: {product_name}"
+        )
+
+        return jsonify({
+            'success': True,
+            'message': 'Product updated successfully',
+            'new_qr_base64': new_qr_base64,
+            'new_image_url': f"/static/product_image/{image_filename}" if image_filename else None
+        })
 
     except Exception as e:
-        current_app.logger.error(f"Error fetching product: {e}")
-        flash('Error loading product', 'danger')
-        return redirect(url_for('manager.all_products'))
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/delete-product/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        # Fetch product name and brand before deletion
+        cursor.execute("SELECT ProductName, ProductBrand FROM Product WHERE ProductID = ?", (product_id,))
+        result = cursor.fetchone()
+        product_name = product_brand = "Unknown"
+
+        if result:
+            product_name, product_brand = result
+
+        # Delete the product
+        cursor.execute("DELETE FROM Product WHERE ProductID = ?", (product_id,))
+        conn.commit()
+
+        # Log the deletion activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='DELETE_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Deleted product {product_brand} {product_name} ID: {product_id}"
+        )
+
+        return jsonify({'success': True, 'message': 'Product deleted'})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/restock-product', methods=['POST'])
+def restock_product():
+    try:
+        data = request.get_json()
+        product_id = data.get('productId')
+        quantity = int(data.get('quantity', 0))
+
+        if not product_id or quantity < 1:
+            return jsonify({'success': False, 'message': 'Invalid product ID or quantity'}), 400
+
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        # Fetch current stock, product name, and brand
+        cursor.execute("""
+            SELECT StockQuantity, ProductName, ProductBrand
+            FROM Product
+            WHERE ProductID = ?
+        """, (product_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        current_stock, product_name, product_brand = result
+
+        # Update stock quantity
+        cursor.execute("""
+            UPDATE Product
+            SET StockQuantity = StockQuantity + ?
+            WHERE ProductID = ?
+        """, (quantity, product_id))
+        conn.commit()
+
+        # Get new quantity
+        cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
+        new_quantity = cursor.fetchone()[0]
+
+        # Log the restock activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='UPDATE_STOCK',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Restocked {quantity} units for {product_brand} {product_name} - New total: {new_quantity}"
+        )
+
+        return jsonify({'success': True, 'newQuantity': new_quantity})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+def log_activity(user_id, action_type, table_name, record_id, description):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            action_type,
+            table_name,
+            record_id,
+            description,
+            datetime.utcnow().isoformat()
+        ))
+
+        conn.commit()
+    except Exception as e:
+        current_app.logger.error(f"Failed to log activity: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @manager_bp.context_processor
 def inject_manager_name():

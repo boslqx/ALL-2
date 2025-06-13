@@ -226,6 +226,9 @@
                         <button class="action-button details-button" data-id="${product.ProductID}">
                             <i class="fas fa-eye"></i> View Details
                         </button>
+                        <button class="action-button restock-button" data-id="${product.ProductID}">
+                            <i class="fas fa-boxes"></i> Restock
+                        </button>
                     </div>
                 </div>
             </div>
@@ -234,6 +237,14 @@
         document.querySelectorAll('.details-button').forEach(button => {
             button.addEventListener('click', function() {
                 showProductDetails(this.getAttribute('data-id'));
+            });
+        });
+
+        // Restock button functionality
+        document.querySelectorAll('.restock-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const productId = this.getAttribute('data-id');
+                window.location.href = `/manager/product/${productId}`;
             });
         });
     }
