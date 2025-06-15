@@ -404,8 +404,122 @@ def generate_receipt(transaction_id, transaction_details, cashier_name):
         if 'conn' in locals():
             conn.close()
 
-
 @cashier_bp.route('/static/product_image/<filename>')
 def serve_product_image(filename):
     return send_from_directory(os.path.join(current_app.static_folder, 'product_image'), filename)
 
+# Cashier Activity Log
+@cashier_bp.route('/cashier/activity')
+def activity():
+    user_id = session.get('user_id')  # Get user_id from session
+    cashier_name = get_cashier_name(user_id)  # Pass user_id to the function
+    return render_template('cashier_activity.html', cashier_name=cashier_name)
+
+@cashier_bp.route('/admin/api/users')
+def get_cashier_users():
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # Only select users with Role = 'cashier'
+        cursor.execute("SELECT UserID, Username, Name FROM User WHERE Role = 'cashier'")
+        rows = cursor.fetchall()
+
+        users = []
+        for row in rows:
+            users.append({
+                'UserID': row['UserID'],
+                'Username': row['Username'],
+                'Name': row['Name']
+            })
+
+        return jsonify(users)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
+# Update activity logs endpoint
+@cashier_bp.route('/admin/activity-logs')
+def cashier_activity_logs():
+    try:
+        # Get filters
+        action_filter = request.args.get('action', 'all')
+        user_filter = request.args.get('user', 'all')
+        date_from = request.args.get('from')
+        date_to = request.args.get('to')
+        
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        query = """
+            SELECT 
+                A.Timestamp,
+                U.UserID,
+                COALESCE(U.Name, U.Username) AS UserName,
+                A.ActionType,
+                A.Description
+            FROM ActivityLog A
+            LEFT JOIN User U ON A.UserID = U.UserID
+            WHERE 1=1
+        """
+        params = []
+        
+        # Apply filters
+        if action_filter != 'all':
+            query += " AND A.ActionType = ?"
+            params.append(action_filter)
+            
+        if user_filter != 'all':
+            query += " AND A.UserID = ?"
+            params.append(user_filter)
+            
+        if date_from:
+            query += " AND DATE(A.Timestamp) >= ?"
+            params.append(date_from)
+            
+        if date_to:
+            query += " AND DATE(A.Timestamp) <= ?"
+            params.append(date_to)
+
+        query += " ORDER BY A.Timestamp DESC LIMIT 200"
+        
+        cursor.execute(query, params)
+        logs = [dict(row) for row in cursor.fetchall()]
+        return jsonify(logs)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+def log_activity(user_id, action_type, table_name, record_id, description):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            action_type,
+            table_name,
+            record_id,
+            description,
+            datetime.utcnow().isoformat()
+        ))
+
+        conn.commit()
+    except Exception as e:
+        current_app.logger.error(f"Failed to log activity: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()

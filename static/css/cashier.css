@@ -820,3 +820,171 @@ body {
 .receipt-actions .action-button i {
     font-size: 1rem;
 }
+
+/* Activity Logs Filter Section */
+.activity-filter-options {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 5px; /* Space for scrollbar */
+    padding-top: 40px;
+}
+
+.activity-filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.activity-filter-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    font-size: 0.8em;
+    color: #555;
+    white-space: nowrap;
+}
+
+.activity-filter-select {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9em;
+    width: 100%;
+    min-width: 120px;
+}
+
+/* Date picker specific styles */
+.activity-filter-group input[type="date"] {
+    padding: 7px 10px; /* Slightly different padding for date inputs */
+    height: 36px; /* Match select height */
+}
+
+/* Button group - slightly wider than allproducts version */
+.activity-filter-button-group {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+/* Modified button styles for activity logs */
+.activity-action-button {
+    padding: 8px 16px;
+    background-color: #3498db; /* Blue instead of green */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+.activity-action-button:hover {
+    background-color: #2980b9;
+}
+
+.activity-action-button.reset {
+    background-color: #95a5a6;
+}
+
+.activity-action-button.reset:hover {
+    background-color: #7f8c8d;
+}
+
+/* Scrollbar styling for filter options */
+.activity-filter-options::-webkit-scrollbar {
+    height: 6px;
+}
+
+.activity-filter-options::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+/* Activity Logs */
+.activity-logs-container {
+    padding: 25px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.log-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+#log-filter {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 14px;
+}
+
+.status-message {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.log-table-container {
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#activity-logs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#activity-logs-table th {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+#activity-logs-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ecf0f1;
+    color: #34495e;
+}
+
+#activity-logs-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+#activity-logs-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Loading state */
+.loading-row td {
+    text-align: center;
+    padding: 20px;
+    color: #7f8c8d;
+}
+
+/* Error state */
+.error-row td {
+    text-align: center;
+    padding: 20px;
+    color: #e74c3c;
+}
