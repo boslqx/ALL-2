@@ -46,13 +46,13 @@ def dashboard():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT * FROM StockAlert
+            SELECT StockAlert.*, Product.ProductName, Product.StockQuantity 
+            FROM StockAlert
             JOIN Product ON StockAlert.ProductID = Product.ProductID
             WHERE StockAlert.AlertStatus = 'Active'
             ORDER BY StockAlert.Timestamp DESC
             LIMIT 3
-        """
-        )
+        """)
         stock_alerts = cursor.fetchall()
 
         time_threshold = datetime.utcnow() - timedelta(hours=4)
@@ -61,8 +61,16 @@ def dashboard():
             WHERE Datetime >= ?
             ORDER BY Datetime DESC
             LIMIT 4
-        """, (time_threshold,))
+        """, (time_threshold.strftime('%Y-%m-%d %H:%M:%S'),))
         recent_transactions = cursor.fetchall()
+
+        # Convert string dates to datetime objects if needed
+        processed_transactions = []
+        for transaction in recent_transactions:
+            if isinstance(transaction['Datetime'], str):
+                transaction = dict(transaction)  # Convert to mutable dict
+                transaction['Datetime'] = datetime.strptime(transaction['Datetime'], '%Y-%m-%d %H:%M:%S')
+            processed_transactions.append(transaction)
 
     finally:
         if 'conn' in locals():
@@ -72,7 +80,7 @@ def dashboard():
         'cashier.html',
         cashier_name=cashier_name,
         stock_alerts=stock_alerts,
-        recent_transactions=recent_transactions,
+        recent_transactions=processed_transactions,
         active_tab='dashboard'
     )
 
@@ -212,9 +220,9 @@ def checkout():
                 return jsonify({'error': f'Not enough stock for product ID {item["productId"]}'}), 400
 
             cursor.execute("""
-                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
-                VALUES (?, ?, ?, ?, ?)
-            """, (transaction_id, item['productId'], item['quantity'], item['price'], item['price'] * item['quantity']))
+                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, Price)
+                VALUES (?, ?, ?, ?)
+            """, (transaction_id, item['productId'], item['quantity'], item['price']))
 
             cursor.execute("""
                 UPDATE Product SET StockQuantity = StockQuantity - ? WHERE ProductID = ?
@@ -270,10 +278,12 @@ def complete_transaction():
         cashier = cursor.fetchone()
         cashier_name = cashier['Name'] if cashier else "Unknown"
 
+        payment_method = data.get('paymentMethod', 'Cash')
+
         cursor.execute("""
             INSERT INTO "Transaction" (CashierID, Datetime, TotalAmount, PaymentMethod)
             VALUES (?, ?, ?, ?)
-        """, (user_id, datetime.utcnow(), data['totalAmount'], data.get('paymentMethod', 'Cash')))
+        """, (user_id, datetime.utcnow(), data['totalAmount'], payment_method))
         transaction_id = cursor.lastrowid
 
         details = []
@@ -290,9 +300,9 @@ def complete_transaction():
                 return jsonify({'error': f'Not enough stock for product ID {item["productId"]}'}), 400
 
             cursor.execute("""
-                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
-                VALUES (?, ?, ?, ?, ?)
-            """, (transaction_id, item['productId'], item['quantity'], item['price'], item['quantity'] * item['price']))
+                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, Price)
+                VALUES (?, ?, ?, ?)
+            """, (transaction_id, item['productId'], item['quantity'], item['price']))
 
             cursor.execute("""
                 UPDATE Product SET StockQuantity = StockQuantity - ? WHERE ProductID = ?
@@ -355,16 +365,17 @@ def generate_receipt(transaction_id, transaction_details, cashier_name):
         p.setFont("Helvetica", 12)
         p.drawString(1 * inch, height - 2.25 * inch, f"Date: {transaction['Datetime']}")
         p.drawString(1 * inch, height - 2.5 * inch, f"Cashier: {cashier_name}")
+        p.drawString(1 * inch, height - 2.75 * inch, f"Payment Method: {transaction['PaymentMethod']}")
 
-        p.line(1 * inch, height - 2.7 * inch, width - 1 * inch, height - 2.7 * inch)
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(1 * inch, height - 2.9 * inch, "Item")
-        p.drawString(4 * inch, height - 2.9 * inch, "Qty")
-        p.drawString(5 * inch, height - 2.9 * inch, "Price")
-        p.drawString(6.5 * inch, height - 2.9 * inch, "Total")
         p.line(1 * inch, height - 3 * inch, width - 1 * inch, height - 3 * inch)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(1 * inch, height - 3.2 * inch, "Item")
+        p.drawString(4 * inch, height - 3.2 * inch, "Qty")
+        p.drawString(5 * inch, height - 3.2 * inch, "Price")
+        p.drawString(6.5 * inch, height - 3.2 * inch, "Total")
+        p.line(1 * inch, height - 3.3 * inch, width - 1 * inch, height - 3.3 * inch)
 
-        y_position = height - 3.2 * inch
+        y_position = height - 3.5 * inch
         p.setFont("Helvetica", 10)
 
         subtotal = 0
