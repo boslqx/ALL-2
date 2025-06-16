@@ -51,7 +51,8 @@ def dashboard():
             WHERE StockAlert.AlertStatus = 'Active'
             ORDER BY StockAlert.Timestamp DESC
             LIMIT 3
-        """)
+        """
+        )
         stock_alerts = cursor.fetchall()
 
         time_threshold = datetime.utcnow() - timedelta(hours=4)
@@ -190,34 +191,34 @@ def checkout():
         cursor = conn.cursor()
 
         total_amount = sum(item['price'] * item['quantity'] for item in data['items'])
-        payment_method = data.get('payment_method', 'Cash')
+        payment_method = data.get('paymentMethod', 'Cash')
 
         cursor.execute("""
-            INSERT INTO "Transaction" (UserID, Datetime, TotalAmount, PaymentMethod)
+            INSERT INTO "Transaction" (CashierID, Datetime, TotalAmount, PaymentMethod)
             VALUES (?, ?, ?, ?)
         """, (user_id, datetime.utcnow(), total_amount, payment_method))
         transaction_id = cursor.lastrowid
 
         for item in data['items']:
-            cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (item['id'],))
+            cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (item['productId'],))
             product = cursor.fetchone()
 
             if not product:
                 conn.rollback()
-                return jsonify({'error': f'Product {item["id"]} not found'}), 404
+                return jsonify({'error': f'Product {item["productId"]} not found'}), 404
 
             if product['StockQuantity'] < item['quantity']:
                 conn.rollback()
-                return jsonify({'error': f'Not enough stock for {item["name"]}'}), 400
+                return jsonify({'error': f'Not enough stock for product ID {item["productId"]}'}), 400
 
             cursor.execute("""
                 INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
                 VALUES (?, ?, ?, ?, ?)
-            """, (transaction_id, item['id'], item['quantity'], item['price'], item['price'] * item['quantity']))
+            """, (transaction_id, item['productId'], item['quantity'], item['price'], item['price'] * item['quantity']))
 
             cursor.execute("""
                 UPDATE Product SET StockQuantity = StockQuantity - ? WHERE ProductID = ?
-            """, (item['quantity'], item['id']))
+            """, (item['quantity'], item['productId']))
 
         conn.commit()
 
@@ -270,9 +271,9 @@ def complete_transaction():
         cashier_name = cashier['Name'] if cashier else "Unknown"
 
         cursor.execute("""
-            INSERT INTO "Transaction" (UserID, Datetime, TotalAmount)
-            VALUES (?, ?, ?)
-        """, (user_id, datetime.utcnow(), data['totalAmount']))
+            INSERT INTO "Transaction" (CashierID, Datetime, TotalAmount, PaymentMethod)
+            VALUES (?, ?, ?, ?)
+        """, (user_id, datetime.utcnow(), data['totalAmount'], data.get('paymentMethod', 'Cash')))
         transaction_id = cursor.lastrowid
 
         details = []
