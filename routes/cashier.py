@@ -76,7 +76,6 @@ def dashboard():
     )
 
 
-
 @cashier_bp.route('/cashier/new-transaction')
 def new_transaction():
     user_id = session.get('user_id')
@@ -194,7 +193,7 @@ def checkout():
         payment_method = data.get('payment_method', 'Cash')
 
         cursor.execute("""
-            INSERT INTO Transaction (UserID, Datetime, TotalAmount, PaymentMethod)
+            INSERT INTO "Transaction" (UserID, Datetime, TotalAmount, PaymentMethod)
             VALUES (?, ?, ?, ?)
         """, (user_id, datetime.utcnow(), total_amount, payment_method))
         transaction_id = cursor.lastrowid
@@ -212,7 +211,7 @@ def checkout():
                 return jsonify({'error': f'Not enough stock for {item["name"]}'}), 400
 
             cursor.execute("""
-                INSERT INTO TransactionDetails (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
+                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
                 VALUES (?, ?, ?, ?, ?)
             """, (transaction_id, item['id'], item['quantity'], item['price'], item['price'] * item['quantity']))
 
@@ -271,7 +270,7 @@ def complete_transaction():
         cashier_name = cashier['Name'] if cashier else "Unknown"
 
         cursor.execute("""
-            INSERT INTO Transaction (UserID, Datetime, TotalAmount)
+            INSERT INTO "Transaction" (UserID, Datetime, TotalAmount)
             VALUES (?, ?, ?)
         """, (user_id, datetime.utcnow(), data['totalAmount']))
         transaction_id = cursor.lastrowid
@@ -290,7 +289,7 @@ def complete_transaction():
                 return jsonify({'error': f'Not enough stock for product ID {item["productId"]}'}), 400
 
             cursor.execute("""
-                INSERT INTO TransactionDetails (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
+                INSERT INTO "TransactionDetails" (TransactionID, ProductID, Quantity, UnitPrice, Subtotal)
                 VALUES (?, ?, ?, ?, ?)
             """, (transaction_id, item['productId'], item['quantity'], item['price'], item['quantity'] * item['price']))
 
@@ -325,12 +324,18 @@ def complete_transaction():
             conn.close()
 
 
+@cashier_bp.route('/static/product_image/<filename>')
+def serve_product_image(filename):
+    return send_from_directory(os.path.join(current_app.static_folder, 'product_image'), filename)
+
+
+# Fixed generate_receipt function
 def generate_receipt(transaction_id, transaction_details, cashier_name):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute("SELECT * FROM Transaction WHERE TransactionID = ?", (transaction_id,))
+        cursor.execute('SELECT * FROM "Transaction" WHERE TransactionID = ?', (transaction_id,))
         transaction = cursor.fetchone()
 
         buffer = BytesIO()
@@ -403,9 +408,3 @@ def generate_receipt(transaction_id, transaction_details, cashier_name):
     finally:
         if 'conn' in locals():
             conn.close()
-
-
-@cashier_bp.route('/static/product_image/<filename>')
-def serve_product_image(filename):
-    return send_from_directory(os.path.join(current_app.static_folder, 'product_image'), filename)
-
