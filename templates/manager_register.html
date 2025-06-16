@@ -1,4 +1,4 @@
-{% extends "admin_base.html" %}
+{% extends "manager_base.html" %}
 {% block content %}
 <div id="register" class="section">
     <div class="register-container">
@@ -62,7 +62,7 @@
                     <div class="form-group half-width">
                         <label for="price">Price (RM)</label>
                         <div class="input-with-icon">
-                            <span class="currency">RM</span>
+                            <span class="currency"></span>
                             <input type="number" id="price" step="0.01" placeholder="0.00">
                         </div>
                     </div>
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch('/register-container', {
+            const response = await fetch('/manager/register-product', {
                 method: 'POST',
                 body: formData
             });
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             return;
         }
-        window.open(`/print-qr/${lastSavedProductId}`, '_blank');
+        window.open(`/manager/print-qr/${lastSavedProductId}`, '_blank');
     });
 
     function validateForm() {

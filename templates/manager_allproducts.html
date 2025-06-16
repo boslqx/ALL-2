@@ -1,155 +1,208 @@
 {% extends "manager_base.html" %}
 
 {% block content %}
-<div class="products-container">
-    <div class="products-header">
-        <h2 class="products-title">Products</h2>
-        <div class="search-container">
-            <input type="text" placeholder="Search by brand or name..." class="search-input">
-            <button class="search-button">
-                <i class="fas fa-search"></i>
-            </button>
+ <div id="products" class="section">
+    <div class="products-container">
+        <!-- Header with title and search -->
+        <div class="products-header">
+            <h2 class="products-title">Products</h2>
+            <div class="search-container">
+                <input type="text" placeholder="Search by brand or name..." class="search-input">
+                <button class="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter options -->
+        <div class="filter-options">
+            <div class="filter-group">
+                <label for="category-filter">Category</label>
+                <select class="filter-select" id="category-filter">
+                    <option value="all">All Categories</option>
+                    <option value="Food & Beverages">Food & Beverages</option>
+                    <option value="Health & Personal">Health & Personal</option>
+                    <option value="Home & Living">Home & Living</option>
+                    <option value="Clothing & Accessories">Clothing & Accessories</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="brand-filter">Brand</label>
+                <select class="filter-select" id="brand-filter">
+                    <option value="default">Default</option>
+                    <option value="a-z">A-Z</option>
+                    <option value="z-a">Z-A</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="price-filter">Price</label>
+                <select class="filter-select" id="price-filter">
+                    <option value="default">Default</option>
+                    <option value="low-high">Low to High</option>
+                    <option value="high-low">High to Low</option>
+                </select>
+            </div>
+            
+            <div class="filter-group filter-button-group">
+                <button id="apply-filters" class="action-button">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Products will be loaded here dynamically -->
+        <div class="products-grid" id="products-grid">
+
         </div>
     </div>
-
-    <div class="filter-options">
-        <div class="filter-group">
-            <label for="category-filter">Category</label>
-            <select class="filter-select" id="category-filter">
-                <option value="all">All Categories</option>
-                <option value="Food & Beverages">Food & Beverages</option>
-                <option value="Health & Personal">Health & Personal</option>
-                <option value="Home & Living">Home & Living</option>
-                <option value="Clothing & Accessories">Clothing & Accessories</option>
-                <option value="Other">Other</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label for="brand-filter">Brand</label>
-            <select class="filter-select" id="brand-filter">
-                <option value="default">Default</option>
-                <option value="a-z">A-Z</option>
-                <option value="z-a">Z-A</option>
-            </select>
-        </div>
-
-        <div class="filter-group">
-            <label for="price-filter">Price</label>
-            <select class="filter-select" id="price-filter">
-                <option value="default">Default</option>
-                <option value="low-high">Low to High</option>
-                <option value="high-low">High to Low</option>
-            </select>
-        </div>
-
-        <div class="filter-group filter-button-group">
-            <button id="apply-filters" class="action-button">
-                <i class="fas fa-filter"></i> Apply Filters
-            </button>
-        </div>
-    </div>
-
-    <div class="products-grid" id="products-grid"></div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Restock Modal -->
+<div id="restockModal" class="restock-modal">
+  <div class="restock-modal-content">
+    <h3>Restock Product</h3>
+    <div class="restock-form-group">
+      <label>Enter Restock Amount:</label>
+      <input type="number" id="restockQuantity" min="1" step="1" 
+             class="restock-input" placeholder="Quantity">
+    </div>
+    <div class="restock-modal-buttons">
+      <button id="cancelRestock" class="btn restock-cancel-btn">Cancel</button>
+      <button id="confirmRestock" class="btn restock-confirm-btn">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
-    // Product management functions
-    let allProducts = [];
+document.addEventListener('DOMContentLoaded', function () {
+    const productsGrid = document.getElementById('products-grid');
+    let allProducts = []; // Store products for filtering
+    let currentRestockProductId = null;
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadProducts();
-        
-        // Product search and filter functionality
-        const searchInput = document.querySelector('.search-input');
-        const searchButton = document.querySelector('.search-button');
-        const applyFiltersBtn = document.getElementById('apply-filters');
+    const searchInput = document.querySelector('.search-input');
+    const searchButton = document.querySelector('.search-button');
 
-        if (searchButton) {
-            searchButton.addEventListener('click', performSearch);
-        }
+    // === INITIAL LOAD ===
+    loadProducts();
 
-        if (searchInput) {
-            searchInput.addEventListener('keyup', function(e) {
-                if (e.key === 'Enter') performSearch();
-            });
-        }
-
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', applyFilters);
-        }
+    // === FILTERS & SEARCH ===
+    document.getElementById('apply-filters').addEventListener('click', applyFilters);
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keyup', e => {
+        if (e.key === 'Enter') performSearch();
     });
+
+    // === RESTOCK MODAL LISTENERS (ONCE ONLY) ===
+    document.getElementById('cancelRestock')?.addEventListener('click', () => {
+        document.getElementById('restockModal').style.display = 'none';
+        document.getElementById('restockQuantity').value = '';
+    });
+
+    document.getElementById('confirmRestock')?.addEventListener('click', () => {
+        const quantity = parseInt(document.getElementById('restockQuantity').value);
+
+        if (!quantity || quantity < 1) {
+            Swal.fire('Error', 'Please enter a valid quantity', 'error');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Confirm Restock?',
+            text: `You are adding ${quantity} items to inventory`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, proceed',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/api/products/restock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productId: currentRestockProductId,
+                        quantity: quantity
+                    })
+                })
+                .then(handleResponse)
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Success!', 'Inventory updated', 'success').then(() => {
+                            document.getElementById('restockModal').style.display = 'none';
+                            document.getElementById('restockQuantity').value = '';
+                            loadProducts(); // Refresh product grid
+                        });
+                    } else {
+                        throw new Error(data.message || 'Update failed');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Error', error.message, 'error');
+                });
+            }
+        });
+    });
+
+    // === FUNCTIONS ===
+
+    function loadProducts() {
+        showLoading();
+        fetch('/api/products')
+            .then(handleResponse)
+            .then(products => {
+                allProducts = products;
+                renderProducts(products);
+            })
+            .catch(handleError);
+    }
 
     function performSearch() {
         applyFilters();
     }
 
     function applyFilters() {
-        showLoading('products-grid');
-        const searchTerm = document.querySelector('.search-input').value.trim().toLowerCase();
+        showLoading();
+        const searchTerm = searchInput.value.trim().toLowerCase();
         const categoryFilter = document.getElementById('category-filter').value;
         const brandFilter = document.getElementById('brand-filter').value;
         const priceFilter = document.getElementById('price-filter').value;
 
-        let filteredProducts = [...allProducts];
+        let filtered = [...allProducts];
 
         if (searchTerm) {
-            filteredProducts = filteredProducts.filter(product => {
-                const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
-                const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
-                return nameMatch || brandMatch;
-            });
+            filtered = filtered.filter(p =>
+                p.ProductName?.toLowerCase().includes(searchTerm) ||
+                p.ProductBrand?.toLowerCase().includes(searchTerm)
+            );
         }
 
         if (categoryFilter !== 'all') {
-            filteredProducts = filteredProducts.filter(product =>
-                product.Category && product.Category === categoryFilter
-            );
+            filtered = filtered.filter(p => p.Category === categoryFilter);
         }
 
-        // First sort by stock (low stock first)
-        filteredProducts.sort((a, b) => {
-            const aIsLowStock = (a.StockQuantity || 0) <= 5;
-            const bIsLowStock = (b.StockQuantity || 0) <= 5;
-            
-            // If both are low stock or both are not, maintain current order
-            if (aIsLowStock === bIsLowStock) return 0;
-            // Put low stock items first
-            return aIsLowStock ? -1 : 1;
-        });
-
-        // Then apply other sorts
         if (brandFilter === 'a-z') {
-            filteredProducts.sort((a, b) =>
-                (a.ProductBrand || '').localeCompare(b.ProductBrand || '')
-            );
+            filtered.sort((a, b) => (a.ProductBrand || '').localeCompare(b.ProductBrand || ''));
         } else if (brandFilter === 'z-a') {
-            filteredProducts.sort((a, b) =>
-                (b.ProductBrand || '').localeCompare(a.ProductBrand || '')
-            );
+            filtered.sort((a, b) => (b.ProductBrand || '').localeCompare(a.ProductBrand || ''));
         }
 
         if (priceFilter === 'low-high') {
-            filteredProducts.sort((a, b) => (a.Price || 0) - (b.Price || 0));
+            filtered.sort((a, b) => (a.Price || 0) - (b.Price || 0));
         } else if (priceFilter === 'high-low') {
-            filteredProducts.sort((a, b) => (b.Price || 0) - (a.Price || 0));
+            filtered.sort((a, b) => (b.Price || 0) - (a.Price || 0));
         }
 
-        renderProducts(filteredProducts);
+        renderProducts(filtered);
     }
 
-    function showLoading(elementId) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.innerHTML = `
-                <div class="loading-spinner">
-                    <i class="fas fa-spinner fa-spin"></i> Loading...
-                </div>
-            `;
-        }
+    function showLoading() {
+        productsGrid.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading products...
+            </div>
+        `;
     }
 
     function handleResponse(response) {
@@ -157,43 +210,27 @@
         return response.json();
     }
 
-    function handleError(error, elementId) {
+    function handleError(error) {
         console.error('Error:', error);
-        const element = document.getElementById(elementId);
-        if (element) {
-            element.innerHTML = `
-                <div class="error-message">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <p>Failed to load data. ${error.message}</p>
-                    <button class="retry-button">Retry</button>
-                </div>
-            `;
-            document.querySelector('.retry-button')?.addEventListener('click', loadProducts);
-        }
+        productsGrid.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load products. ${error.message}</p>
+                <button class="retry-button">Retry</button>
+            </div>
+        `;
+        document.querySelector('.retry-button')?.addEventListener('click', loadProducts);
+    }
+
+    function getProductImageUrl(imagePath) {
+        return imagePath ? `/static/product_image/${imagePath}` : '/static/images/placeholder.png';
     }
 
     function showProductDetails(productId) {
         window.location.href = `/manager/product/${productId}`;
     }
 
-    function loadProducts() {
-        showLoading('products-grid');
-        fetch('/api/products')
-            .then(handleResponse)
-            .then(products => {
-                allProducts = products;
-                // Apply initial sorting with low stock first
-                applyFilters(); // This will now handle the sorting
-            })
-            .catch(error => {
-                handleError(error, 'products-grid');
-            });
-    }
-
     function renderProducts(products) {
-        const productsGrid = document.getElementById('products-grid');
-        if (!productsGrid) return;
-
         if (products.length === 0) {
             productsGrid.innerHTML = `
                 <div class="no-products">
@@ -204,46 +241,66 @@
             return;
         }
 
-        productsGrid.innerHTML = products.map(product => `
-            <div class="product-card ${product.StockQuantity <= 5 ? 'low-stock' : ''}" data-id="${product.ProductID}">
-                <div class="product-image">
-                    <img src="${getProductImageUrl(product.Image)}"
-                        alt="${product.ProductName}"
-                        onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
-                </div>
-                <div class="product-info">
-                    <div class="product-brand-name">
-                        <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
-                        <span class="product-name">${product.ProductName}</span>
-                    </div>
-                    <div class="product-meta">
-                        <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
-                        <span class="product-stock ${product.StockQuantity <= 5 ? 'low-stock' : ''}">
-                            ${product.StockQuantity || 0} in stock
-                        </span>
-                    </div>
-                    <div class="product-actions">
-                        <button class="action-button details-button" data-id="${product.ProductID}">
-                            <i class="fas fa-eye"></i> View Details
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        // Sort products - low stock first
+        const sortedProducts = [...products].sort((a, b) => {
+            const aLowStock = (a.StockQuantity || 0) <= 5;
+            const bLowStock = (b.StockQuantity || 0) <= 5;
+            if (aLowStock && !bLowStock) return -1;
+            if (!aLowStock && bLowStock) return 1;
+            return 0;
+        });
 
+        productsGrid.innerHTML = sortedProducts.map(product => {
+            const isLowStock = (product.StockQuantity || 0) <= 5;
+            return `
+                <div class="product-card ${isLowStock ? 'low-stock' : ''}" data-id="${product.ProductID}">
+                    ${isLowStock ? '<div class="stock-warning"></div>' : ''}
+                    <div class="product-image">
+                        <img src="${getProductImageUrl(product.Image)}" 
+                            alt="${product.ProductName}"
+                            onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand-name">
+                            <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                            <span class="product-name">${product.ProductName}</span>
+                        </div>
+                        <div class="product-meta">
+                            <span class="product-price">RM${(product.Price || 0).toFixed(2)}</span>
+                            <span class="product-stock ${isLowStock ? 'text-danger' : ''}">
+                                ${product.StockQuantity || 0} in stock
+                                ${isLowStock ? ' <i class="fas fa-exclamation-circle"></i>' : ''}
+                            </span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="action-button details-button" data-id="${product.ProductID}">
+                                <i class="fas fa-info-circle"></i> Details
+                            </button>
+                            <button class="action-button restock-button" data-id="${product.ProductID}">
+                                <i class="fas fa-boxes"></i> Restock
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Attach buttons
         document.querySelectorAll('.details-button').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 showProductDetails(this.getAttribute('data-id'));
             });
         });
-    }
 
-    function getProductImageUrl(imagePath) {
-        if (!imagePath) return '/static/images/placeholder.png';
-        if (imagePath.includes('static/')) {
-            return imagePath;
-        }
-        return `/static/product_image/${imagePath}`;
+        document.querySelectorAll('.restock-button').forEach(button => {
+            button.addEventListener('click', function () {
+                currentRestockProductId = this.getAttribute('data-id');
+                document.getElementById('restockModal').style.display = 'flex';
+                document.getElementById('restockQuantity').focus();
+            });
+        });
     }
+});
 </script>
+
 {% endblock %}

@@ -7,71 +7,113 @@
         <a href="{{ url_for('manager.all_products') }}" class="back-button">
             <i class="fas fa-arrow-left"></i> Back to Products
         </a>
-
+        
         <h1 class="register-title">Product Details</h1>
-
+        
         <div class="register-card">
             <!-- Left Column - Image -->
             <div class="register-column image-column">
-                <div class="image-preview-container">
-                    {% if product.Image %}
-                        <img src="{{ url_for('static', filename='product_image/' + product.Image) }}"
+                <div class="upload-container">
+                    <div class="image-preview-container">
+                        <img src="{{ url_for('static', filename='product_image/' + product.Image) if product.Image else url_for('static', filename='images/placeholder.png') }}"
+                            id="preview-img"
                             class="preview-image"
-                            alt="Product Image">
-                    {% else %}
-                        <img src="{{ url_for('static', filename='images/placeholder.png') }}"
-                            class="preview-image"
-                            alt="Placeholder">
-                    {% endif %}
+                            alt="Product Preview">
+                        <div class="upload-overlay edit-mode" style="display: none;">
+                            <i class="fas fa-camera"></i>
+                            <span>Click to upload</span>
+                        </div>
+                    </div>
+                    <input type="file" id="image-upload" accept="image/*" hidden>
+                </div>
+
+                <div class="image-actions edit-mode" style="display: none;">
+                    <button class="action-button remove-image" {% if not product.Image %}disabled{% endif %}>
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
                 </div>
             </div>
-
-            <!-- Middle Column - Product Info -->
+            
+            <!-- Middle Column - Product Details -->
             <div class="register-column form-column">
                 <div class="form-header">
                     <h3>Product Information</h3>
                     <div class="form-divider"></div>
                 </div>
-
+                
+                <!-- Category -->
                 <div class="form-group">
                     <label>Category</label>
+                    <!-- View Mode -->
                     <div class="view-mode">{{ product.Category }}</div>
-                </div>
 
+                    <!-- Edit Mode -->
+                    <div class="edit-mode" style="display:none;">
+                        <select id="category" class="category-select">
+                            <option value="" disabled>Select a category</option>
+                            <option value="Food & Beverages" {% if product.Category == 'Food & Beverages' %}selected{% endif %}>Food & Beverages</option>
+                            <option value="Health & Personal" {% if product.Category == 'Health & Personal' %}selected{% endif %}>Health & Personal</option>
+                            <option value="Home & Living" {% if product.Category == 'Home & Living' %}selected{% endif %}>Home & Living</option>
+                            <option value="Clothing & Accessories" {% if product.Category == 'Clothing & Accessories' %}selected{% endif %}>Clothing & Accessories</option>
+                            <option value="Other" {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}selected{% endif %}>Other</option>
+                        </select>
+
+                        <!-- Custom "Other" Category Input -->
+                        <div class="other-category-container" style="display: {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}block{% else %}none{% endif %};">
+                            <input type="text" id="other-category" class="category-select" 
+                                value="{% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}{{ product.Category }}{% endif %}" 
+                                placeholder="Enter custom category">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Brand Name -->
                 <div class="form-group">
                     <label>Brand Name</label>
                     <div class="view-mode">{{ product.ProductBrand }}</div>
+                    <input type="text" id="brand" class="edit-mode" style="display:none;" 
+                           value="{{ product.ProductBrand }}">
                 </div>
-
+                
+                <!-- Product Name -->
                 <div class="form-group">
                     <label>Product Name</label>
                     <div class="view-mode">{{ product.ProductName }}</div>
+                    <input type="text" id="product" class="edit-mode" style="display:none;" 
+                           value="{{ product.ProductName }}">
                 </div>
-
+                
+                <!-- Price and Quantity -->
                 <div class="form-row">
                     <div class="form-group half-width">
                         <label>Price (RM)</label>
                         <div class="view-mode">RM{{ "%.2f"|format(product.Price) }}</div>
+                        <div class="input-with-icon edit-mode" style="display:none;">
+                            <span class="currency">RM</span>
+                            <input type="number" id="price" step="0.01" value="{{ product.Price }}">
+                        </div>
                     </div>
-
+                    
                     <div class="form-group half-width">
                         <label>Stock Quantity</label>
                         <div class="view-mode">{{ product.StockQuantity }}</div>
+                        <input type="number" id="quantity" class="edit-mode" style="display:none;" 
+                               value="{{ product.StockQuantity }}">
                     </div>
                 </div>
             </div>
-
+            
             <!-- Right Column - QR Code -->
             <div class="register-column qr-column">
                 <div class="qr-header">
                     <h3>QR Code</h3>
                     <div class="form-divider"></div>
                 </div>
-
                 <div class="qr-preview-container">
                     {% if product.QRcode %}
-                        <img src="data:image/png;base64,{{ product.QRcode }}"
-                             alt="Product QR Code">
+                        <img src="data:image/png;base64,{{ product.QRcode }}" 
+                             alt="Product QR Code"
+                             style="max-width:100%; height:auto;">
                     {% else %}
                         <div class="qr-placeholder">
                             <i class="fas fa-qrcode"></i>
@@ -79,8 +121,197 @@
                         </div>
                     {% endif %}
                 </div>
+                <div class="qr-actions">
+                    <button class="action-button print-qr" {% if not product.QRcode %}disabled{% endif %}>
+                        <i class="fas fa-print"></i> Print QR
+                    </button>
+                </div>
             </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="form-actions">
+            <button id="edit-button" class="action-button">
+                <i class="fas fa-edit"></i> Edit Product
+            </button>
+            <button id="save-button" class="action-button primary" style="display:none;">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button id="delete-button" class="action-button danger">
+                <i class="fas fa-trash"></i> Delete Product
+            </button>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const updateUrl = "{{ url_for('admin.update_product', product_id=product.ProductID) }}";
+    const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
+
+    // DOM Elements
+    const fileInput = document.getElementById('image-upload');
+    const previewImg = document.getElementById('preview-img');
+    const removeBtn = document.querySelector('.remove-image');
+    const uploadOverlay = document.querySelector('.upload-overlay.edit-mode');
+    const imagePreviewContainer = document.querySelector('.image-preview-container');
+    
+    // Initialize upload overlay state
+    if (uploadOverlay) {
+        uploadOverlay.style.display = 'none'; // Start hidden
+        uploadOverlay.style.cursor = 'pointer'; // Clickable when visible
+    }
+
+    document.getElementById('edit-button').addEventListener('click', function () {
+        // Toggle view/edit modes
+        document.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.edit-mode').forEach(el => el.style.display = 'block');
+
+        // Toggle buttons
+        this.style.display = 'none';
+        document.getElementById('save-button').style.display = 'inline-block';
+
+        // Activate upload overlay
+        if (uploadOverlay) {
+            uploadOverlay.style.display = 'flex';
+            imagePreviewContainer.style.pointerEvents = 'auto';
+        }
+
+        // Category "Other" toggle logic
+        document.getElementById('category')?.addEventListener('change', function () {
+            const otherContainer = document.querySelector('.other-category-container');
+            otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
+        });
+    });
+
+    // Click handler for image container
+    if (imagePreviewContainer) {
+        imagePreviewContainer.addEventListener('click', function(e) {
+            // Only trigger in edit mode when clicking overlay/empty space
+            if (uploadOverlay && uploadOverlay.style.display === 'flex' && 
+                (e.target === this || e.target === uploadOverlay || uploadOverlay.contains(e.target))) {
+                fileInput.click();
+            }
+        });
+    }
+
+    // File input change handler
+    fileInput?.addEventListener('change', function (e) {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = event => {
+                previewImg.src = event.target.result;
+                if (removeBtn) removeBtn.disabled = false;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    // Remove Image
+    removeBtn?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        Swal.fire({
+            title: 'Remove Image?',
+            text: "This will remove the product image",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Remove',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fileInput.value = '';
+                previewImg.src = placeholderImg;
+                this.disabled = true;
+                
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'remove_image';
+                hiddenInput.value = '1';
+                document.querySelector('.register-container').appendChild(hiddenInput);
+            }
+        });
+    });
+
+    // Save Changes
+    document.getElementById('save-button').addEventListener('click', async function () {
+        const formData = new FormData();
+        let category = document.getElementById('category').value;
+        if (category === 'Other') {
+            category = document.getElementById('other-category').value;
+        }
+
+        formData.append('product_name', document.getElementById('product').value);
+        formData.append('category', category);
+        formData.append('brand', document.getElementById('brand').value);
+        formData.append('price', document.getElementById('price').value);
+        formData.append('stock_quantity', document.getElementById('quantity').value);
+
+        if (fileInput.files[0]) {
+            formData.append('image', fileInput.files[0]);
+        } else if (document.querySelector('input[name="remove_image"]')) {
+            formData.append('remove_image', '1');
+        }
+
+        try {
+            const response = await fetch(updateUrl, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                await Swal.fire({
+                    title: 'Success!',
+                    text: 'Product changes saved successfully',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+                if (data.new_image_url) {
+                    previewImg.src = data.new_image_url + '?t=' + new Date().getTime();
+                }
+                location.reload();
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            Swal.fire({
+                title: 'Error!',
+                text: error.message,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+
+    // Print QR Code
+    document.querySelector('.print-qr')?.addEventListener('click', function () {
+        window.open(`/print-qr/{{ product.ProductID }}`, '_blank');
+    });
+
+    // Delete Product
+    document.getElementById('delete-button').addEventListener('click', function () {
+        Swal.fire({
+            title: 'Confirm Delete',
+            text: "This cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/delete-product/{{ product.ProductID }}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = "{{ url_for('admin.all_products') }}";
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+
 {% endblock %}

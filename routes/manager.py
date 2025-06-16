@@ -1,12 +1,19 @@
-from flask import Blueprint, render_template, session, current_app, request, jsonify, flash, redirect
+from flask import Blueprint, render_template, session, current_app, request, redirect, url_for, flash, jsonify, send_file, send_from_directory
 import sqlite3, os
 import secrets
 import string
 from datetime import datetime, timedelta
 import base64
 from extensions import mail
-from flask import url_for
 from flask_mail import Message
+from io import BytesIO
+import qrcode
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.utils import ImageReader
+import base64
+from reportlab.pdfgen import canvas
+from werkzeug.utils import secure_filename
+
 
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
 
@@ -107,6 +114,18 @@ def all_products():
     return render_template('manager_allproducts.html',
                          manager_name=get_manager_name(session.get('user_id')),
                          active_tab='All Products')
+
+@manager_bp.route('/manager/new-transaction')
+def new_transaction():
+    return render_template('manager_transaction.html',
+                         manager_name=get_manager_name(session.get('user_id')),
+                         active_tab='New Transaction')
+
+@manager_bp.route('/manager/register')
+def register_page():
+    return render_template('manager_register.html',
+                         manager_name=get_manager_name(session.get('user_id')),
+                         active_tab='Register')
 
 @manager_bp.route('/manager/activity-page')
 def activity_page():
@@ -344,11 +363,46 @@ def get_employees():
         cursor.execute("""
             SELECT UserID, Name, Username, Email, Role, IsActive 
             FROM User 
-            WHERE Role = 'cashier'
+            WHERE Role != 'manager'
             ORDER BY Name
         """)
         return jsonify([dict(emp) for emp in cursor.fetchall()])
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/remove-employee', methods=['POST'])
+def remove_employee():
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID is required'}), 400
+            
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # First check if the user exists and is not a manager
+        cursor.execute("SELECT Role FROM User WHERE UserID = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        if user[0] == 'manager':
+            return jsonify({'error': 'Cannot remove manager accounts'}), 403
+            
+        # Delete the user
+        cursor.execute("DELETE FROM User WHERE UserID = ?", (user_id,))
+        conn.commit()
+        
+        return jsonify({'message': 'Employee removed successfully'})
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -366,21 +420,242 @@ def product_details(product_id):
         conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
-        result = cursor.fetchone()
-        if not result:
-            flash('Product not found', 'danger')
+        
+        cursor.execute("""
+            SELECT * FROM Product 
+            WHERE ProductID = ?
+        """, (product_id,))
+        
+        product = cursor.fetchone()
+        if not product:
+            flash('Product not found', 'error')
             return redirect(url_for('manager.all_products'))
+            
+        return render_template(
+            'manager_productdetails.html',
+            product=dict(product),
+            manager_name=get_manager_name(session.get('user_id'))
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching product: {str(e)}")
+        flash('Error loading product', 'error')
+        return redirect(url_for('manager.all_products'))
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
-        product = dict(result)
+@manager_bp.route('/manager/update-product/<int:product_id>', methods=['POST'])
+def update_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
 
-        return render_template('manager_productdetails.html', product=product)
+        # Fetch old product data
+        cursor.execute("SELECT * FROM Product WHERE ProductID = ?", (product_id,))
+        old_product = cursor.fetchone()
+        if not old_product:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        # Extract new form values
+        product_name = request.form['product_name']
+        category = request.form['category']
+        brand = request.form['brand']
+        price = request.form['price']
+        quantity = request.form['stock_quantity']
+
+        # Handle image upload or removal
+        image_filename = old_product['Image']
+        if 'image' in request.files and request.files['image'].filename:
+            file = request.files['image']
+            if file.filename and '.' in file.filename:
+                filename = secure_filename(file.filename)
+                upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = os.path.join(upload_dir, filename)
+                file.save(file_path)
+                image_filename = filename
+        elif 'remove_image' in request.form:
+            if image_filename:
+                try:
+                    os.remove(os.path.join(current_app.static_folder, 'product_image', image_filename))
+                except:
+                    pass
+                image_filename = None  # remove reference from DB
+
+        # Check if QR needs update
+        qr_needs_update = (
+            product_name != old_product['ProductName'] or
+            category != old_product['Category'] or
+            brand != old_product['ProductBrand'] or
+            price != str(old_product['Price'])  # compare as string to avoid float mismatch
+        )
+
+        # Generate new QR if needed
+        if qr_needs_update:
+            qr_data = (
+                f"Product ID: {product_id}\n"
+                f"Name: {product_name}\n"
+                f"Brand: {brand}\n"
+                f"Price: RM{float(price):.2f}"
+            )
+            qr = qrcode.make(qr_data)
+            buffered = BytesIO()
+            qr.save(buffered, format="PNG")
+            new_qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+        else:
+            new_qr_base64 = old_product['QRcode']
+
+        # Update product
+        cursor.execute("""
+            UPDATE Product SET 
+                ProductName = ?, 
+                Category = ?, 
+                ProductBrand = ?, 
+                Price = ?, 
+                StockQuantity = ?, 
+                QRcode = ?, 
+                Image = ?
+            WHERE ProductID = ?
+        """, (product_name, category, brand, price, quantity, new_qr_base64, image_filename, product_id))
+        conn.commit()
+
+        # Log the product update activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='EDIT_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Updated product information: {product_name}"
+        )
+
+        return jsonify({
+            'success': True,
+            'message': 'Product updated successfully',
+            'new_qr_base64': new_qr_base64,
+            'new_image_url': f"/static/product_image/{image_filename}" if image_filename else None
+        })
 
     except Exception as e:
-        current_app.logger.error(f"Error fetching product: {e}")
-        flash('Error loading product', 'danger')
-        return redirect(url_for('manager.all_products'))
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/delete-product/<int:product_id>', methods=['POST'])
+def delete_product(product_id):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        # Fetch product name and brand before deletion
+        cursor.execute("SELECT ProductName, ProductBrand FROM Product WHERE ProductID = ?", (product_id,))
+        result = cursor.fetchone()
+        product_name = product_brand = "Unknown"
+
+        if result:
+            product_name, product_brand = result
+
+        # Delete the product
+        cursor.execute("DELETE FROM Product WHERE ProductID = ?", (product_id,))
+        conn.commit()
+
+        # Log the deletion activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='DELETE_PRODUCT',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Deleted product {product_brand} {product_name} ID: {product_id}"
+        )
+
+        return jsonify({'success': True, 'message': 'Product deleted'})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/restock-product', methods=['POST'])
+def restock_product():
+    try:
+        data = request.get_json()
+        product_id = data.get('productId')
+        quantity = int(data.get('quantity', 0))
+
+        if not product_id or quantity < 1:
+            return jsonify({'success': False, 'message': 'Invalid product ID or quantity'}), 400
+
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        # Fetch current stock, product name, and brand
+        cursor.execute("""
+            SELECT StockQuantity, ProductName, ProductBrand
+            FROM Product
+            WHERE ProductID = ?
+        """, (product_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+        current_stock, product_name, product_brand = result
+
+        # Update stock quantity
+        cursor.execute("""
+            UPDATE Product
+            SET StockQuantity = StockQuantity + ?
+            WHERE ProductID = ?
+        """, (quantity, product_id))
+        conn.commit()
+
+        # Get new quantity
+        cursor.execute("SELECT StockQuantity FROM Product WHERE ProductID = ?", (product_id,))
+        new_quantity = cursor.fetchone()[0]
+
+        # Log the restock activity
+        log_activity(
+            user_id=session.get('user_id'),
+            action_type='UPDATE_STOCK',
+            table_name='Product',
+            record_id=product_id,
+            description=f"Restocked {quantity} units for {product_brand} {product_name} - New total: {new_quantity}"
+        )
+
+        return jsonify({'success': True, 'newQuantity': new_quantity})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+def log_activity(user_id, action_type, table_name, record_id, description):
+    try:
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO ActivityLog (UserID, ActionType, TableAffected, RecordID, Description, Timestamp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            action_type,
+            table_name,
+            record_id,
+            description,
+            datetime.utcnow().isoformat()
+        ))
+
+        conn.commit()
+    except Exception as e:
+        current_app.logger.error(f"Failed to log activity: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @manager_bp.context_processor
 def inject_manager_name():
@@ -418,74 +693,280 @@ def get_products():
         if 'conn' in locals():
             conn.close()
 
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Register Product
+@manager_bp.route('/manager/register-product', methods=['GET', 'POST'])
+def register_product():
+    if request.method == 'GET':
+        return render_template('manager_register.html',
+                            manager_name=get_manager_name(session.get('user_id')),
+                            active_tab='Register')
+    
+    # POST handling (same as admin version)
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'message': 'Not authenticated'}), 401
+
+    # Validate required fields
+    required_fields = ['category', 'brand', 'product', 'price', 'quantity']
+    if not all(field in request.form for field in required_fields):
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+
+    try:
+        # Get form data
+        category = request.form['category']
+        if category == 'Other':
+            category = request.form.get('other-category', category)
+        brand = request.form['brand']
+        product_name = request.form['product']
+        price = float(request.form['price'])
+        quantity = int(request.form['quantity'])
+
+        # Handle image upload
+        image_filename = None
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                upload_dir = os.path.join(current_app.static_folder, 'product_image')
+                os.makedirs(upload_dir, exist_ok=True)
+                file.save(os.path.join(upload_dir, filename))
+                image_filename = filename
+
+        # Database operations
+        db_path = os.path.join(current_app.instance_path, 'site.db')
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # Insert product
+        cursor.execute("""
+            INSERT INTO Product 
+            (ProductName, Category, Price, StockQuantity, QRcode, Image, ProductBrand)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (product_name, category, price, quantity, None, image_filename, brand))
+
+        product_id = cursor.lastrowid
+
+        # Generate QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr_data = f"Product ID: {product_id}\nName: {product_name}\nBrand: {brand}\nPrice: RM{price:.2f}"
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        qr_code_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        # Update with QR code
+        cursor.execute("""
+            UPDATE Product SET QRcode = ? WHERE ProductID = ?
+        """, (qr_code_base64, product_id))
+
+        # Log activity
+        cursor.execute("""
+            INSERT INTO ActivityLog 
+            (UserID, ActionType, TableAffected, RecordID, Description)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            user_id,
+            'ADD_PRODUCT',
+            'Product',
+            product_id,
+            f"Added {product_name} (Brand: {brand}, Price: RM{price:.2f})"
+        ))
+
+        conn.commit()
+
+        return jsonify({
+            'success': True,
+            'product_id': product_id,
+            'qr_image_url': f"data:image/png;base64,{qr_code_base64}",
+            'message': 'Product registered successfully!'
+        })
+
+    except ValueError as e:
+        return jsonify({'success': False, 'message': f'Invalid data: {str(e)}'}), 400
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@manager_bp.route('/manager/print-qr/<product_id>')
+def print_qr(product_id):
+    try:
+        # Get product data from database
+        conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+        cursor = conn.cursor()
+        cursor.execute("SELECT ProductID, ProductName, ProductBrand, QRcode FROM Product WHERE ProductID = ?", (product_id,))
+        product = cursor.fetchone()
+        conn.close()
+        
+        if not product:
+            return "Product not found", 404
+
+        product_id, product_name, product_brand, qr_base64 = product
+
+        # Create PDF
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Add QR code image (centered)
+        qr_img = ImageReader(BytesIO(base64.b64decode(qr_base64)))
+        p.drawImage(qr_img, (width - 200) / 2, height - 300, width=200, height=200)
+
+        # Add Product ID above QR
+        p.setFont("Helvetica", 12)
+        p.drawCentredString(width / 2, height - 80, f"Product ID: {product_id}")
+
+        # Add Brand + Product Name
+        p.setFont("Helvetica-Bold", 14)
+        p.drawCentredString(width / 2, height - 320, f"{product_brand} - {product_name}")
+
+        # Footer message
+        p.setFont("Helvetica", 10)
+        p.drawCentredString(width / 2, 30, "Scan this QR code for product details")
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"{product_brand}_{product_name}_QR.pdf",
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        return str(e), 500
+
+
+def get_db():
+    """Connect to the SQLite database"""
+    conn = sqlite3.connect('site.db')
+    conn.row_factory = sqlite3.Row  # Enable dictionary-style access
+    return conn
+
 
 @manager_bp.route('/manager/sales-data')
-def get_sales_data():
+def sales_data():
     try:
-        days = request.args.get('days', '30')
-        try:
-            days = int(days)
-        except ValueError:
-            days = 30
+        # Get date parameters
+        days = request.args.get('days')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
 
         db_path = os.path.join(current_app.instance_path, 'site.db')
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # Get sales data by date
-        cursor.execute("""
+        # Build the date filter part of the query
+        date_filter = ""
+        params = []
+
+        if days:
+            # Use relative day filter (last X days)
+            date_filter = "WHERE t.Datetime >= DATE('now', ? || ' days')"
+            params = [f'-{days}']
+        elif start_date and end_date:
+            # Use absolute date range filter
+            date_filter = "WHERE DATE(t.Datetime) BETWEEN ? AND ?"
+            params = [start_date, end_date]
+        else:
+            # Default to last 30 days if no filter specified
+            date_filter = "WHERE t.Datetime >= DATE('now', '-30 days')"
+
+        # Get daily sales data from Transaction table
+        cursor.execute(f"""
             SELECT 
-                DATE(Sale.Timestamp) as sale_date,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
-                COUNT(DISTINCT Sale.SaleID) as transaction_count,
-                SUM(SaleItem.Quantity) as items_sold
-            FROM Sale
-            JOIN SaleItem ON Sale.SaleID = SaleItem.SaleID
-            WHERE Sale.Timestamp >= DATE('now', ? || ' days')
-            GROUP BY DATE(Sale.Timestamp)
-            ORDER BY sale_date DESC
-        """, (f'-{days}',))
+                DATE(t.Datetime) as sale_date,
+                SUM(t.TotalAmount) as total_sales,
+                COUNT(DISTINCT t.TransactionID) as transaction_count
+            FROM "Transaction" t
+            {date_filter}
+            GROUP BY DATE(t.Datetime)
+            ORDER BY sale_date
+        """, params)
+
         daily_sales = [dict(row) for row in cursor.fetchall()]
 
-        # Get top selling products
-        cursor.execute("""
+        # Calculate period totals
+        period_total = sum(day['total_sales'] for day in daily_sales)
+        period_transactions = sum(day['transaction_count'] for day in daily_sales)
+
+        # Get category sales data
+        cursor.execute(f"""
             SELECT 
-                Product.ProductName,
-                SUM(SaleItem.Quantity) as total_quantity,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_revenue
-            FROM SaleItem
-            JOIN Product ON SaleItem.ProductID = Product.ProductID
-            GROUP BY Product.ProductID
+                p.Category,
+                SUM(td.Quantity * td.Price) as total_sales,
+                SUM(td.Quantity) as items_sold
+            FROM TransactionDetails td
+            JOIN Product p ON td.ProductID = p.ProductID
+            JOIN "Transaction" t ON td.TransactionID = t.TransactionID
+            {date_filter}
+            GROUP BY p.Category
+            ORDER BY total_sales DESC
+        """, params)
+
+        category_sales = [dict(row) for row in cursor.fetchall()]
+
+        # Get top products
+        cursor.execute(f"""
+            SELECT 
+                p.ProductName,
+                SUM(td.Quantity) as total_quantity,
+                SUM(td.Quantity * td.Price) as total_revenue
+            FROM TransactionDetails td
+            JOIN Product p ON td.ProductID = p.ProductID
+            JOIN "Transaction" t ON td.TransactionID = t.TransactionID
+            {date_filter}
+            GROUP BY p.ProductID
             ORDER BY total_quantity DESC
             LIMIT 10
-        """)
+        """, params)
+
         top_products = [dict(row) for row in cursor.fetchall()]
 
-        # Get sales by category
-        cursor.execute("""
-            SELECT 
-                Product.Category,
-                SUM(SaleItem.Quantity * SaleItem.PriceAtSale) as total_sales,
-                SUM(SaleItem.Quantity) as items_sold
-            FROM SaleItem
-            JOIN Product ON SaleItem.ProductID = Product.ProductID
-            GROUP BY Product.Category
-            ORDER BY total_sales DESC
-        """)
-        category_sales = [dict(row) for row in cursor.fetchall()]
+        # Calculate total items sold
+        total_items = sum(product['total_quantity'] for product in top_products)
 
         return jsonify({
             'daily_sales': daily_sales,
+            'category_sales': category_sales,
             'top_products': top_products,
-            'category_sales': category_sales
+            'period_total': period_total,
+            'period_transactions': period_transactions,
+            'total_items': total_items,
+            'date_filter': {
+                'start_date': start_date if start_date else None,
+                'end_date': end_date if end_date else None,
+                'days': days if days else None
+            }
         })
 
     except Exception as e:
+        current_app.logger.error(f"Error fetching sales data: {str(e)}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'conn' in locals():
             conn.close()
+
 
 @manager_bp.route('/manager/inventory-report-data')
 def inventory_report_data():

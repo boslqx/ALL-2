@@ -7,20 +7,31 @@
     <h2>Sales Report</h2>
 
     <div class="report-filters">
-        <div class="filter-group">
-            <label for="time-period">Time Period:</label>
-            <select id="time-period" class="filter-select">
-                <option value="7">Last 7 Days</option>
-                <option value="30" selected>Last 30 Days</option>
-                <option value="90">Last 90 Days</option>
-                <option value="365">Last Year</option>
-            </select>
-        </div>
-        <button id="refresh-sales" class="action-button">
-            <i class="fas fa-sync-alt"></i> Refresh
-        </button>
+    <div class="filter-group">
+        <label for="date-range">Date Range:</label>
+        <select id="date-range" class="filter-select">
+            <option value="custom">Custom Range</option>
+            <option value="7">Last 7 Days</option>
+            <option value="30" selected>Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="365">Last Year</option>
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+        </select>
     </div>
 
+    <div class="filter-group" id="custom-date-filters" style="display: none;">
+        <label for="start-date">From:</label>
+        <input type="date" id="start-date" class="filter-select">
+
+        <label for="end-date">To:</label>
+        <input type="date" id="end-date" class="filter-select">
+    </div>
+
+    <button id="refresh-sales" class="action-button">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+</div>
     <div class="sales-summary">
         <div class="summary-card">
             <h3>Total Revenue</h3>
@@ -50,6 +61,51 @@
             <canvas id="categorySalesChart"></canvas>
         </div>
     </div>
+    <div class="chart-card">
+        <h3>Monthly Sales Trend</h3>
+        <canvas id="monthlySalesChart"></canvas>
+    </div>
+
+    <!-- Add Demand Forecasting Section -->
+    <div class="chart-card">
+        <h3>Demand Forecasting</h3>
+        <div class="forecast-options">
+            <div class="filter-group">
+                <label for="forecast-period">Forecast Period:</label>
+                <select id="forecast-period" class="filter-select">
+                    <option value="7">Next 7 Days</option>
+                    <option value="14" selected>Next 14 Days</option>
+                    <option value="30">Next 30 Days</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="forecast-method">Method:</label>
+                <select id="forecast-method" class="filter-select">
+                    <option value="moving-average">Moving Average</option>
+                    <option value="exponential-smoothing">Exponential Smoothing</option>
+                    <option value="linear-regression">Linear Regression</option>
+                </select>
+            </div>
+            <button id="generate-forecast" class="action-button">
+                <i class="fas fa-chart-line"></i> Generate Forecast
+            </button>
+        </div>
+        <canvas id="forecastChart"></canvas>
+        <div class="forecast-summary">
+            <div class="forecast-metric">
+                <span class="metric-label">Projected Revenue:</span>
+                <span class="metric-value" id="projected-revenue">RM0.00</span>
+            </div>
+            <div class="forecast-metric">
+                <span class="metric-label">Growth Rate:</span>
+                <span class="metric-value" id="growth-rate">0%</span>
+            </div>
+            <div class="forecast-metric">
+                <span class="metric-label">Confidence Level:</span>
+                <span class="metric-value" id="confidence-level">Medium</span>
+            </div>
+        </div>
+    </div>
 
     <div class="tables-container">
         <div class="table-card">
@@ -73,28 +129,54 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
 <script>
-let dailySalesChart, categorySalesChart;
+let dailySalesChart, categorySalesChart, monthlySalesChart, forecastChart;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Load sales data when page loads
+    // Initialize date inputs with today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('start-date').value = today;
+    document.getElementById('end-date').value = today;
+
+    // Toggle custom date inputs visibility
+    document.getElementById('date-range').addEventListener('change', function() {
+        const customDateFilters = document.getElementById('custom-date-filters');
+        customDateFilters.style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+
     loadSalesData();
+    document.getElementById('refresh-sales').addEventListener('click', loadSalesData);
+    document.getElementById('generate-forecast').addEventListener('click', generateForecast);
 
-    // Set up refresh button
-    const refreshSalesBtn = document.getElementById('refresh-sales');
-    if (refreshSalesBtn) {
-        refreshSalesBtn.addEventListener('click', loadSalesData);
-    }
-
-    // Logout modal handling
-    setupLogoutModal();
+    // Initialize forecast chart
+    initForecastChart();
 });
 
 function loadSalesData() {
-    showLoading('Sales Report');
-    const timePeriod = document.getElementById('time-period').value;
+    const dateRange = document.getElementById('date-range').value;
+    let url = '/manager/sales-data?';
 
-    fetch(`/manager/sales-data?days=${timePeriod}`)
+    if (dateRange === 'custom') {
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        url += `start_date=${startDate}&end_date=${endDate}`;
+    }
+    else if (dateRange === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        url += `start_date=${today}&end_date=${today}`;
+    }
+    else if (dateRange === 'yesterday') {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        url += `start_date=${yesterdayStr}&end_date=${yesterdayStr}`;
+    }
+    else {
+        url += `days=${dateRange}`;
+    }
+
+    fetch(url)
         .then(response => {
             if (!response.ok) throw new Error('Network response was not ok');
             return response.json();
@@ -104,15 +186,15 @@ function loadSalesData() {
         })
         .catch(error => {
             console.error('Error loading sales data:', error);
-            handleError(error, 'Sales Report');
+            document.getElementById('total-revenue').textContent = "Error";
         });
 }
 
 function renderSalesData(data) {
-    // Update summary cards
-    const totalRevenue = data.daily_sales.reduce((sum, day) => sum + day.total_sales, 0);
-    const totalTransactions = data.daily_sales.reduce((sum, day) => sum + day.transaction_count, 0);
-    const totalItems = data.daily_sales.reduce((sum, day) => sum + day.items_sold, 0);
+    // Update summary cards with accurate data
+    const totalRevenue = data.period_total || 0;
+    const totalTransactions = data.period_transactions || 0;
+    const totalItems = data.total_items || 0;
     const avgSale = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
     document.getElementById('total-revenue').textContent = `RM${totalRevenue.toFixed(2)}`;
@@ -120,52 +202,43 @@ function renderSalesData(data) {
     document.getElementById('total-items').textContent = totalItems;
     document.getElementById('avg-sale').textContent = `RM${avgSale.toFixed(2)}`;
 
-    // Render top products table
-    const topProductsBody = document.getElementById('topProductsBody');
-    topProductsBody.innerHTML = data.top_products.map(product => `
-        <tr>
-            <td>${product.ProductName}</td>
-            <td>${product.total_quantity}</td>
-            <td>RM${product.total_revenue.toFixed(2)}</td>
-        </tr>
-    `).join('');
-
-    // Initialize or update charts
-    renderCharts(data);
+    // Render charts
+    renderDailySalesChart(data.daily_sales);
+    renderCategorySalesChart(data.category_sales);
+    renderTopProducts(data.top_products);
+    updateMonthlySalesChart(data.daily_sales);
 }
 
-function renderCharts(data) {
-    const dailyCtx = document.getElementById('dailySalesChart').getContext('2d');
-    const categoryCtx = document.getElementById('categorySalesChart').getContext('2d');
+function renderDailySalesChart(dailyData) {
+    const ctx = document.getElementById('dailySalesChart').getContext('2d');
 
-    // Destroy existing charts if they exist
     if (dailySalesChart) dailySalesChart.destroy();
-    if (categorySalesChart) categorySalesChart.destroy();
 
-    // Daily sales chart (line chart)
-    dailySalesChart = new Chart(dailyCtx, {
+    dailySalesChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: data.daily_sales.map(day => day.sale_date),
+            labels: dailyData.map(day => day.sale_date),
             datasets: [{
                 label: 'Daily Sales (RM)',
-                data: data.daily_sales.map(day => day.total_sales),
+                data: dailyData.map(day => day.total_sales),
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 2,
-                tension: 0.1
+                tension: 0.1,
+                fill: true
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    position: 'top',
-                },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `RM${context.raw.toFixed(2)} (${data.daily_sales[context.dataIndex].transaction_count} transactions)`;
+                            const dayData = dailyData[context.dataIndex];
+                            return [
+                                `Sales: RM${context.raw.toFixed(2)}`,
+                                `Transactions: ${dayData.transaction_count || 0}`
+                            ];
                         }
                     }
                 }
@@ -177,25 +250,42 @@ function renderCharts(data) {
                         callback: function(value) {
                             return 'RM' + value;
                         }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
                     }
                 }
             }
         }
     });
+}
 
-    // Category sales chart (doughnut chart)
-    categorySalesChart = new Chart(categoryCtx, {
+function renderCategorySalesChart(categoryData) {
+    const ctx = document.getElementById('categorySalesChart').getContext('2d');
+
+    if (categorySalesChart) categorySalesChart.destroy();
+
+    categorySalesChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: data.category_sales.map(cat => cat.Category),
+            labels: categoryData.map(cat => cat.Category || 'Uncategorized'),
             datasets: [{
-                data: data.category_sales.map(cat => cat.total_sales),
+                data: categoryData.map(cat => cat.total_sales),
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.7)',
                     'rgba(54, 162, 235, 0.7)',
                     'rgba(255, 206, 86, 0.7)',
                     'rgba(75, 192, 192, 0.7)',
                     'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(199, 199, 199, 0.7)'
                 ],
                 borderWidth: 1
             }]
@@ -203,16 +293,17 @@ function renderCharts(data) {
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    position: 'right',
-                },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const category = data.category_sales[context.dataIndex];
+                            const category = categoryData[context.dataIndex];
                             const percentage = Math.round((category.total_sales /
-                                data.category_sales.reduce((sum, cat) => sum + cat.total_sales, 0)) * 100);
-                            return `${context.label}: RM${context.raw.toFixed(2)} (${percentage}%)`;
+                                categoryData.reduce((sum, cat) => sum + cat.total_sales, 0)) * 100);
+                            return [
+                                `${context.label}: RM${context.raw.toFixed(2)}`,
+                                `Percentage: ${percentage}%`,
+                                `Items sold: ${category.items_sold || 0}`
+                            ];
                         }
                     }
                 }
@@ -221,49 +312,339 @@ function renderCharts(data) {
     });
 }
 
-function showLoading(elementId) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i> Loading...
-            </div>
-        `;
-    }
+function renderTopProducts(products) {
+    const topProductsBody = document.getElementById('topProductsBody');
+    topProductsBody.innerHTML = products.length > 0
+        ? products.map(product => `
+            <tr>
+                <td>${product.ProductName || 'Unknown'}</td>
+                <td>${product.total_quantity || 0}</td>
+                <td>RM${(product.total_revenue || 0).toFixed(2)}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="3">No product data available</td></tr>';
 }
 
-function handleError(error, elementId) {
-    console.error('Error:', error);
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Failed to load data. ${error.message}</p>
-                <button class="retry-button">Retry</button>
-            </div>
-        `;
-        document.querySelector('.retry-button')?.addEventListener('click', () => {
-            if (elementId === 'Sales Report') loadSalesData();
-        });
-    }
+function updateMonthlySalesChart(dailyData) {
+    if (!monthlySalesChart) return;
+
+    // Group daily data by month
+    const monthlyData = Array(12).fill(0);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    dailyData.forEach(day => {
+        if (day.sale_date) {
+            const date = new Date(day.sale_date);
+            const month = date.getMonth();
+            monthlyData[month] += day.total_sales || 0;
+        }
+    });
+
+    monthlySalesChart.data.datasets[0].data = monthlyData;
+    monthlySalesChart.update();
 }
 
-function setupLogoutModal() {
-    const logoutBtn = document.querySelector('.logout a');
-    const logoutModal = document.getElementById('logoutModal');
-    const cancelLogout = document.getElementById('cancelLogout');
+// Initialize monthly chart with empty data
+function initMonthlyChart() {
+    const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+    monthlySalesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Sales (RM)',
+                data: Array(12).fill(0),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+}
 
-    if (logoutBtn && logoutModal && cancelLogout) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            logoutModal.style.display = 'flex';
-        });
+// Initialize forecast chart
+function initForecastChart() {
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Historical Sales',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: true
+                },
+                {
+                    label: 'Forecast',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: RM${context.raw.toFixed(2)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+}
 
-        cancelLogout.addEventListener('click', () => {
-            logoutModal.style.display = 'none';
+// Generate forecast based on selected method
+function generateForecast() {
+    const period = parseInt(document.getElementById('forecast-period').value);
+    const method = document.getElementById('forecast-method').value;
+
+    // Get historical data from the daily sales chart
+    const historicalData = dailySalesChart.data.datasets[0].data;
+    const labels = dailySalesChart.data.labels;
+
+    if (!historicalData || historicalData.length === 0) {
+        alert('Please load sales data first');
+        return;
+    }
+
+    // Convert historical data to time series format
+    const timeSeries = historicalData.map((value, index) => ({
+        x: index,
+        y: value
+    }));
+
+    let forecastData = [];
+    let projectedRevenue = 0;
+    let growthRate = 0;
+    let confidenceLevel = "Medium";
+
+    // Apply selected forecasting method
+    switch(method) {
+        case 'moving-average':
+            forecastData = movingAverageForecast(historicalData, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData);
+            confidenceLevel = "High";
+            break;
+
+        case 'exponential-smoothing':
+            forecastData = exponentialSmoothingForecast(historicalData, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData);
+            confidenceLevel = "Medium";
+            break;
+
+        case 'linear-regression':
+            forecastData = linearRegressionForecast(timeSeries, period);
+            projectedRevenue = forecastData.reduce((sum, val) => sum + val.y, 0);
+            growthRate = calculateGrowthRate(historicalData, forecastData.map(d => d.y));
+            confidenceLevel = "Low";
+            break;
+    }
+
+    // Generate forecast dates
+    const lastDate = new Date(labels[labels.length - 1]);
+    const forecastDates = [];
+    for (let i = 1; i <= period; i++) {
+        const nextDate = new Date(lastDate);
+        nextDate.setDate(nextDate.getDate() + i);
+        forecastDates.push(nextDate.toISOString().split('T')[0]);
+    }
+
+    // Update forecast chart
+    forecastChart.data.labels = [...labels, ...forecastDates];
+    forecastChart.data.datasets[0].data = [...historicalData, ...Array(period).fill(null)];
+    forecastChart.data.datasets[1].data = [...Array(historicalData.length).fill(null), ...forecastData.map(d => d.y || d)];
+    forecastChart.update();
+
+    // Update forecast summary
+    document.getElementById('projected-revenue').textContent = `RM${projectedRevenue.toFixed(2)}`;
+    document.getElementById('growth-rate').textContent = `${growthRate.toFixed(2)}%`;
+    document.getElementById('confidence-level').textContent = confidenceLevel;
+}
+
+// Moving average forecast method
+function movingAverageForecast(data, period, windowSize = 3) {
+    if (data.length < windowSize) {
+        windowSize = data.length;
+    }
+
+    const forecast = [];
+    const lastWindow = data.slice(-windowSize);
+    const avg = lastWindow.reduce((sum, val) => sum + val, 0) / windowSize;
+
+    for (let i = 0; i < period; i++) {
+        forecast.push(avg);
+    }
+
+    return forecast;
+}
+
+// Exponential smoothing forecast method
+function exponentialSmoothingForecast(data, period, alpha = 0.3) {
+    if (data.length === 0) return [];
+
+    let forecast = [];
+    let lastSmoothed = data[0];
+
+    // Smooth the historical data
+    for (let i = 1; i < data.length; i++) {
+        lastSmoothed = alpha * data[i] + (1 - alpha) * lastSmoothed;
+    }
+
+    // Forecast future periods
+    for (let i = 0; i < period; i++) {
+        forecast.push(lastSmoothed);
+    }
+
+    return forecast;
+}
+
+// Linear regression forecast method
+function linearRegressionForecast(data, period) {
+    if (data.length < 2) return [];
+
+    const result = regression.linear(data);
+    const forecast = [];
+    const lastX = data[data.length - 1].x;
+
+    for (let i = 1; i <= period; i++) {
+        forecast.push({
+            x: lastX + i,
+            y: result.predict(lastX + i)[1]
         });
     }
+
+    return forecast;
 }
+
+// Calculate growth rate between historical and forecast data
+function calculateGrowthRate(historical, forecast) {
+    if (historical.length === 0 || forecast.length === 0) return 0;
+
+    const historicalAvg = historical.reduce((sum, val) => sum + val, 0) / historical.length;
+    const forecastAvg = forecast.reduce((sum, val) => sum + (val.y || val), 0) / forecast.length;
+
+    return ((forecastAvg - historicalAvg) / historicalAvg) * 100;
+}
+
+function updateMonthlySalesChart(dailyData) {
+    if (!monthlySalesChart) return;
+
+    // Group daily data by month
+    const monthlyData = Array(12).fill(0);
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    dailyData.forEach(day => {
+        if (day.sale_date) {
+            const date = new Date(day.sale_date);
+            const month = date.getMonth();
+            monthlyData[month] += day.total_sales || 0;
+        }
+    });
+
+    monthlySalesChart.data.datasets[0].data = monthlyData;
+    monthlySalesChart.update();
+}
+
+// Initialize monthly chart with empty data
+function initMonthlyChart() {
+    const ctx = document.getElementById('monthlySalesChart').getContext('2d');
+    monthlySalesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Sales (RM)',
+                data: Array(12).fill(0),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'RM' + value;
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Sales Amount (RM)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Month'
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+// Initialize charts on page load
+initMonthlyChart();
 </script>
 {% endblock %}
+

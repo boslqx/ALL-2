@@ -8,6 +8,8 @@ import re
 from datetime import datetime, timedelta
 from flask_mail import Message
 from extensions import mail
+from werkzeug.security import check_password_hash
+
 
 login_bp = Blueprint('login', __name__, template_folder='../templates')
 
@@ -22,7 +24,7 @@ class LoginView(MethodView):
 
         user = User.query.filter_by(Email=email).first()
 
-        if user and user.Password == password:
+        if user and check_password_hash(user.Password, password):  # 🔒 Secure check
             session['user_id'] = user.UserID
             session['role'] = user.Role
 
@@ -36,7 +38,7 @@ class LoginView(MethodView):
                 flash('Unknown role!', 'danger')
                 return redirect(url_for('login.login'))
         else:
-            flash('Invalid username or password.', 'danger')
+            flash('Invalid email or password.', 'danger')
             return redirect(url_for('login.login'))
 
 
