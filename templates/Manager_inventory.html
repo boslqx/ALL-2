@@ -5,7 +5,7 @@
 {% block content %}
 <div class="inventory-report-container">
     <h2>Inventory Report</h2>
-    
+
     <div class="report-filters">
         <div class="filter-group">
             <label for="category-filter">Category</label>
@@ -14,7 +14,7 @@
                 <!-- Will be populated dynamically -->
             </select>
         </div>
-        
+
         <div class="filter-group">
             <label for="stock-filter">Stock Status</label>
             <select id="stock-filter" class="report-filter-select">
@@ -24,12 +24,12 @@
                 <option value="sufficient">Sufficient Stock</option>
             </select>
         </div>
-        
+
         <button id="generate-report" class="report-button">
             <i class="fas fa-file-export"></i> Generate Report
         </button>
     </div>
-    
+
     <div class="report-results">
         <table id="inventory-report-table">
             <thead>
