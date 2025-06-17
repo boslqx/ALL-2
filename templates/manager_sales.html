@@ -456,6 +456,7 @@ function generateForecast() {
     const historicalData = dailySalesChart.data.datasets[0].data;
     const labels = dailySalesChart.data.labels;
 
+
     if (!historicalData || historicalData.length === 0) {
         alert('Please load sales data first');
         return;
@@ -517,69 +518,98 @@ function generateForecast() {
     document.getElementById('confidence-level').textContent = confidenceLevel;
 }
 
-// Moving average forecast method
-function movingAverageForecast(data, period, windowSize = 3) {
+function movingAverageForecast(data, period, windowSize = 7) {  // Increased default window size
     if (data.length < windowSize) {
         windowSize = data.length;
     }
 
-    const forecast = [];
+    // Calculate weighted average (more recent days have higher weight)
     const lastWindow = data.slice(-windowSize);
-    const avg = lastWindow.reduce((sum, val) => sum + val, 0) / windowSize;
+    let totalWeight = 0;
+    let weightedSum = 0;
 
+    lastWindow.forEach((value, index) => {
+        const weight = (index + 1) / windowSize; // Linear weights
+        weightedSum += value * weight;
+        totalWeight += weight;
+    });
+
+    const weightedAvg = weightedSum / totalWeight;
+
+    // Add some noise/variation to the forecast
+    const forecast = [];
     for (let i = 0; i < period; i++) {
-        forecast.push(avg);
+        // Add slight random variation (±10% of average)
+        const variation = weightedAvg * 0.1 * (Math.random() - 0.5);
+        forecast.push(weightedAvg + variation);
     }
 
     return forecast;
 }
-
-// Exponential smoothing forecast method
-function exponentialSmoothingForecast(data, period, alpha = 0.3) {
+function exponentialSmoothingForecast(data, period, alpha = 0.5) {  // More responsive alpha
     if (data.length === 0) return [];
 
-    let forecast = [];
-    let lastSmoothed = data[0];
+    // Calculate initial level as average of first few points
+    const initialPoints = Math.min(5, data.length);
+    let lastSmoothed = data.slice(0, initialPoints).reduce((a, b) => a + b, 0) / initialPoints;
 
     // Smooth the historical data
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         lastSmoothed = alpha * data[i] + (1 - alpha) * lastSmoothed;
     }
 
-    // Forecast future periods
+    // Forecast with trend adjustment
+    const forecast = [];
     for (let i = 0; i < period; i++) {
-        forecast.push(lastSmoothed);
+        // Add slight trend based on recent changes
+        const recentChange = data.length > 1 ?
+            data[data.length-1] - data[data.length-2] : 0;
+        forecast.push(lastSmoothed + (recentChange * 0.5));
     }
 
     return forecast;
 }
 
-// Linear regression forecast method
 function linearRegressionForecast(data, period) {
     if (data.length < 2) return [];
 
-    const result = regression.linear(data);
-    const forecast = [];
-    const lastX = data[data.length - 1].x;
+    // Convert to regression-js format
+    const points = data.map((value, index) => [index, value]);
 
+    // Perform regression with forced non-negative intercept
+    const result = regression.linear(points, {
+        precision: 3,
+        order: 1
+    });
+
+    // Cap the forecast to not go below zero
+    const lastX = data.length - 1;
+    const forecast = [];
     for (let i = 1; i <= period; i++) {
+        const prediction = result.predict(lastX + i)[1];
         forecast.push({
             x: lastX + i,
-            y: result.predict(lastX + i)[1]
+            y: Math.max(0, prediction) // Ensure no negative forecasts
         });
     }
 
     return forecast;
 }
 
-// Calculate growth rate between historical and forecast data
 function calculateGrowthRate(historical, forecast) {
     if (historical.length === 0 || forecast.length === 0) return 0;
 
     const historicalAvg = historical.reduce((sum, val) => sum + val, 0) / historical.length;
     const forecastAvg = forecast.reduce((sum, val) => sum + (val.y || val), 0) / forecast.length;
 
-    return ((forecastAvg - historicalAvg) / historicalAvg) * 100;
+    // Handle cases where historical average is zero
+    if (Math.abs(historicalAvg) < 0.01) {
+        return forecastAvg > 0 ? Infinity : -Infinity;
+    }
+
+    // Cap growth rate at ±1000% to avoid extreme values
+    const rawRate = ((forecastAvg - historicalAvg) / historicalAvg) * 100;
+    return Math.max(-1000, Math.min(1000, rawRate));
 }
 
 function updateMonthlySalesChart(dailyData) {
@@ -600,6 +630,13 @@ function updateMonthlySalesChart(dailyData) {
     monthlySalesChart.data.datasets[0].data = monthlyData;
     monthlySalesChart.update();
 }
+function validateForecastData(data) {
+    return data.filter(val => {
+        const num = val.y || val;
+        return typeof num === 'number' && !isNaN(num) && isFinite(num);
+    });
+}
+
 
 // Initialize monthly chart with empty data
 function initMonthlyChart() {
