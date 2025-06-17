@@ -7,132 +7,102 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Additional styles for checkout page */
-        .checkout-content {
-            padding: 20px;
+        /* POS-specific styles */
+        .checkout-container {
             display: flex;
-            flex-direction: column;
-            height: calc(100vh - 40px);
-        }
-
-        .checkout-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .checkout-header h1 {
-            font-size: 1.5rem;
-            margin: 0;
-        }
-
-        .checkout-body {
-            display: flex;
-            flex: 1;
+            height: calc(100vh - 80px);
             gap: 20px;
-            overflow: hidden;
+            padding: 20px;
         }
 
-        /* Order Items */
-        .order-items {
+        /* Order Items Panel */
+        .order-panel {
             flex: 1;
             background: white;
             border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 15px;
             overflow-y: auto;
         }
 
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-        }
-
-        .item-info h3 {
-            font-size: 1rem;
-            margin-bottom: 5px;
-        }
-
-        .item-info p {
-            font-size: 0.9rem;
-            color: #666;
-            margin: 3px 0;
-        }
-
-        .item-price {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .divider {
-            height: 1px;
-            background-color: #eee;
-            margin: 10px 0;
-        }
-
-        /* Payment Method */
-        .payment-method {
-            flex: 1;
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            overflow-y: auto;
-        }
-
-        .payment-method h2 {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
+        .order-panel h2 {
+            margin-top: 0;
             padding-bottom: 10px;
             border-bottom: 1px solid #eee;
         }
 
-        .payment-options {
+        .cart-item {
             display: flex;
-            flex-direction: column;
-            gap: 15px;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
         }
 
-        .payment-option {
-            border: 1px solid #ddd;
-            border-radius: 6px;
+        .item-info {
+            flex: 1;
+        }
+
+        .item-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .item-price {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .item-total {
+            font-weight: 600;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Payment Method Panel */
+        .payment-panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
         }
 
-        .payment-option.active {
-            border-color: #1abc9c;
-            background-color: rgba(26, 188, 156, 0.05);
+        .payment-panel h2 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
         }
 
-        .payment-option:hover {
-            border-color: #bbb;
-        }
-
-        .option-header {
+        .payment-method {
             display: flex;
             align-items: center;
             gap: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             margin-bottom: 10px;
+            cursor: pointer;
         }
 
-        .option-header i {
+        .payment-method.active {
+            border-color: #1abc9c;
+            background: rgba(26, 188, 156, 0.1);
+        }
+
+        .payment-method i {
             font-size: 1.2rem;
             color: #2a3f54;
         }
 
-        .option-header h3 {
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        .option-details {
+        .payment-details {
             display: none;
-            padding-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            margin-top: 10px;
         }
 
-        .payment-option.active .option-details {
+        .payment-method.active .payment-details {
             display: block;
         }
 
@@ -154,90 +124,138 @@
             border-radius: 4px;
         }
 
-        /* Order Summary */
-        .order-summary {
-            flex: 0 0 250px;
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
+        /* Calculator Panel */
+        .calculator-panel {
+            flex: 1;
             display: flex;
             flex-direction: column;
+            background: #f5f5f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
-        .summary-row {
+        .amount-display {
+            padding: 15px;
+            background: #2a3f54;
+            color: white;
+        }
+
+        .amount-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
         }
 
-        .summary-row.total {
+        .amount-row.total {
             font-weight: 600;
             font-size: 1.1rem;
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid rgba(255,255,255,0.2);
         }
 
-        .complete-button {
+        .calculator-display {
+            padding: 15px;
+            background: #2a3f54;
+            color: white;
+            text-align: right;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .calculator-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #ddd;
+            flex: 1;
+        }
+
+        .calc-btn {
+            background: white;
+            border: none;
+            padding: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .calc-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .calc-btn.operator {
+            background: #f0f0f0;
+            font-weight: 600;
+        }
+
+        .calc-btn.primary {
+            background: #1abc9c;
+            color: white;
+        }
+
+        .calc-btn.primary:hover {
+            background: #16a085;
+        }
+
+        .calc-btn.danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .calc-btn.danger:hover {
+            background: #c0392b;
+        }
+
+        .complete-btn {
             width: 100%;
             padding: 12px;
-            margin-top: 20px;
-            background-color: #1abc9c;
+            background: #2a3f54;
             color: white;
             border: none;
             border-radius: 6px;
-            cursor: pointer;
             font-size: 1rem;
-            transition: background-color 0.3s ease;
-        }
-
-        .complete-button:hover {
-            background-color: #16a085;
-        }
-
-        /* Receipt Modal */
-        .receipt-modal {
-            max-width: 500px;
-            height: 80vh;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-
-        .receipt-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            gap: 10px;
-        }
-
-        .receipt-actions .action-button {
-            flex: 1;
-            padding: 10px;
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            margin-top: 15px;
         }
 
-        .receipt-actions .action-button i {
-            font-size: 1rem;
+        .complete-btn:hover {
+            background: #3b4e63;
+        }
+
+        /* Empty Cart State */
+        .empty-cart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+        }
+
+        .empty-cart i {
+            font-size: 2rem;
+            margin-bottom: 10px;
         }
 
         /* Responsive Design */
-        @media (max-width: 992px) {
-            .checkout-body {
+        @media (max-width: 1200px) {
+            .checkout-container {
                 flex-direction: column;
-            }
-            
-            .order-summary {
-                flex: 0 0 auto;
+                height: auto;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
+    <!-- Sidebar (unchanged from your original) -->
     <div class="sidebar">
         <div class="logo">
             <h2>{{ cashier_name }}</h2>
@@ -249,11 +267,11 @@
             </li>
             <li class="nav-item active">
                 <i class="fas fa-cash-register"></i>
-                <span>New Transaction</span>
+                <span>Checkout</span>
             </li>
-            <li class="nav-item" onclick="window.location.href='#'">
+            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
                 <i class="fas fa-history"></i>
-                <span>Recent Sales</span>
+                <span>Transaction History</span>
             </li>
             <li class="nav-item logout" onclick="showLogoutModal()">
                 <i class="fas fa-sign-out-alt"></i>
@@ -262,112 +280,118 @@
         </ul>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content checkout-content">
-        <div class="checkout-header">
-            <button class="back-button" onclick="window.history.back()">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h1>Checkout</h1>
-        </div>
-
-        <div class="checkout-body">
-            <!-- Order Items -->
-            <div class="order-items" id="order-items">
-                <!-- Items will be populated by JavaScript -->
-                <div class="empty-cart">
-                    <i class="fas fa-shopping-cart"></i>
-                    <p>Loading order items...</p>
+    <!-- Main Checkout Content -->
+    <div class="main-content">
+        <div class="checkout-container">
+            <!-- Order Items Panel -->
+            <div class="order-panel">
+                <h2>Order Items</h2>
+                <div id="orderItems">
+                    <div class="empty-cart">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading order items...</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Payment Method -->
-            <div class="payment-method">
+            <!-- Payment Method Panel -->
+            <div class="payment-panel">
                 <h2>Payment Method</h2>
                 
-                <div class="payment-options">
-                    <div class="payment-option" data-method="cash">
-                        <div class="option-header">
-                            <i class="fas fa-money-bill-wave"></i>
-                            <h3>Cash</h3>
-                        </div>
-                        <div class="option-details">
-                            <div class="payment-field">
-                                <label>Amount Received</label>
-                                <input type="number" id="cash-received" placeholder="Enter amount">
-                            </div>
-                            <div class="payment-field">
-                                <label>Change</label>
-                                <input type="text" id="cash-change" placeholder="0.00" readonly>
-                            </div>
-                        </div>
+                <div class="payment-method" data-method="cash" onclick="selectPaymentMethod(this)">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>Cash</span>
+                </div>
+                <div class="payment-details">
+                    <div class="payment-field">
+                        <label>Amount Paid</label>
+                        <input type="number" id="cashReceived" placeholder="0.00">
                     </div>
-                    
-                    <!--E wallet-->
-                    <div class="payment-option" data-method="e-wallet">
-                        <div class="option-header">
-                            <i class="fas fa-wallet"></i>
-                            <h3>E-wallet</h3>
-                        </div>
-                        <div class="option-details">
-                            <div class="payment-field">
-                                <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-wallet QR Code" style="width: 200px; height: 200px; object-fit: contain;">
-                            </div>
-                        </div>
+                    <div class="payment-field">
+                        <label>Change</label>
+                        <input type="text" id="cashChange" placeholder="0.00" readonly>
                     </div>
+                </div>
 
-                    <div class="payment-option" data-method="card">
-                        <div class="option-header">
-                            <i class="fas fa-credit-card"></i>
-                            <h3>Debit/Credit Card</h3>
-                        </div>
-                        <div class="option-details">
-                            <div class="payment-field">
-                                <label>Card Number</label>
-                                <input type="text" placeholder="Enter card number">
-                            </div>
-                            <div class="payment-field">
-                                <label>Expiry Date</label>
-                                <input type="text" placeholder="MM/YY">
-                            </div>
-                            <div class="payment-field">
-                                <label>CVV</label>
-                                <input type="text" placeholder="CVV">
-                            </div>
-                        </div>
+                <div class="payment-method" data-method="e-wallet" onclick="selectPaymentMethod(this)">
+                    <i class="fas fa-wallet"></i>
+                    <span>E-Wallet</span>
+                </div>
+                <div class="payment-details">
+                    <div style="text-align: center;">
+                        <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-Wallet QR Code" style="max-width: 200px; height: auto;">
+                        <p style="margin-top: 10px; font-size: 0.9rem;">Scan the QR code to pay</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Order Summary -->
-            <div class="order-summary">
-                <div class="summary-row">
-                    <span>Subtotal:</span>
-                    <span id="subtotal">RM0.00</span>
+                <div class="payment-method" data-method="card" onclick="selectPaymentMethod(this)">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Debit/Credit Card</span>
                 </div>
-                <div class="summary-row">
-                    <span>Tax (6%):</span>
-                    <span id="tax">RM0.00</span>
+                <div class="payment-details">
+                    <div class="payment-field">
+                        <label>Card Number</label>
+                        <input type="text" placeholder="1234 5678 9012 3456">
+                    </div>
+                    <div class="payment-field">
+                        <label>Expiry Date</label>
+                        <input type="text" placeholder="MM/YY">
+                    </div>
+                    <div class="payment-field">
+                        <label>CVV</label>
+                        <input type="text" placeholder="123">
+                    </div>
                 </div>
-                <div class="summary-row total">
-                    <span>Total:</span>
-                    <span id="total">RM0.00</span>
-                </div>
-                
-                <button class="complete-button" id="complete-button" onclick="processPayment()">
-                    Complete Payment
+
+                <button class="complete-btn" onclick="completeTransaction()">
+                    <i class="fas fa-check-circle"></i> Complete Payment
                 </button>
             </div>
-        </div>
-    </div>
 
-    <!-- Logout Modal -->
-    <div id="logoutModal" class="modal">
-        <div class="modal-content">
-            <p>Are you sure you want to log out?</p>
-            <div class="modal-buttons">
-                <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
-                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            <!-- Calculator Panel -->
+            <div class="calculator-panel">
+                <div class="amount-display">
+                    <div class="amount-row">
+                        <span>Total:</span>
+                        <span id="displayTotal">RM0.00</span>
+                    </div>
+                    <div class="amount-row" id="paidRow" style="display: none;">
+                        <span>Paid:</span>
+                        <span id="displayPaid">RM0.00</span>
+                    </div>
+                    <div class="amount-row" id="changeRow" style="display: none;">
+                        <span>Change:</span>
+                        <span id="displayChange">RM0.00</span>
+                    </div>
+                    <div class="amount-row total">
+                        <span>Amount Due:</span>
+                        <span id="displayDue">RM0.00</span>
+                    </div>
+                </div>
+                
+                <div class="calculator-display" id="calcDisplay">0</div>
+                <div class="calculator-buttons">
+                    <button class="calc-btn" onclick="calcInput('7')">7</button>
+                    <button class="calc-btn" onclick="calcInput('8')">8</button>
+                    <button class="calc-btn" onclick="calcInput('9')">9</button>
+                    <button class="calc-btn operator" onclick="calcInput('/')">/</button>
+                    <button class="calc-btn" onclick="calcInput('4')">4</button>
+                    <button class="calc-btn" onclick="calcInput('5')">5</button>
+                    <button class="calc-btn" onclick="calcInput('6')">6</button>
+                    <button class="calc-btn operator" onclick="calcInput('*')">×</button>
+                    <button class="calc-btn" onclick="calcInput('1')">1</button>
+                    <button class="calc-btn" onclick="calcInput('2')">2</button>
+                    <button class="calc-btn" onclick="calcInput('3')">3</button>
+                    <button class="calc-btn operator" onclick="calcInput('-')">-</button>
+                    <button class="calc-btn" onclick="calcInput('0')">0</button>
+                    <button class="calc-btn" onclick="calcInput('.')">.</button>
+                    <button class="calc-btn primary" onclick="calcEquals()">=</button>
+                    <button class="calc-btn operator" onclick="calcInput('+')">+</button>
+                    <button class="calc-btn" onclick="calcClear()">C</button>
+                    <button class="calc-btn" onclick="calcBackspace()">⌫</button>
+                    <button class="calc-btn primary" onclick="applyToPayment()">Apply</button>
+                    <button class="calc-btn danger" onclick="clearCalculator()">Clear</button>
+                </div>
             </div>
         </div>
     </div>
@@ -379,8 +403,10 @@
                 <i class="fas fa-check-circle"></i>
             </div>
             <h3>Transaction Successful!</h3>
-            <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>
-            Total Amount: <span id="transaction-amount"></span></p>
+            <p id="transaction-details">
+                Transaction ID: <span id="transactionId"></span><br>
+                Total Amount: <span id="transactionAmount"></span>
+            </p>
             <div class="modal-buttons">
                 <button class="action-button primary" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
                     New Transaction
@@ -394,13 +420,13 @@
 
     <!-- Receipt Modal -->
     <div id="receiptModal" class="modal">
-        <div class="modal-content receipt-modal">
-            <iframe id="receiptFrame" style="width:100%; height:80%; border:none;"></iframe>
-            <div class="receipt-actions">
-                <button class="action-button" onclick="printReceipt()">
-                    <i class="fas fa-print"></i> Print Receipt
+        <div class="modal-content" style="max-width: 500px; height: 80vh; display: flex; flex-direction: column;">
+            <iframe id="receiptFrame" style="flex: 1; width: 100%; border: none;"></iframe>
+            <div style="display: flex; gap: 10px; padding: 15px;">
+                <button class="action-button" style="flex: 1;" onclick="printReceipt()">
+                    <i class="fas fa-print"></i> Print
                 </button>
-                <button class="action-button primary" onclick="closeReceiptModal()">
+                <button class="action-button primary" style="flex: 1;" onclick="closeReceiptModal()">
                     <i class="fas fa-check"></i> Done
                 </button>
             </div>
@@ -408,104 +434,137 @@
     </div>
 
     <script>
+        // Global variables
+        let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+        let currentCalcValue = '0';
+        let selectedPaymentMethod = null;
+
+        // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
-            // Load cart items from sessionStorage
-            const cart = JSON.parse(sessionStorage.getItem('cart')) || [];
+            renderOrderItems();
+            updateTotals();
             
-            if (cart.length === 0) {
-                window.location.href = '/cashier/new-transaction';
-            } else {
-                renderOrderItems(cart);
-                updateTotals(cart);
-            }
-            
-            // Payment method selection
-            const paymentOptions = document.querySelectorAll('.payment-option');
-            paymentOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    paymentOptions.forEach(opt => opt.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-            
-            // Calculate change when cash received changes
-            const cashReceived = document.getElementById('cash-received');
-            const cashChange = document.getElementById('cash-change');
-            
-            cashReceived.addEventListener('input', function() {
-                const totalAmount = parseFloat(document.getElementById('total').textContent.replace('RM', ''));
-                const received = parseFloat(this.value) || 0;
-                const change = received - totalAmount;
-                cashChange.value = change >= 0 ? 'RM' + change.toFixed(2) : 'RM0.00';
-            });
+            // Set up event listeners
+            document.getElementById('cashReceived').addEventListener('input', calculateChange);
         });
-        
-        function renderOrderItems(cart) {
-            const orderItemsContainer = document.getElementById('order-items');
-            orderItemsContainer.innerHTML = '';
+
+        // Render order items
+        function renderOrderItems() {
+            const orderItems = document.getElementById('orderItems');
             
             if (cart.length === 0) {
-                orderItemsContainer.innerHTML = `
+                orderItems.innerHTML = `
                     <div class="empty-cart">
                         <i class="fas fa-shopping-cart"></i>
-                        <p>No items in cart</p>
+                        <p>No items in order</p>
                     </div>
                 `;
                 return;
             }
-            
-            cart.forEach((item, index) => {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'order-item';
-                itemElement.innerHTML = `
+
+            orderItems.innerHTML = '';
+            cart.forEach(item => {
+                const cartItem = document.createElement('div');
+                cartItem.className = 'cart-item';
+                cartItem.innerHTML = `
                     <div class="item-info">
-                        <h3>${item.name}</h3>
-                        <p>Quantity: ${item.quantity}</p>
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price">RM${item.price.toFixed(2)} × ${item.quantity}</div>
                     </div>
-                    <div class="item-price">RM${(item.price * item.quantity).toFixed(2)}</div>
+                    <div class="item-total">RM${(item.price * item.quantity).toFixed(2)}</div>
                 `;
-                orderItemsContainer.appendChild(itemElement);
-                
-                if (index < cart.length - 1) {
-                    const divider = document.createElement('div');
-                    divider.className = 'divider';
-                    orderItemsContainer.appendChild(divider);
-                }
+                orderItems.appendChild(cartItem);
             });
         }
-        
-        function updateTotals(cart) {
+
+        // Update order totals
+        function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const tax = subtotal * 0.06;
             const total = subtotal + tax;
             
-            document.getElementById('subtotal').textContent = `RM${subtotal.toFixed(2)}`;
-            document.getElementById('tax').textContent = `RM${tax.toFixed(2)}`;
-            document.getElementById('total').textContent = `RM${total.toFixed(2)}`;
-        }
-        
-        async function processPayment() {
-            const activeOption = document.querySelector('.payment-option.active');
-            const method = activeOption.dataset.method;
-            const totalAmount = parseFloat(document.getElementById('total').textContent.replace('RM', ''));
+            // Update display
+            document.getElementById('displayTotal').textContent = `RM${total.toFixed(2)}`;
+            document.getElementById('displayDue').textContent = `RM${total.toFixed(2)}`;
             
-            if (method === 'cash') {
-                const received = parseFloat(document.getElementById('cash-received').value) || 0;
-                if (received < totalAmount) {
+            // Update calculator display with total
+            currentCalcValue = total.toString();
+            updateCalcDisplay();
+            
+            // If cash is selected, update payment fields
+            if (selectedPaymentMethod === 'cash') {
+                document.getElementById('cashReceived').value = total.toFixed(2);
+                calculateChange();
+            }
+        }
+
+        // Select payment method
+        function selectPaymentMethod(element) {
+            document.querySelectorAll('.payment-method').forEach(method => {
+                method.classList.remove('active');
+            });
+            
+            element.classList.add('active');
+            selectedPaymentMethod = element.dataset.method;
+            
+            // Show/hide paid and change rows
+            const paidRow = document.getElementById('paidRow');
+            const changeRow = document.getElementById('changeRow');
+            
+            if (selectedPaymentMethod === 'cash') {
+                paidRow.style.display = 'flex';
+                changeRow.style.display = 'flex';
+                
+                const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
+                document.getElementById('cashReceived').value = total.toFixed(2);
+                calculateChange();
+            } else {
+                paidRow.style.display = 'none';
+                changeRow.style.display = 'none';
+            }
+        }
+
+        // Calculate change for cash payment
+        function calculateChange() {
+            if (selectedPaymentMethod !== 'cash') return;
+            
+            const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
+            const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+            const change = received - total;
+            
+            document.getElementById('cashChange').value = change >= 0 ? change.toFixed(2) : '0.00';
+            document.getElementById('displayPaid').textContent = `RM${received.toFixed(2)}`;
+            document.getElementById('displayChange').textContent = `RM${change >= 0 ? change.toFixed(2) : '0.00'}`;
+            document.getElementById('displayDue').textContent = `RM${Math.max(0, total - received).toFixed(2)}`;
+        }
+
+        // Complete the transaction
+        function completeTransaction() {
+            if (cart.length === 0) {
+                alert('No items in the order');
+                return;
+            }
+            
+            if (!selectedPaymentMethod) {
+                alert('Please select a payment method');
+                return;
+            }
+            
+            // Validate cash payment
+            if (selectedPaymentMethod === 'cash') {
+                const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
+                const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+                
+                if (received < total) {
                     alert('Amount received is less than total amount');
                     return;
                 }
             }
             
-            const cart = JSON.parse(sessionStorage.getItem('cart')) || [];
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.06;
-            const total = subtotal + tax;
-            
             const transactionData = {
                 cashierId: getCashierId(),
-                totalAmount: total,
-                paymentMethod: method,
+                totalAmount: parseFloat(document.getElementById('displayTotal').textContent.replace('RM', '')),
+                paymentMethod: selectedPaymentMethod,
                 items: cart.map(item => ({
                     productId: item.id,
                     quantity: item.quantity,
@@ -513,31 +572,99 @@
                 }))
             };
             
-            try {
-                const response = await fetch('/cashier/complete-transaction', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(transactionData)
-                });
-                
-                const data = await response.json();
-                
+            // Send transaction to server
+            fetch('/cashier/complete-transaction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(transactionData)
+            })
+            .then(response => response.json())
+            .then(data => {
                 if (data.success) {
+                    // Show receipt
                     showReceiptModal(data.receiptPdf);
-                    document.getElementById('transaction-id').textContent = data.transactionId;
-                    document.getElementById('transaction-amount').textContent = `RM${data.totalAmount.toFixed(2)}`;
+                    
+                    // Update success modal
+                    document.getElementById('transactionId').textContent = data.transactionId;
+                    document.getElementById('transactionAmount').textContent = `RM${data.totalAmount.toFixed(2)}`;
+                    
+                    // Clear cart
+                    cart = [];
                     sessionStorage.removeItem('cart');
                 } else {
                     alert(data.error || 'Failed to process transaction');
                 }
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error('Error:', error);
                 alert('Failed to process transaction');
+            });
+        }
+
+        // Calculator functions
+        function calcInput(value) {
+            if (currentCalcValue === '0' && value !== '.') {
+                currentCalcValue = value;
+            } else {
+                currentCalcValue += value;
+            }
+            updateCalcDisplay();
+        }
+
+        function calcClear() {
+            currentCalcValue = '0';
+            updateCalcDisplay();
+        }
+
+        function clearCalculator() {
+            currentCalcValue = '0';
+            updateCalcDisplay();
+            
+            if (selectedPaymentMethod === 'cash') {
+                document.getElementById('cashReceived').value = '';
+                document.getElementById('cashChange').value = '0.00';
+                document.getElementById('displayPaid').textContent = 'RM0.00';
+                document.getElementById('displayChange').textContent = 'RM0.00';
+                const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
+                document.getElementById('displayDue').textContent = `RM${total.toFixed(2)}`;
             }
         }
-        
+
+        function calcBackspace() {
+            if (currentCalcValue.length === 1) {
+                currentCalcValue = '0';
+            } else {
+                currentCalcValue = currentCalcValue.slice(0, -1);
+            }
+            updateCalcDisplay();
+        }
+
+        function calcEquals() {
+            try {
+                // Replace × with * for evaluation
+                currentCalcValue = eval(currentCalcValue.replace('×', '*')).toString();
+                updateCalcDisplay();
+            } catch (e) {
+                currentCalcValue = 'Error';
+                updateCalcDisplay();
+                setTimeout(calcClear, 1000);
+            }
+        }
+
+        function updateCalcDisplay() {
+            document.getElementById('calcDisplay').textContent = currentCalcValue;
+        }
+
+        function applyToPayment() {
+            if (selectedPaymentMethod === 'cash') {
+                document.getElementById('cashReceived').value = currentCalcValue;
+                calculateChange();
+            }
+        }
+
+        // Show receipt modal
         function showReceiptModal(pdfBase64) {
             const modal = document.getElementById('receiptModal');
             const frame = document.getElementById('receiptFrame');
@@ -548,7 +675,7 @@
             
             modal.style.display = 'flex';
         }
-        
+
         function closeReceiptModal() {
             const modal = document.getElementById('receiptModal');
             const frame = document.getElementById('receiptFrame');
@@ -561,13 +688,13 @@
             modal.style.display = 'none';
             document.getElementById('successModal').style.display = 'flex';
         }
-        
+
         function printReceipt() {
             const frame = document.getElementById('receiptFrame');
             frame.contentWindow.focus();
             frame.contentWindow.print();
         }
-        
+
         function base64ToBlob(base64, contentType) {
             contentType = contentType || '';
             const sliceSize = 1024;
@@ -588,12 +715,13 @@
             
             return new Blob(byteArrays, {type: contentType});
         }
-        
+
+        // Get cashier ID (you'll need to implement this based on your auth system)
         function getCashierId() {
-            // Implement this to get the actual cashier ID
-            return 1; // Replace with your implementation
+            // This should return the logged-in cashier's ID
+            return 1; // Replace with actual implementation
         }
-        
+
         function showLogoutModal() {
             document.getElementById('logoutModal').style.display = 'flex';
         }
