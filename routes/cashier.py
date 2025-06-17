@@ -1,11 +1,19 @@
 from flask import Blueprint, render_template, session, current_app, request, jsonify, send_from_directory, url_for
+
 import sqlite3
+
 from datetime import datetime, timedelta
+
 import os
+
 from io import BytesIO
+
 from reportlab.pdfgen import canvas
+
 from reportlab.lib.pagesizes import letter
+
 from reportlab.lib.units import inch
+
 import base64
 
 cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
@@ -46,8 +54,7 @@ def dashboard():
         cursor = conn.cursor()
 
         cursor.execute("""
-            SELECT StockAlert.*, Product.ProductName, Product.StockQuantity 
-            FROM StockAlert
+            SELECT * FROM StockAlert
             JOIN Product ON StockAlert.ProductID = Product.ProductID
             WHERE StockAlert.AlertStatus = 'Active'
             ORDER BY StockAlert.Timestamp DESC
@@ -61,16 +68,17 @@ def dashboard():
             WHERE Datetime >= ?
             ORDER BY Datetime DESC
             LIMIT 4
-        """, (time_threshold.strftime('%Y-%m-%d %H:%M:%S'),))
+        """, (time_threshold,))
         recent_transactions = cursor.fetchall()
 
-        # Convert string dates to datetime objects if needed
-        processed_transactions = []
+        # Convert to mutable dicts
+        recent_transactions = [
+            dict(transaction) for transaction in recent_transactions
+        ]
+
+        # Parse datetime with microseconds
         for transaction in recent_transactions:
-            if isinstance(transaction['Datetime'], str):
-                transaction = dict(transaction)  # Convert to mutable dict
-                transaction['Datetime'] = datetime.strptime(transaction['Datetime'], '%Y-%m-%d %H:%M:%S')
-            processed_transactions.append(transaction)
+            transaction['Datetime'] = datetime.strptime(transaction['Datetime'], '%Y-%m-%d %H:%M:%S.%f')
 
     finally:
         if 'conn' in locals():
@@ -80,9 +88,11 @@ def dashboard():
         'cashier.html',
         cashier_name=cashier_name,
         stock_alerts=stock_alerts,
-        recent_transactions=processed_transactions,
+        recent_transactions=recent_transactions,
         active_tab='dashboard'
     )
+
+
 
 
 @cashier_bp.route('/cashier/new-transaction')
