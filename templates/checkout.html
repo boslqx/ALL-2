@@ -286,7 +286,7 @@
                 <h2>Payment Method</h2>
                 
                 <div class="payment-options">
-                    <div class="payment-option active" data-method="cash">
+                    <div class="payment-option" data-method="cash">
                         <div class="option-header">
                             <i class="fas fa-money-bill-wave"></i>
                             <h3>Cash</h3>
@@ -304,10 +304,15 @@
                     </div>
                     
                     <!--E wallet-->
-                    <div class="payment-option active" data-method="e-wallet">
+                    <div class="payment-option" data-method="e-wallet">
                         <div class="option-header">
                             <i class="fas fa-wallet"></i>
                             <h3>E-wallet</h3>
+                        </div>
+                        <div class="option-details">
+                            <div class="payment-field">
+                                <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-wallet QR Code" style="width: 200px; height: 200px; object-fit: contain;">
+                            </div>
                         </div>
                     </div>
 
