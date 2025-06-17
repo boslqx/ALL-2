@@ -430,3 +430,73 @@ def generate_receipt(transaction_id, transaction_details, cashier_name):
     finally:
         if 'conn' in locals():
             conn.close()
+
+@cashier_bp.route('/cashier/transaction-history')
+def transaction_history():
+    user_id = session.get('user_id')
+    cashier_name = get_cashier_name(user_id)
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get all transactions with cashier names
+        cursor.execute("""
+            SELECT t.TransactionID, t.Datetime, t.TotalAmount, t.PaymentMethod, u.Name as CashierName
+            FROM "Transaction" t
+            JOIN User u ON t.CashierID = u.UserID
+            ORDER BY t.Datetime DESC
+        """)
+        transactions = cursor.fetchall()
+
+        # Convert to list of dicts and format datetime
+        transactions = [dict(transaction) for transaction in transactions]
+        for transaction in transactions:
+            transaction['Datetime'] = datetime.strptime(transaction['Datetime'], '%Y-%m-%d %H:%M:%S.%f')
+
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+    return render_template(
+        'transaction_history.html',
+        cashier_name=cashier_name,
+        transactions=transactions,
+        active_tab='transaction_history'
+    )
+
+@cashier_bp.route('/cashier/transaction-details/<int:transaction_id>')
+def transaction_details(transaction_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Get transaction header
+        cursor.execute("""
+            SELECT t.*, u.Name as CashierName 
+            FROM "Transaction" t
+            JOIN User u ON t.CashierID = u.UserID
+            WHERE t.TransactionID = ?
+        """, (transaction_id,))
+        transaction = cursor.fetchone()
+
+        if not transaction:
+            return "Transaction not found", 404
+
+        # Get transaction details
+        cursor.execute("""
+            SELECT td.*, p.ProductName, p.ProductBrand
+            FROM TransactionDetails td
+            JOIN Product p ON td.ProductID = p.ProductID
+            WHERE td.TransactionID = ?
+        """, (transaction_id,))
+        details = cursor.fetchall()
+
+        return jsonify({
+            'transaction': dict(transaction),
+            'details': [dict(detail) for detail in details]
+        })
+
+    finally:
+        if 'conn' in locals():
+            conn.close()

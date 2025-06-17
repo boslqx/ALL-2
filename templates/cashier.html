@@ -21,9 +21,9 @@
                 <i class="fas fa-cash-register"></i>
                 <span>New Transaction</span>
             </li>
-            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.checkout_page') }}'">
-                <i class="fas fa-receipt"></i>
-                <span>Checkout</span>
+            <li class="nav-item {% if active_tab == 'transaction_history' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
+                <i class="fas fa-history"></i>
+                <span>Transaction History</span>
             </li>
             <li class="nav-item logout" onclick="showLogoutModal()">
                 <i class="fas fa-sign-out-alt"></i>
@@ -94,9 +94,9 @@
                         <i class="fas fa-cash-register"></i>
                         New Transaction
                     </button>
-                    <button class="action-button" onclick="window.location.href='#'">
+                    <button class="action-button" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
                         <i class="fas fa-history"></i>
-                        Recent Sales
+                        Transaction History
                     </button>
                     <button class="action-button" onclick="window.location.href='#'">
                         <i class="fas fa-user"></i>

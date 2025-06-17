@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>{{ cashier_name }}</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'new_transaction' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'transaction_history' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
+                <i class="fas fa-history"></i>
+                <span>Transaction History</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="transaction-history-header">
+            <h1>Transaction History</h1>
+            <div class="search-filter">
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search transactions...">
+                </div>
+                <div class="filter-container">
+                    <select id="dateFilter">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="transaction-list-container">
+            <table class="transaction-table">
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Date & Time</th>
+                        <th>Cashier</th>
+                        <th>Total Amount</th>
+                        <th>Payment Method</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>T{{ transaction.TransactionID }}</td>
+                        <td>{{ transaction.Datetime.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ transaction.CashierName }}</td>
+                        <td>RM{{ "%.2f"|format(transaction.TotalAmount) }}</td>
+                        <td>{{ transaction.PaymentMethod }}</td>
+                        <td>
+                            <button class="view-details-btn" data-transaction-id="{{ transaction.TransactionID }}">
+                                <i class="fas fa-eye"></i> View Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="no-transactions">No transactions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Transaction Details Modal -->
+        <div id="transactionDetailsModal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h2>Transaction Details - T<span id="modalTransactionId"></span></h2>
+                    <span class="close-modal" onclick="closeModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="transaction-info">
+                        <div>
+                            <strong>Date:</strong> <span id="transactionDate"></span>
+                        </div>
+                        <div>
+                            <strong>Cashier:</strong> <span id="transactionCashier"></span>
+                        </div>
+                        <div>
+                            <strong>Payment Method:</strong> <span id="transactionPaymentMethod"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="details-table-container">
+                        <table class="details-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailsTableBody">
+                                <!-- Details will be inserted here -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="total-label">Total:</td>
+                                    <td class="total-amount" id="transactionTotalAmount"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="print-btn" onclick="printReceipt()">
+                        <i class="fas fa-print"></i> Print Receipt
+                    </button>
+                    <button class="close-btn" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // View details button click handler
+            document.querySelectorAll('.view-details-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const transactionId = this.getAttribute('data-transaction-id');
+                    fetchTransactionDetails(transactionId);
+                });
+            });
+
+            // Search functionality
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = document.querySelectorAll('.transaction-table tbody tr');
+                
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+
+            // Date filter functionality
+            document.getElementById('dateFilter').addEventListener('change', function() {
+                const filterValue = this.value;
+                const rows = document.querySelectorAll('.transaction-table tbody tr');
+                const now = new Date();
+                
+                rows.forEach(row => {
+                    if (filterValue === 'all') {
+                        row.style.display = '';
+                        return;
+                    }
+                    
+                    const dateText = row.cells[1].textContent;
+                    const transactionDate = new Date(dateText);
+                    
+                    let showRow = false;
+                    
+                    if (filterValue === 'today') {
+                        showRow = transactionDate.toDateString() === now.toDateString();
+                    } else if (filterValue === 'week') {
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        showRow = transactionDate >= weekStart;
+                    } else if (filterValue === 'month') {
+                        showRow = transactionDate.getMonth() === now.getMonth() && 
+                                  transactionDate.getFullYear() === now.getFullYear();
+                    }
+                    
+                    row.style.display = showRow ? '' : 'none';
+                });
+            });
+        });
+
+        function fetchTransactionDetails(transactionId) {
+            fetch(`/cashier/transaction-details/${transactionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayTransactionDetails(data);
+                    document.getElementById('transactionDetailsModal').style.display = 'flex';
+                })
+                .catch(error => {
+                    console.error('Error fetching transaction details:', error);
+                    alert('Failed to load transaction details');
+                });
+        }
+
+        function displayTransactionDetails(data) {
+            const transaction = data.transaction;
+            const details = data.details;
+            
+            // Set header info
+            document.getElementById('modalTransactionId').textContent = transaction.TransactionID;
+            document.getElementById('transactionDate').textContent = new Date(transaction.Datetime).toLocaleString();
+            document.getElementById('transactionCashier').textContent = transaction.CashierName;
+            document.getElementById('transactionPaymentMethod').textContent = transaction.PaymentMethod;
+            document.getElementById('transactionTotalAmount').textContent = `RM${parseFloat(transaction.TotalAmount).toFixed(2)}`;
+            
+            // Populate details table
+            const tbody = document.getElementById('detailsTableBody');
+            tbody.innerHTML = '';
+            
+            details.forEach(item => {
+                const subtotal = item.Price * item.Quantity;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.ProductName} ${item.ProductBrand ? '(' + item.ProductBrand + ')' : ''}</td>
+                    <td>RM${parseFloat(item.Price).toFixed(2)}</td>
+                    <td>${item.Quantity}</td>
+                    <td>RM${subtotal.toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('transactionDetailsModal').style.display = 'none';
+        }
+
+        function printReceipt() {
+            const transactionId = document.getElementById('modalTransactionId').textContent;
+            window.open(`/cashier/print-receipt/${transactionId}`, '_blank');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('transactionDetailsModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
