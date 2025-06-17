@@ -11,6 +11,13 @@
                     <i class="fas fa-search"></i>
                 </button>
             </div>
+
+             <!-- QR Code Scanner Container -->
+            <div class="scanner-container">
+                <button id="startScanner" class="action-button">
+                    <i class="fas fa-qrcode"></i> Scan QR Code
+                </button>
+            </div>
         </div>
 
         <!-- Filter options -->
@@ -75,26 +82,157 @@
   </div>
 </div>
 
+<!-- Scanner Modal -->
+<div id="scannerModal" class="scanner-modal">
+  <div class="scanner-modal-content">
+    <div class="scanner-header">
+      <h3>QR Code Scanner</h3>
+      <button id="closeScanner" class="close-button">&times;</button>
+    </div>
+    <div class="scanner-video-container">
+      <video id="scannerVideo" playsinline></video>
+      <canvas id="scannerCanvas" style="display: none;"></canvas>
+    </div>
+    <div class="scanner-status" id="scannerStatus">Point camera at a QR code</div>
+    <div class="scanner-actions">
+      <button id="switchCamera" class="action-button">
+        <i class="fas fa-sync-alt"></i> Switch Camera
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
+// Global variables
+let scannerStream = null;
+let currentFacingMode = "environment";
+let scanInterval = null;
+let allProducts = [];
+let currentRestockProductId = null;
+
+// Global functions
+function showProductDetails(productId) {
+    window.location.href = `/admin/product/${productId}`;
+}
+
+function extractProductIdFromQR(qrData) {
+    const idMatch = qrData.match(/Product ID: (\d+)/);
+    return idMatch && idMatch[1] ? idMatch[1] : null;
+}
+
+// Scanner Functions
+function startScanner() {
+    const modal = document.getElementById('scannerModal');
+    const video = document.getElementById('scannerVideo');
+    const status = document.getElementById('scannerStatus');
+    
+    modal.style.display = 'flex';
+    status.textContent = 'Initializing camera...';
+    
+    const constraints = {
+        video: {
+            facingMode: currentFacingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 1280 }
+        },
+        audio: false
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(stream) {
+            scannerStream = stream;
+            video.srcObject = stream;
+            video.play();
+            status.textContent = 'Point camera at a QR code';
+            scanInterval = setInterval(scanQRCode, 100);
+        })
+        .catch(function(err) {
+            console.error("Error accessing camera:", err);
+            status.textContent = 'Error accessing camera. Please ensure you have granted camera permissions.';
+        });
+}
+
+function stopScanner() {
+    const modal = document.getElementById('scannerModal');
+    const video = document.getElementById('scannerVideo');
+    
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    if (scannerStream) {
+        scannerStream.getTracks().forEach(track => track.stop());
+        scannerStream = null;
+    }
+    
+    if (video.srcObject) {
+        video.srcObject = null;
+    }
+    
+    modal.style.display = 'none';
+}
+
+function switchCamera() {
+    currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+    stopScanner();
+    startScanner();
+}
+
+function scanQRCode() {
+    const video = document.getElementById('scannerVideo');
+    const canvas = document.getElementById('scannerCanvas');
+    const status = document.getElementById('scannerStatus');
+    
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+        });
+        
+        if (code) {
+            status.textContent = 'QR Code detected!';
+            const productId = extractProductIdFromQR(code.data);
+            
+            if (productId) {
+                stopScanner();
+                showProductDetails(productId);
+            } else {
+                status.textContent = 'Invalid product QR code';
+            }
+        }
+    }
+}
+
+// DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function () {
     const productsGrid = document.getElementById('products-grid');
-    let allProducts = []; // Store products for filtering
-    let currentRestockProductId = null;
-
     const searchInput = document.querySelector('.search-input');
     const searchButton = document.querySelector('.search-button');
 
-    // === INITIAL LOAD ===
+    // Initialize
     loadProducts();
 
-    // === FILTERS & SEARCH ===
+    // Event Listeners
     document.getElementById('apply-filters').addEventListener('click', applyFilters);
     searchButton.addEventListener('click', performSearch);
     searchInput.addEventListener('keyup', e => {
         if (e.key === 'Enter') performSearch();
     });
 
-    // === RESTOCK MODAL LISTENERS (ONCE ONLY) ===
+    document.getElementById('startScanner').addEventListener('click', startScanner);
+    document.getElementById('closeScanner').addEventListener('click', stopScanner);
+    document.getElementById('switchCamera').addEventListener('click', switchCamera);
+
+    // Restock Modal
     document.getElementById('cancelRestock')?.addEventListener('click', () => {
         document.getElementById('restockModal').style.display = 'none';
         document.getElementById('restockQuantity').value = '';
@@ -131,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         Swal.fire('Success!', 'Inventory updated', 'success').then(() => {
                             document.getElementById('restockModal').style.display = 'none';
                             document.getElementById('restockQuantity').value = '';
-                            loadProducts(); // Refresh product grid
+                            loadProducts();
                         });
                     } else {
                         throw new Error(data.message || 'Update failed');
@@ -144,8 +282,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // === FUNCTIONS ===
-
+    // Helper Functions
     function loadProducts() {
         showLoading();
         fetch('/api/products')
@@ -225,10 +362,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return imagePath ? `/static/product_image/${imagePath}` : '/static/images/placeholder.png';
     }
 
-    function showProductDetails(productId) {
-        window.location.href = `/admin/product/${productId}`;
-    }
-
     function renderProducts(products) {
         if (products.length === 0) {
             productsGrid.innerHTML = `
@@ -240,7 +373,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Sort products - low stock first
         const sortedProducts = [...products].sort((a, b) => {
             const aLowStock = (a.StockQuantity || 0) <= 5;
             const bLowStock = (b.StockQuantity || 0) <= 5;
@@ -286,13 +418,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Attach buttons
         document.querySelectorAll('.details-button').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                 showProductDetails(this.getAttribute('data-id'));
             });
         });
 
         document.querySelectorAll('.restock-button').forEach(button => {
-            button.addEventListener('click', function () {
+            button.addEventListener('click', function() {
                 currentRestockProductId = this.getAttribute('data-id');
                 document.getElementById('restockModal').style.display = 'flex';
                 document.getElementById('restockQuantity').focus();
@@ -301,5 +433,4 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
-
 {% endblock %}
