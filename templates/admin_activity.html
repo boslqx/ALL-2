@@ -125,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const logs = await response.json();
             if (logs.error) throw new Error(logs.error);
 
+            // Sort logs by timestamp in descending order (newest first)
+            logs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+
             renderLogs(logs);
             statusElement.textContent = `Loaded ${logs.length} activities`;
         } catch (error) {

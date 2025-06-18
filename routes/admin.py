@@ -127,7 +127,7 @@ class DashboardStatsAPIView(MethodView):
             cursor.execute("SELECT COUNT(*) FROM Product")
             total_products = cursor.fetchone()[0]
             
-            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity < 10")
+            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity <= 5")
             low_stock_items = cursor.fetchone()[0]
             
             today = datetime.now().strftime('%Y-%m-%d')

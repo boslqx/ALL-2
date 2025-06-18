@@ -315,7 +315,19 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (categoryFilter !== 'all') {
-            filtered = filtered.filter(p => p.Category === categoryFilter);
+            if (categoryFilter === 'Other') {
+                // Filter for categories that aren't in our main list
+                const mainCategories = [
+                    'Food & Beverages',
+                    'Health & Personal',
+                    'Home & Living',
+                    'Clothing & Accessories'
+                ];
+                filtered = filtered.filter(p => !mainCategories.includes(p.Category));
+            } else {
+                // Filter for specific category
+                filtered = filtered.filter(p => p.Category === categoryFilter);
+            }
         }
 
         if (brandFilter === 'a-z') {
