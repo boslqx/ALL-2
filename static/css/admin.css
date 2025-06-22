@@ -846,6 +846,81 @@ body {
     }
 }
 
+/* QR Scanner Styles */
+.scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.scanner-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.scanner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.scanner-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #7f8c8d;
+}
+
+.scanner-video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 100%; 
+  margin-bottom: 15px;
+  background: black;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.scanner-video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanner-status {
+  text-align: center;
+  margin: 10px 0;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.scanner-actions {
+  display: flex;
+  justify-content: center;
+}
+
 /* Product Details */
 /* View/Edit Mode Toggle */
 .view-mode {
