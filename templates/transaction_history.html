@@ -196,14 +196,22 @@
 
         function fetchTransactionDetails(transactionId) {
             fetch(`/cashier/transaction-details/${transactionId}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
                     displayTransactionDetails(data);
                     document.getElementById('transactionDetailsModal').style.display = 'flex';
                 })
                 .catch(error => {
                     console.error('Error fetching transaction details:', error);
-                    alert('Failed to load transaction details');
+                    alert('Error: ' + error.message);
                 });
         }
 
@@ -241,8 +249,9 @@
 
         function printReceipt() {
             const transactionId = document.getElementById('modalTransactionId').textContent;
-            window.open(`/cashier/print-receipt/${transactionId}`, '_blank');
+            window.open(`/cashier/get-receipt/${transactionId}`, '_blank');
         }
+
 
         // Close modal when clicking outside
         window.onclick = function(event) {

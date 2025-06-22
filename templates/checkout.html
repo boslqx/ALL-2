@@ -15,6 +15,7 @@
             padding: 20px;
         }
 
+
         /* Order Items Panel */
         .order-panel {
             flex: 1;
@@ -25,11 +26,13 @@
             overflow-y: auto;
         }
 
+
         .order-panel h2 {
             margin-top: 0;
             padding-bottom: 10px;
             border-bottom: 1px solid #eee;
         }
+
 
         .cart-item {
             display: flex;
@@ -38,25 +41,30 @@
             border-bottom: 1px dashed #eee;
         }
 
+
         .item-info {
             flex: 1;
         }
+
 
         .item-name {
             font-weight: 500;
             margin-bottom: 3px;
         }
 
+
         .item-price {
             font-size: 0.9rem;
             color: #666;
         }
+
 
         .item-total {
             font-weight: 600;
             min-width: 60px;
             text-align: right;
         }
+
 
         /* Payment Method Panel */
         .payment-panel {
@@ -67,11 +75,13 @@
             padding: 15px;
         }
 
+
         .payment-panel h2 {
             margin-top: 0;
             padding-bottom: 10px;
             border-bottom: 1px solid #eee;
         }
+
 
         .payment-method {
             display: flex;
@@ -84,15 +94,18 @@
             cursor: pointer;
         }
 
+
         .payment-method.active {
             border-color: #1abc9c;
             background: rgba(26, 188, 156, 0.1);
         }
 
+
         .payment-method i {
             font-size: 1.2rem;
             color: #2a3f54;
         }
+
 
         .payment-details {
             display: none;
@@ -102,13 +115,16 @@
             margin-top: 10px;
         }
 
+
         .payment-method.active .payment-details {
             display: block;
         }
 
+
         .payment-field {
             margin-bottom: 10px;
         }
+
 
         .payment-field label {
             display: block;
@@ -117,6 +133,7 @@
             color: #555;
         }
 
+
         .payment-field input {
             width: 100%;
             padding: 8px 12px;
@@ -124,8 +141,9 @@
             border-radius: 4px;
         }
 
-        /* Calculator Panel */
-        .calculator-panel {
+
+        /* Right Panel - Dynamic based on payment method */
+        .right-panel {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -135,17 +153,21 @@
             overflow: hidden;
         }
 
-        .amount-display {
+
+        /* Cash Payment Display */
+        .cash-display {
             padding: 15px;
             background: #2a3f54;
             color: white;
         }
+
 
         .amount-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
         }
+
 
         .amount-row.total {
             font-weight: 600;
@@ -154,6 +176,7 @@
             padding-top: 10px;
             border-top: 1px solid rgba(255,255,255,0.2);
         }
+
 
         .calculator-display {
             padding: 15px;
@@ -165,6 +188,7 @@
             border-top: 1px solid rgba(255,255,255,0.2);
         }
 
+
         .calculator-buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -173,6 +197,52 @@
             flex: 1;
         }
 
+
+        /* Card Payment Display */
+        .card-display {
+            padding: 15px;
+            background: #2a3f54;
+            color: white;
+            display: none;
+        }
+
+
+        .current-field-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+
+        .account-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+
+        /* E-Wallet Display */
+        .ewallet-display {
+            display: none;
+            flex: 1;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+
+        .ewallet-display img {
+            width: 600px;
+            height: 600px;
+            object-fit: contain;
+        }
+
+
+        /* Calculator Buttons */
         .calc-btn {
             background: white;
             border: none;
@@ -182,32 +252,39 @@
             transition: background 0.2s;
         }
 
+
         .calc-btn:hover {
             background: #f0f0f0;
         }
+
 
         .calc-btn.operator {
             background: #f0f0f0;
             font-weight: 600;
         }
 
+
         .calc-btn.primary {
             background: #1abc9c;
             color: white;
         }
 
+
         .calc-btn.primary:hover {
             background: #16a085;
         }
+
 
         .calc-btn.danger {
             background: #e74c3c;
             color: white;
         }
 
+
         .calc-btn.danger:hover {
             background: #c0392b;
         }
+
 
         .complete-btn {
             width: 100%;
@@ -226,9 +303,11 @@
             margin-top: 15px;
         }
 
+
         .complete-btn:hover {
             background: #3b4e63;
         }
+
 
         /* Empty Cart State */
         .empty-cart {
@@ -240,10 +319,12 @@
             color: #999;
         }
 
+
         .empty-cart i {
             font-size: 2rem;
             margin-bottom: 10px;
         }
+
 
         /* Responsive Design */
         @media (max-width: 1200px) {
@@ -255,7 +336,7 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar (unchanged from your original) -->
+    <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo">
             <h2>{{ cashier_name }}</h2>
@@ -280,6 +361,7 @@
         </ul>
     </div>
 
+
     <!-- Main Checkout Content -->
     <div class="main-content">
         <div class="checkout-container">
@@ -294,18 +376,19 @@
                 </div>
             </div>
 
+
             <!-- Payment Method Panel -->
             <div class="payment-panel">
                 <h2>Payment Method</h2>
-                
-                <div class="payment-method" data-method="cash" onclick="selectPaymentMethod(this)">
+               
+                <div class="payment-method" data-method="cash" onclick="selectPaymentMethod('cash')">
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Cash</span>
                 </div>
-                <div class="payment-details">
+                <div class="payment-details" id="cashDetails">
                     <div class="payment-field">
                         <label>Amount Paid</label>
-                        <input type="number" id="cashReceived" placeholder="0.00">
+                        <input type="number" id="cashReceived" placeholder="0.00" readonly>
                     </div>
                     <div class="payment-field">
                         <label>Change</label>
@@ -313,53 +396,57 @@
                     </div>
                 </div>
 
-                <div class="payment-method" data-method="e-wallet" onclick="selectPaymentMethod(this)">
+
+                <div class="payment-method" data-method="ewallet" onclick="selectPaymentMethod('ewallet')">
                     <i class="fas fa-wallet"></i>
                     <span>E-Wallet</span>
                 </div>
-                <div class="payment-details">
-                    <div style="text-align: center;">
-                        <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-Wallet QR Code" style="max-width: 200px; height: auto;">
-                        <p style="margin-top: 10px; font-size: 0.9rem;">Scan the QR code to pay</p>
+                <div class="payment-details" id="ewalletDetails">
+                    <div>
+                        <p style="margin-bottom: 10px;">Scan the QR code to pay</p>
                     </div>
                 </div>
 
-                <div class="payment-method" data-method="card" onclick="selectPaymentMethod(this)">
+
+                <div class="payment-method" data-method="card" onclick="selectPaymentMethod('card')">
                     <i class="fas fa-credit-card"></i>
                     <span>Debit/Credit Card</span>
                 </div>
-                <div class="payment-details">
+                <div class="payment-details" id="cardDetails">
                     <div class="payment-field">
                         <label>Card Number</label>
-                        <input type="text" placeholder="1234 5678 9012 3456">
+                        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" readonly>
                     </div>
                     <div class="payment-field">
                         <label>Expiry Date</label>
-                        <input type="text" placeholder="MM/YY">
+                        <input type="text" id="cardExpiry" placeholder="MM/YY" readonly>
                     </div>
                     <div class="payment-field">
                         <label>CVV</label>
-                        <input type="text" placeholder="123">
+                        <input type="text" id="cardCVV" placeholder="123" readonly>
                     </div>
                 </div>
+
 
                 <button class="complete-btn" onclick="completeTransaction()">
                     <i class="fas fa-check-circle"></i> Complete Payment
                 </button>
             </div>
 
-            <!-- Calculator Panel -->
-            <div class="calculator-panel">
-                <div class="amount-display">
+
+            <!-- Right Panel (Dynamic based on payment method) -->
+            <div class="right-panel" id="rightPanel">
+                <!-- Cash Payment Display (Default) -->
+                <div class="cash-display" id="cashDisplay">
                     <div class="amount-row">
                         <span>Total:</span>
                         <span id="displayTotal">RM0.00</span>
                     </div>
-                    <div class="amount-row" id="paidRow" style="display: none;">
+                    <div class="amount-row">
                         <span>Paid:</span>
                         <span id="displayPaid">RM0.00</span>
                     </div>
-                    <div class="amount-row" id="changeRow" style="display: none;">
+                    <div class="amount-row">
                         <span>Change:</span>
                         <span id="displayChange">RM0.00</span>
                     </div>
@@ -368,9 +455,10 @@
                         <span id="displayDue">RM0.00</span>
                     </div>
                 </div>
-                
+               
+                <!-- Calculator for Cash Payments -->
                 <div class="calculator-display" id="calcDisplay">0</div>
-                <div class="calculator-buttons">
+                <div class="calculator-buttons" id="cashCalculator">
                     <button class="calc-btn" onclick="calcInput('7')">7</button>
                     <button class="calc-btn" onclick="calcInput('8')">8</button>
                     <button class="calc-btn" onclick="calcInput('9')">9</button>
@@ -389,12 +477,44 @@
                     <button class="calc-btn operator" onclick="calcInput('+')">+</button>
                     <button class="calc-btn" onclick="calcClear()">C</button>
                     <button class="calc-btn" onclick="calcBackspace()">⌫</button>
-                    <button class="calc-btn primary" onclick="applyToPayment()">Apply</button>
+                    <button class="calc-btn primary" onclick="applyToPayment()">Enter</button>
                     <button class="calc-btn danger" onclick="clearCalculator()">Clear</button>
+                </div>
+
+
+                <!-- Card Payment Display -->
+                <div class="card-display" id="cardDisplay">
+                    <div class="current-field-display" id="currentFieldDisplay">Card Number</div>
+                    <div class="account-number" id="currentFieldValue"></div>
+                    <div class="calculator-buttons" id="cardCalculator">
+                        <button class="calc-btn" onclick="cardInput('7')">7</button>
+                        <button class="calc-btn" onclick="cardInput('8')">8</button>
+                        <button class="calc-btn" onclick="cardInput('9')">9</button>
+                        <button class="calc-btn operator" onclick="nextCardField()">Next</button>
+                        <button class="calc-btn" onclick="cardInput('4')">4</button>
+                        <button class="calc-btn" onclick="cardInput('5')">5</button>
+                        <button class="calc-btn" onclick="cardInput('6')">6</button>
+                        <button class="calc-btn operator" onclick="prevCardField()">Prev</button>
+                        <button class="calc-btn" onclick="cardInput('1')">1</button>
+                        <button class="calc-btn" onclick="cardInput('2')">2</button>
+                        <button class="calc-btn" onclick="cardInput('3')">3</button>
+                        <button class="calc-btn operator" onclick="cardInput('/')">/</button>
+                        <button class="calc-btn" onclick="cardInput('0')">0</button>
+                        <button class="calc-btn" onclick="cardBackspace()">⌫</button>
+                        <button class="calc-btn primary" onclick="applyCardField()">Enter</button>
+                        <button class="calc-btn danger" onclick="clearCardField()">Clear</button>
+                    </div>
+                </div>
+
+
+                <!-- E-Wallet Display -->
+                <div class="ewallet-display" id="ewalletDisplay">
+                    <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-wallet QR Code">
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Success Modal -->
     <div id="successModal" class="modal">
@@ -418,6 +538,7 @@
         </div>
     </div>
 
+
     <!-- Receipt Modal -->
     <div id="receiptModal" class="modal">
         <div class="modal-content" style="max-width: 500px; height: 80vh; display: flex; flex-direction: column;">
@@ -433,25 +554,47 @@
         </div>
     </div>
 
+
     <script>
         // Global variables
         let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
         let currentCalcValue = '0';
-        let selectedPaymentMethod = null;
+        let selectedPaymentMethod = 'cash';
+        let currentCardField = 'number'; // 'number', 'expiry', or 'cvv'
+        let cardFields = {
+            number: {
+                display: 'Card Number',
+                maxLength: 16,
+                value: ''
+            },
+            expiry: {
+                display: 'Expiry Date (MM/YY)',
+                maxLength: 4,
+                value: ''
+            },
+            cvv: {
+                display: 'CVV',
+                maxLength: 3,
+                value: ''
+            }
+        };
+
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
             renderOrderItems();
             updateTotals();
-            
+            selectPaymentMethod('cash'); // Set default payment method
+           
             // Set up event listeners
             document.getElementById('cashReceived').addEventListener('input', calculateChange);
         });
 
+
         // Render order items
         function renderOrderItems() {
             const orderItems = document.getElementById('orderItems');
-            
+           
             if (cart.length === 0) {
                 orderItems.innerHTML = `
                     <div class="empty-cart">
@@ -461,6 +604,7 @@
                 `;
                 return;
             }
+
 
             orderItems.innerHTML = '';
             cart.forEach(item => {
@@ -477,66 +621,103 @@
             });
         }
 
+
         // Update order totals
         function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const tax = subtotal * 0.06;
             const total = subtotal + tax;
-            
+           
             // Update display
             document.getElementById('displayTotal').textContent = `RM${total.toFixed(2)}`;
             document.getElementById('displayDue').textContent = `RM${total.toFixed(2)}`;
-            
+           
             // Update calculator display with total
-            currentCalcValue = total.toString();
+            currentCalcValue = '0';
             updateCalcDisplay();
-            
+           
             // If cash is selected, update payment fields
             if (selectedPaymentMethod === 'cash') {
-                document.getElementById('cashReceived').value = total.toFixed(2);
+                document.getElementById('cashReceived').value = '0.00';
                 calculateChange();
             }
         }
 
+
         // Select payment method
-        function selectPaymentMethod(element) {
-            document.querySelectorAll('.payment-method').forEach(method => {
-                method.classList.remove('active');
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+
+
+            // Update active payment method UI
+            document.querySelectorAll('.payment-method').forEach(el => {
+                el.classList.remove('active');
             });
-            
-            element.classList.add('active');
-            selectedPaymentMethod = element.dataset.method;
-            
-            // Show/hide paid and change rows
-            const paidRow = document.getElementById('paidRow');
-            const changeRow = document.getElementById('changeRow');
-            
-            if (selectedPaymentMethod === 'cash') {
-                paidRow.style.display = 'flex';
-                changeRow.style.display = 'flex';
-                
-                const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
-                document.getElementById('cashReceived').value = total.toFixed(2);
-                calculateChange();
-            } else {
-                paidRow.style.display = 'none';
-                changeRow.style.display = 'none';
+            document.querySelector(`.payment-method[data-method="${method}"]`).classList.add('active');
+
+
+            // Hide all payment details and right panel sections
+            document.querySelectorAll('.payment-details').forEach(el => {
+                el.style.display = 'none';
+            });
+
+
+            // Hide all displays
+            document.getElementById('cashDisplay').style.display = 'none';
+            document.getElementById('cardDisplay').style.display = 'none';
+            document.getElementById('ewalletDisplay').style.display = 'none';
+
+
+            // Hide all calculators by default
+            document.getElementById('calcDisplay').style.display = 'none';
+            document.getElementById('cashCalculator').style.display = 'none';
+            document.getElementById('cardCalculator').style.display = 'none';
+
+
+            // Show the selected payment method's UI
+            switch (method) {
+                case 'cash':
+                    document.getElementById('cashDetails').style.display = 'block';
+                    document.getElementById('cashDisplay').style.display = 'block';
+                    document.getElementById('calcDisplay').style.display = 'block';
+                    document.getElementById('cashCalculator').style.display = 'grid';
+                    currentCalcValue = '0';
+                    updateCalcDisplay();
+                    break;
+
+
+                case 'card':
+                    document.getElementById('cardDetails').style.display = 'block';
+                    document.getElementById('cardDisplay').style.display = 'block';
+                    document.getElementById('cardCalculator').style.display = 'grid';
+                    currentCardField = 'number';
+                    cardFields.number.value = '';
+                    cardFields.expiry.value = '';
+                    cardFields.cvv.value = '';
+                    updateCardFieldDisplay();
+                    break;
+
+
+                case 'ewallet':
+                    document.getElementById('ewalletDetails').style.display = 'block';
+                    document.getElementById('ewalletDisplay').style.display = 'flex';
+                    break;
             }
         }
+
 
         // Calculate change for cash payment
         function calculateChange() {
-            if (selectedPaymentMethod !== 'cash') return;
-            
             const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
             const received = parseFloat(document.getElementById('cashReceived').value) || 0;
             const change = received - total;
-            
+           
             document.getElementById('cashChange').value = change >= 0 ? change.toFixed(2) : '0.00';
             document.getElementById('displayPaid').textContent = `RM${received.toFixed(2)}`;
             document.getElementById('displayChange').textContent = `RM${change >= 0 ? change.toFixed(2) : '0.00'}`;
             document.getElementById('displayDue').textContent = `RM${Math.max(0, total - received).toFixed(2)}`;
         }
+
 
         // Complete the transaction
         function completeTransaction() {
@@ -544,23 +725,34 @@
                 alert('No items in the order');
                 return;
             }
-            
-            if (!selectedPaymentMethod) {
-                alert('Please select a payment method');
-                return;
-            }
-            
-            // Validate cash payment
+           
+            // Validate payment method specific requirements
             if (selectedPaymentMethod === 'cash') {
                 const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
                 const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-                
+               
                 if (received < total) {
                     alert('Amount received is less than total amount');
                     return;
                 }
+            } else if (selectedPaymentMethod === 'card') {
+                const cardNumber = document.getElementById('cardNumber').value;
+                if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
+                    alert('Please enter a valid card number');
+                    return;
+                }
+                const cardExpiry = document.getElementById('cardExpiry').value;
+                if (!cardExpiry || cardExpiry.length < 5) {
+                    alert('Please enter a valid expiry date (MM/YY)');
+                    return;
+                }
+                const cardCVV = document.getElementById('cardCVV').value;
+                if (!cardCVV || cardCVV.length < 3) {
+                    alert('Please enter a valid CVV');
+                    return;
+                }
             }
-            
+           
             const transactionData = {
                 cashierId: getCashierId(),
                 totalAmount: parseFloat(document.getElementById('displayTotal').textContent.replace('RM', '')),
@@ -571,7 +763,21 @@
                     price: item.price
                 }))
             };
-            
+           
+            // Add payment details
+            if (selectedPaymentMethod === 'cash') {
+                transactionData.paymentDetails = {
+                    amountReceived: parseFloat(document.getElementById('cashReceived').value),
+                    change: parseFloat(document.getElementById('cashChange').value)
+                };
+            } else if (selectedPaymentMethod === 'card') {
+                transactionData.paymentDetails = {
+                    cardNumber: document.getElementById('cardNumber').value,
+                    cardExpiry: document.getElementById('cardExpiry').value,
+                    cardCVV: document.getElementById('cardCVV').value
+                };
+            }
+           
             // Send transaction to server
             fetch('/cashier/complete-transaction', {
                 method: 'POST',
@@ -585,11 +791,11 @@
                 if (data.success) {
                     // Show receipt
                     showReceiptModal(data.receiptPdf);
-                    
+                   
                     // Update success modal
                     document.getElementById('transactionId').textContent = data.transactionId;
                     document.getElementById('transactionAmount').textContent = `RM${data.totalAmount.toFixed(2)}`;
-                    
+                   
                     // Clear cart
                     cart = [];
                     sessionStorage.removeItem('cart');
@@ -603,7 +809,8 @@
             });
         }
 
-        // Calculator functions
+
+        // Calculator functions for cash payment
         function calcInput(value) {
             if (currentCalcValue === '0' && value !== '.') {
                 currentCalcValue = value;
@@ -613,24 +820,20 @@
             updateCalcDisplay();
         }
 
+
         function calcClear() {
             currentCalcValue = '0';
             updateCalcDisplay();
         }
 
+
         function clearCalculator() {
             currentCalcValue = '0';
             updateCalcDisplay();
-            
-            if (selectedPaymentMethod === 'cash') {
-                document.getElementById('cashReceived').value = '';
-                document.getElementById('cashChange').value = '0.00';
-                document.getElementById('displayPaid').textContent = 'RM0.00';
-                document.getElementById('displayChange').textContent = 'RM0.00';
-                const total = parseFloat(document.getElementById('displayTotal').textContent.replace('RM', ''));
-                document.getElementById('displayDue').textContent = `RM${total.toFixed(2)}`;
-            }
+            document.getElementById('cashReceived').value = '0.00';
+            calculateChange();
         }
+
 
         function calcBackspace() {
             if (currentCalcValue.length === 1) {
@@ -640,6 +843,7 @@
             }
             updateCalcDisplay();
         }
+
 
         function calcEquals() {
             try {
@@ -653,41 +857,139 @@
             }
         }
 
+
         function updateCalcDisplay() {
             document.getElementById('calcDisplay').textContent = currentCalcValue;
         }
 
+
         function applyToPayment() {
             if (selectedPaymentMethod === 'cash') {
-                document.getElementById('cashReceived').value = currentCalcValue;
+                const paidAmount = currentCalcValue === '0' ? '0.00' : currentCalcValue;
+                document.getElementById('cashReceived').value = paidAmount;
                 calculateChange();
+                currentCalcValue = '0';
+                updateCalcDisplay();
             }
         }
+
+
+        // Card input functions
+        function updateCardFieldDisplay() {
+            document.getElementById('currentFieldDisplay').textContent = cardFields[currentCardField].display;
+            let displayValue = cardFields[currentCardField].value;
+           
+            // Format card number with spaces every 4 digits
+            if (currentCardField === 'number') {
+                displayValue = displayValue.replace(/\s/g, '')
+                    .replace(/(\d{4})/g, '$1 ')
+                    .trim();
+            }
+            // Format expiry date as MM/YY
+            else if (currentCardField === 'expiry' && displayValue.length >= 2) {
+                displayValue = displayValue.slice(0, 2) + '/' + displayValue.slice(2);
+            }
+           
+            document.getElementById('currentFieldValue').textContent = displayValue || 'Enter ' + cardFields[currentCardField].display.toLowerCase();
+        }
+
+
+        function nextCardField() {
+            if (currentCardField === 'number') currentCardField = 'expiry';
+            else if (currentCardField === 'expiry') currentCardField = 'cvv';
+            else currentCardField = 'number';
+            updateCardFieldDisplay();
+        }
+
+
+        function prevCardField() {
+            if (currentCardField === 'number') currentCardField = 'cvv';
+            else if (currentCardField === 'expiry') currentCardField = 'number';
+            else currentCardField = 'expiry';
+            updateCardFieldDisplay();
+        }
+
+
+        function cardInput(value) {
+            // Handle slash for expiry date
+            if (currentCardField === 'expiry' && value === '/') {
+                if (cardFields.expiry.value.length === 2) {
+                    cardFields.expiry.value += '/';
+                }
+                return;
+            }
+           
+            // Don't exceed max length
+            if (cardFields[currentCardField].value.replace(/\D/g, '').length >= cardFields[currentCardField].maxLength) {
+                return;
+            }
+           
+            // Only allow numbers
+            if (!/^\d$/.test(value)) return;
+           
+            cardFields[currentCardField].value += value;
+            updateCardFieldDisplay();
+        }
+
+
+        function cardBackspace() {
+            if (cardFields[currentCardField].value.length > 0) {
+                cardFields[currentCardField].value = cardFields[currentCardField].value.slice(0, -1);
+                updateCardFieldDisplay();
+            }
+        }
+
+
+        function clearCardField() {
+            cardFields[currentCardField].value = '';
+            updateCardFieldDisplay();
+        }
+
+
+        function applyCardField() {
+            if (currentCardField === 'number') {
+                document.getElementById('cardNumber').value = cardFields.number.value.replace(/\s/g, '');
+            } else if (currentCardField === 'expiry') {
+                let expiry = cardFields.expiry.value;
+                if (expiry.length >= 2) {
+                    expiry = expiry.slice(0, 2) + '/' + expiry.slice(2);
+                }
+                document.getElementById('cardExpiry').value = expiry;
+            } else if (currentCardField === 'cvv') {
+                document.getElementById('cardCVV').value = cardFields.cvv.value;
+            }
+           
+            // Auto-advance to next field
+            nextCardField();
+        }
+
 
         // Show receipt modal
         function showReceiptModal(pdfBase64) {
             const modal = document.getElementById('receiptModal');
             const frame = document.getElementById('receiptFrame');
-            
+           
             const pdfBlob = base64ToBlob(pdfBase64, 'application/pdf');
             const pdfUrl = URL.createObjectURL(pdfBlob);
             frame.src = pdfUrl;
-            
+           
             modal.style.display = 'flex';
         }
+
 
         function closeReceiptModal() {
             const modal = document.getElementById('receiptModal');
             const frame = document.getElementById('receiptFrame');
-            
+           
             if (frame.src) {
                 URL.revokeObjectURL(frame.src);
                 frame.src = '';
             }
-            
+           
             modal.style.display = 'none';
             document.getElementById('successModal').style.display = 'flex';
         }
+
 
         function printReceipt() {
             const frame = document.getElementById('receiptFrame');
@@ -695,26 +997,28 @@
             frame.contentWindow.print();
         }
 
+
         function base64ToBlob(base64, contentType) {
             contentType = contentType || '';
             const sliceSize = 1024;
             const byteCharacters = atob(base64);
             const byteArrays = [];
-            
+           
             for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
                 const slice = byteCharacters.slice(offset, offset + sliceSize);
                 const byteNumbers = new Array(slice.length);
-                
+               
                 for (let i = 0; i < slice.length; i++) {
                     byteNumbers[i] = slice.charCodeAt(i);
                 }
-                
+               
                 const byteArray = new Uint8Array(byteNumbers);
                 byteArrays.push(byteArray);
             }
-            
+           
             return new Blob(byteArrays, {type: contentType});
         }
+
 
         // Get cashier ID (you'll need to implement this based on your auth system)
         function getCashierId() {
@@ -722,9 +1026,14 @@
             return 1; // Replace with actual implementation
         }
 
+
         function showLogoutModal() {
             document.getElementById('logoutModal').style.display = 'flex';
         }
     </script>
 </body>
 </html>
+
+
+
+
