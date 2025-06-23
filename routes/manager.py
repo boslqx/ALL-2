@@ -126,7 +126,36 @@ class DashboardView(MethodView):
                             manager_name=get_manager_name(session.get('user_id')),
                             active_tab='Dashboard')
 
-class DashboardDataView(MethodView):
+class ManagerProfileAPIView(MethodView):
+    def get(self):
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        try:
+            conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT UserID as id, Username, Name as name, Email as email, Role as role
+                FROM User 
+                WHERE UserID = ?
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+                
+            return jsonify(dict(user))
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+class ManagerDashboardStatsAPIView(MethodView):
     def get(self):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -135,25 +164,39 @@ class DashboardDataView(MethodView):
             cursor.execute("SELECT COUNT(*) FROM Product")
             total_products = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity < 10")
+            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity <= 5")
             low_stock_items = cursor.fetchone()[0]
 
             cursor.execute("""
-                SELECT COUNT(*) FROM Sale 
-                WHERE Timestamp >= DATE('now', '-7 days')
+                SELECT COUNT(*) FROM "Transaction" 
+                WHERE Datetime >= DATE('now', '-7 days')
             """)
             recent_sales = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT A.Description, A.ActionType, A.Timestamp, 
+                       COALESCE(U.Name, U.Username) AS UserName
+                FROM ActivityLog A
+                LEFT JOIN User U ON A.UserID = U.UserID
+                WHERE DATE(A.Timestamp) = DATE('now')
+                ORDER BY A.Timestamp DESC
+                LIMIT 5
+            """)
+            recent_activities = [dict(row) for row in cursor.fetchall()]
 
             return jsonify({
                 'total_products': total_products,
                 'low_stock_items': low_stock_items,
-                'recent_sales': recent_sales
+                'recent_sales': recent_sales,
+                'recent_activities': recent_activities  # ✅
             })
+
         except Exception as e:
             return jsonify({'error': str(e)}), 500
         finally:
             if 'conn' in locals():
                 conn.close()
+
 
 class AllProductsView(MethodView):
     def get(self):
@@ -893,7 +936,9 @@ def inject_manager_name():
 # Register Views
 manager_bp.add_url_rule('/manager', view_func=DashboardView.as_view('manager'))
 manager_bp.add_url_rule('/manager/dashboard', view_func=DashboardView.as_view('dashboard'))
-manager_bp.add_url_rule('/manager/dashboard-data', view_func=DashboardDataView.as_view('dashboard_data'))
+manager_bp.add_url_rule('/manager/dashboard-data', view_func=ManagerDashboardStatsAPIView.as_view('dashboard_data'))
+manager_bp.add_url_rule('/manager/api/profile', view_func=ManagerProfileAPIView.as_view('manager_profile_api'))
+manager_bp.add_url_rule('/manager/api/dashboard-stats', view_func=ManagerDashboardStatsAPIView.as_view('manager_dashboard_stats'))
 manager_bp.add_url_rule('/manager/all-products', view_func=AllProductsView.as_view('all_products'))
 manager_bp.add_url_rule('/manager/new-transaction', view_func=NewTransactionView.as_view('new_transaction'))
 manager_bp.add_url_rule('/manager/register', view_func=RegisterPageView.as_view('register_page'))
@@ -910,9 +955,9 @@ manager_bp.add_url_rule('/manager/product/<int:product_id>', view_func=ProductDe
 manager_bp.add_url_rule('/manager/update-product/<int:product_id>', view_func=UpdateProductView.as_view('update_product'), methods=['POST'])
 manager_bp.add_url_rule('/manager/delete-product/<int:product_id>', view_func=DeleteProductView.as_view('delete_product'), methods=['POST'])
 manager_bp.add_url_rule('/manager/restock-product', view_func=RestockProductView.as_view('restock_product'), methods=['POST'])
-manager_bp.add_url_rule('/api/products', view_func=ProductsAPIView.as_view('get_products'))
+manager_bp.add_url_rule('/manager/api/products', view_func=ProductsAPIView.as_view('get_manager_products'))  # Changed from /api/products
 manager_bp.add_url_rule('/manager/register-product', view_func=RegisterProductView.as_view('register_product'), methods=['GET', 'POST'])
 manager_bp.add_url_rule('/manager/print-qr/<product_id>', view_func=PrintQRView.as_view('print_qr'))
 manager_bp.add_url_rule('/manager/sales-data', view_func=SalesDataView.as_view('sales_data'))
 manager_bp.add_url_rule('/manager/inventory-report-data', view_func=InventoryReportDataView.as_view('inventory_report_data'))
-manager_bp.add_url_rule('/api/product-categories', view_func=ProductCategoriesView.as_view('get_product_categories'))
+manager_bp.add_url_rule('/manager/api/product-categories', view_func=ProductCategoriesView.as_view('get_product_categories'))

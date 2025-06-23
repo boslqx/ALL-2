@@ -1,37 +1,192 @@
 {% extends "manager_base.html" %}
 {% block content %}
-<div id="Dashboard" class="section">
+<div class="dashboard-container">
     <h2>Manager Dashboard</h2>
-    <!-- Add your dashboard content here -->
-    <div class="dashboard-summary">
-        <div class="summary-card">
-            <h3>Total Products</h3>
-            <p class="summary-value" id="total-products">0</p>
+    
+    <!-- Profile Section -->
+    <div class="dashboard-section profile-section">
+        <h3><i class="fas fa-user"></i> Profile</h3>
+        <div class="profile-details">
+            <div class="profile-row">
+                <div class="profile-label">Name:</div>
+                <div class="profile-value" id="profile-name">Loading...</div>
+                <div class="profile-label">Email:</div>
+                <div class="profile-value" id="profile-email">Loading...</div>
+            </div>
+            <div class="profile-row">
+                <div class="profile-label">ID:</div>
+                <div class="profile-value" id="profile-id">Loading...</div>
+                <div class="profile-label">Role:</div>
+                <div class="profile-value" id="profile-role">Loading...</div>
+            </div>
         </div>
-        <div class="summary-card">
-            <h3>Low Stock Items</h3>
-            <p class="summary-value" id="low-stock-items">0</p>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+        <div class="quick-actions">
+            <a href="/manager/register-product" class="quick-action">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New Product</span>
+            </a>
+            <a href="/manager/all-products" class="quick-action">
+                <i class="fas fa-boxes"></i>
+                <span>Manage Products</span>
+            </a>
+            <a href="/manager/new-transaction" class="quick-action">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </a>
         </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="summary-cards">
         <div class="summary-card">
-            <h3>Recent Sales</h3>
-            <p class="summary-value" id="recent-sales">0</p>
+            <div class="card-icon">
+                <i class="fas fa-box-open"></i>
+            </div>
+            <div class="card-content">
+                <h3>Total Products</h3>
+                <span id="total-products">Loading...</span>
+            </div>
         </div>
+        
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="card-content">
+                <h3>Low Stock Items</h3>
+                <span id="low-stock">Loading...</span>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon">
+                <i class="fas fa-history"></i>
+            </div>
+            <div class="card-content">
+                <h3>Recent Sales</h3>
+                <span id="recent-sales">Loading...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity Section -->
+    <div class="dashboard-section">
+        <h3><i class="fas fa-list-alt"></i> Recent Activities</h3>
+        <div class="recent-activities" id="recent-activities-list">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Loading activities...
+            </div>
+        </div>
+        <a href="/manager/activity-page" class="view-all-link">
+            View All Activities <i class="fas fa-arrow-right"></i>
+        </a>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Load dashboard data
-    fetch('/manager/dashboard-data')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('total-products').textContent = data.total_products;
-            document.getElementById('low-stock-items').textContent = data.low_stock_items;
-            document.getElementById('recent-sales').textContent = data.recent_sales;
-        })
-        .catch(error => {
-            console.error('Error loading dashboard data:', error);
-        });
+    // Fetch dashboard data
+    fetchDashboardData();
+    fetchProfileData();
+    fetchRecentActivities();
 });
+
+async function fetchDashboardData() {
+    try {
+        const response = await fetch('/manager/api/dashboard-stats');
+        const data = await response.json();
+        
+        // Update summary cards
+        document.getElementById('total-products').textContent = data.total_products;
+        document.getElementById('low-stock').textContent = data.low_stock_items;
+        document.getElementById('recent-sales').textContent = data.recent_sales;
+        
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        document.getElementById('total-products').textContent = 'Error';
+        document.getElementById('low-stock').textContent = 'Error';
+        document.getElementById('recent-sales').textContent = 'Error';
+    }
+}
+
+async function fetchProfileData() {
+    try {
+        const response = await fetch('/manager/api/profile');
+        const data = await response.json();
+        
+        // Update profile information
+        document.getElementById('profile-name').textContent = data.name || 'N/A';
+        document.getElementById('profile-email').textContent = data.email || 'N/A';
+        document.getElementById('profile-id').textContent = data.id || 'N/A';
+        document.getElementById('profile-role').textContent = data.role || 'N/A';
+        
+    } catch (error) {
+        console.error('Error loading profile data:', error);
+        document.getElementById('profile-name').textContent = 'Error loading';
+        document.getElementById('profile-email').textContent = 'Error loading';
+        document.getElementById('profile-id').textContent = 'Error loading';
+        document.getElementById('profile-role').textContent = 'Error loading';
+    }
+}
+
+async function fetchRecentActivities() {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // format: YYYY-MM-DD
+        const response = await fetch(`/manager/activity-logs?from=${today}&to=${today}`);
+        const activities = await response.json();
+
+        const activitiesList = document.getElementById('recent-activities-list');
+        activitiesList.innerHTML = '';
+
+        if (activities.length === 0) {
+            activitiesList.innerHTML = '<div class="no-activities">No recent activities today</div>';
+            return;
+        }
+
+        activities.forEach(activity => {
+            const activityEl = document.createElement('div');
+            activityEl.className = 'activity-item';
+            activityEl.innerHTML = `
+                <div class="activity-icon">
+                    <i class="${getActivityIcon(activity.ActionType)}"></i>
+                </div>
+                <div class="activity-details">
+                    <div class="activity-description">${activity.Description}</div>
+                    <div class="activity-meta">
+                        <span class="activity-user">${activity.UserName || 'System'}</span>
+                        <span class="activity-time">${formatTime(activity.Timestamp)}</span>
+                    </div>
+                </div>
+            `;
+            activitiesList.appendChild(activityEl);
+        });
+    } catch (error) {
+        console.error('Error loading activities:', error);
+        document.getElementById('recent-activities-list').innerHTML = 
+            '<div class="error-message">Failed to load activities</div>';
+    }
+}
+
+
+function getActivityIcon(actionType) {
+    const icons = {
+        'ADD_PRODUCT': 'fas fa-plus-circle text-success',
+        'EDIT_PRODUCT': 'fas fa-edit text-warning',
+        'DELETE_PRODUCT': 'fas fa-trash-alt text-danger',
+        'UPDATE_STOCK': 'fas fa-boxes text-primary'
+    };
+    return icons[actionType] || 'fas fa-info-circle';
+}
+
+function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 </script>
 {% endblock %}

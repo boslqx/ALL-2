@@ -82,26 +82,6 @@
             }
         });
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.querySelector('.sidebar');
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'sidebar-toggle';
-        toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
-        document.body.appendChild(toggleBtn);
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'overlay';
-        document.body.appendChild(overlay);
-        
-        toggleBtn.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-        
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('active');
-        });
-    });
 </script>
 </body>
 </html> 
