@@ -10,17 +10,12 @@ from io import BytesIO
 import base64
 from db.models import Product
 from datetime import datetime
-from extensions import admin_required
+from extensions import admin_required, apply_role_protection, role_required
 
 
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
-
-@admin_bp.before_request
-@admin_required
-def before_request():
-    pass
-
+apply_role_protection(admin_bp, 'admin')
 
 # Utility functions
 def get_admin_name():
@@ -306,6 +301,7 @@ class PrintView(MethodView):
         return render_template('print.html', product=product)
 
 class ProductsAPIView(MethodView):
+    decorators = [role_required('admin', 'manager')]
     def get(self):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))

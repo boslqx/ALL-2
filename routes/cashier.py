@@ -7,15 +7,11 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 import base64
-from extensions import cashier_required
+from extensions import apply_role_protection
 
 
 cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
-
-@cashier_bp.before_request
-@cashier_required
-def before_cashier_request():
-    pass
+apply_role_protection(cashier_bp, 'cashier')
 
 
 def get_db_connection():
