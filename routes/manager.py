@@ -5,7 +5,7 @@ import secrets
 import string
 from datetime import datetime, timedelta
 import base64
-from extensions import mail
+from extensions import mail, manager_required
 from flask_mail import Message
 from io import BytesIO
 import qrcode
@@ -14,7 +14,13 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from werkzeug.utils import secure_filename
 
+
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
+
+@manager_bp.before_request
+@manager_required
+def before_manager_request():
+    pass
 
 # Utility Functions
 def get_manager_name(user_id):

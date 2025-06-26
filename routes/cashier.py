@@ -7,9 +7,16 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 import base64
+from extensions import cashier_required
 
 
 cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
+
+@cashier_bp.before_request
+@cashier_required
+def before_cashier_request():
+    pass
+
 
 def get_db_connection():
     db_path = os.path.join(current_app.instance_path, 'site.db')

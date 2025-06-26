@@ -10,8 +10,17 @@ from io import BytesIO
 import base64
 from db.models import Product
 from datetime import datetime
+from extensions import admin_required
+
+
 
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
+
+@admin_bp.before_request
+@admin_required
+def before_request():
+    pass
+
 
 # Utility functions
 def get_admin_name():
