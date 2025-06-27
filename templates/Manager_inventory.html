@@ -3,13 +3,14 @@
 {% block title %}Inventory Report - Manager Dashboard{% endblock %}
 
 {% block content %}
-<div class="inventory-report-container">
+<div class="content-container">
     <h2>Inventory Report</h2>
+    <span id="report-status" class="status-message"></span>
 
-    <div class="report-filters">
+    <div class="filter-options">
         <div class="filter-group">
             <label for="category-filter">Category</label>
-            <select id="category-filter" class="report-filter-select">
+            <select class="filter-select" id="category-filter">
                 <option value="all">All Categories</option>
                 <!-- Will be populated dynamically -->
             </select>
@@ -17,7 +18,7 @@
 
         <div class="filter-group">
             <label for="stock-filter">Stock Status</label>
-            <select id="stock-filter" class="report-filter-select">
+            <select class="filter-select" id="stock-filter">
                 <option value="all">All Items</option>
                 <option value="low">Low Stock (<10)</option>
                 <option value="out">Out of Stock</option>
@@ -25,12 +26,17 @@
             </select>
         </div>
 
-        <button id="generate-report" class="report-button">
-            <i class="fas fa-file-export"></i> Generate Report
-        </button>
+        <div class="filter-button-group">
+            <button class="action-button primary" id="apply-filters">
+                <i class="fas fa-filter"></i> Apply Filters
+            </button>
+            <button class="action-button secondary" id="reset-filters">
+                <i class="fas fa-redo"></i> Reset
+            </button>
+        </div>
     </div>
 
-    <div class="report-results">
+    <div class="table-container">
         <table id="inventory-report-table">
             <thead>
                 <tr>
@@ -53,86 +59,139 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Load categories
-    fetch('/api/product-categories')
-        .then(response => response.json())
-        .then(categories => {
-            const select = document.getElementById('category-filter');
-            categories.forEach(category => {
+    let allCategories = [];
+    const statusElement = document.getElementById('report-status');
+
+    // Initialize
+    loadCategories().then(applyFilters); // Changed from generateReport to applyFilters
+
+    // Event Listeners
+    document.getElementById('apply-filters').addEventListener('click', applyFilters); // Changed from generate-report to apply-filters
+    document.getElementById('reset-filters').addEventListener('click', resetFilters);
+
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/product-categories');
+            if (!response.ok) throw new Error('Failed to fetch categories');
+
+            allCategories = await response.json();
+            const categoryFilter = document.getElementById('category-filter');
+
+            // Clear existing options except first
+            while (categoryFilter.options.length > 1) {
+                categoryFilter.remove(1);
+            }
+
+            allCategories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category;
                 option.textContent = category;
-                select.appendChild(option);
+                categoryFilter.appendChild(option);
             });
-        });
-    
-    // Generate report button handler
-    document.getElementById('generate-report').addEventListener('click', generateReport);
-    
-    function generateReport() {
-        const category = document.getElementById('category-filter').value;
-        const stockStatus = document.getElementById('stock-filter').value;
-        
-        // Show loading state
-        const tbody = document.getElementById('report-body');
-        tbody.innerHTML = '<tr><td colspan="6"><i class="fas fa-spinner fa-spin"></i> Loading inventory data...</td></tr>';
-        
-        // Build query params
-        const params = new URLSearchParams();
-        if (category !== 'all') params.append('category', category);
-        if (stockStatus !== 'all') params.append('stock', stockStatus);
-        
-        fetch(`/manager/inventory-report-data?${params.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                renderReport(data);
-            })
-            .catch(error => {
-                tbody.innerHTML = `<tr><td colspan="6">Error loading report: ${error.message}</td></tr>`;
-            });
+        } catch (error) {
+            console.error('Failed to load categories:', error);
+            statusElement.textContent = 'Error loading categories';
+            statusElement.style.color = '#e74c3c';
+        }
     }
-    
+
+    async function applyFilters() { // Changed from generateReport to applyFilters
+        const tbody = document.getElementById('report-body');
+        tbody.innerHTML = `
+            <tr class="loading-row">
+                <td colspan="6">
+                    <i class="fas fa-spinner fa-spin"></i> Loading inventory data...
+                </td>
+            </tr>
+        `;
+        statusElement.textContent = 'Applying filters...';
+        statusElement.style.color = '#3498db';
+
+        const filters = {
+            category: document.getElementById('category-filter').value,
+            stock: document.getElementById('stock-filter').value
+        };
+
+        try {
+            const params = new URLSearchParams();
+            if (filters.category !== 'all') params.append('category', filters.category);
+            if (filters.stock !== 'all') params.append('stock', filters.stock);
+
+            const response = await fetch(`/manager/inventory-report-data?${params.toString()}`);
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+
+            const products = await response.json();
+            if (products.error) throw new Error(products.error);
+
+            renderReport(products);
+            statusElement.textContent = `Showing ${products.length} product(s)`;
+            statusElement.style.color = '#27ae60';
+        } catch (error) {
+            console.error('Error loading report:', error);
+            tbody.innerHTML = `
+                <tr class="error-row">
+                    <td colspan="6">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error loading report: ${error.message}
+                    </td>
+                </tr>
+            `;
+            statusElement.textContent = 'Failed to load report';
+            statusElement.style.color = '#e74c3c';
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('category-filter').value = 'all';
+        document.getElementById('stock-filter').value = 'all';
+        applyFilters(); // Changed from generateReport to applyFilters
+    }
+
     function renderReport(products) {
         const tbody = document.getElementById('report-body');
         tbody.innerHTML = '';
-        
-        if (products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No products match the selected criteria</td></tr>';
+
+        if (!products.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-message">
+                        No products match the selected criteria
+                    </td>
+                </tr>
+            `;
             return;
         }
-        
+
         products.forEach(product => {
             const row = document.createElement('tr');
-            
+            row.className = 'data-row';
+
             // Determine stock status
             let status = '';
             let statusClass = '';
             if (product.StockQuantity <= 0) {
-                status = 'Out of Stock';
+                status = '<i class="fas fa-times-circle"></i> Out of Stock';
                 statusClass = 'status-out';
             } else if (product.StockQuantity < 10) {
-                status = 'Low Stock';
+                status = '<i class="fas fa-exclamation-triangle"></i> Low Stock';
                 statusClass = 'status-low';
             } else {
-                status = 'In Stock';
+                status = '<i class="fas fa-check-circle"></i> In Stock';
                 statusClass = 'status-ok';
             }
-            
+
             row.innerHTML = `
-                <td>${product.ProductID}</td>
+                <td class="product-id">${product.ProductID}</td>
                 <td>${product.ProductName}</td>
                 <td>${product.Category}</td>
                 <td>${product.StockQuantity}</td>
                 <td>$${product.Price.toFixed(2)}</td>
                 <td class="${statusClass}">${status}</td>
             `;
-            
+
             tbody.appendChild(row);
         });
     }
-    
-    // Load initial report
-    generateReport();
 });
 </script>
 {% endblock %}
