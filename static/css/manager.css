@@ -1951,3 +1951,23 @@ body {
         gap: 10px;
     }
 }
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .sales-report-container, .sales-report-container * {
+        visibility: visible;
+    }
+    .sales-report-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    .report-filters, .action-button {
+        display: none !important;
+    }
+    .chart-card {
+        page-break-inside: avoid;
+    }
+}

@@ -27,6 +27,11 @@
         <label for="end-date">To:</label>
         <input type="date" id="end-date" class="filter-select">
     </div>
+        <div class="report-actions">
+    <button id="print-report" class="action-button">
+        <i class="fas fa-file-pdf"></i> Export to PDF
+    </button>
+</div>
 
     <button id="refresh-sales" class="action-button">
         <i class="fas fa-sync-alt"></i> Refresh
@@ -678,7 +683,87 @@ function initMonthlyChart() {
         }
     });
 }
+// PDF Export Functionality
+document.getElementById('print-report').addEventListener('click', generatePDF);
 
+function generatePDF() {
+    // Create a temporary container for print content
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-container';
+
+    // Clone the sales report content
+    const reportContent = document.querySelector('.sales-report-container').cloneNode(true);
+
+    // Remove elements we don't want in the PDF
+    const elementsToRemove = reportContent.querySelectorAll('.report-filters, .action-button, #generate-forecast');
+    elementsToRemove.forEach(el => el.remove());
+
+    // Add title and date to print
+    const title = document.createElement('h1');
+    title.textContent = 'Sales Report - ' + new Date().toLocaleDateString();
+    title.style.textAlign = 'center';
+    title.style.marginBottom = '20px';
+    printContainer.appendChild(title);
+
+    // Add the report content
+    printContainer.appendChild(reportContent);
+
+    // Create a new window for printing
+    const printWindow = window.open('', '', 'width=1000,height=600');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Sales Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1, h2, h3 { color: #333; }
+                .summary-card, .chart-card, .table-card {
+                    margin-bottom: 20px;
+                    border: 1px solid #ddd;
+                    padding: 15px;
+                    border-radius: 5px;
+                }
+                .summary-value { font-size: 24px; font-weight: bold; }
+                .sales-summary {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 15px;
+                    margin-bottom: 20px;
+                }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                th { background-color: #f2f2f2; }
+                .forecast-summary {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 15px;
+                    margin-top: 15px;
+                }
+                .forecast-metric {
+                    border: 1px solid #eee;
+                    padding: 10px;
+                    border-radius: 5px;
+                    text-align: center;
+                }
+                .metric-label { display: block; font-weight: bold; }
+                .metric-value { font-size: 18px; }
+            </style>
+        </head>
+        <body>
+    `);
+    printWindow.document.write(printContainer.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+
+    // Wait for content to load before printing
+    printWindow.onload = function() {
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    };
+}
 
 // Initialize charts on page load
 initMonthlyChart();
