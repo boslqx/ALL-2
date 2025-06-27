@@ -252,6 +252,7 @@ class RegisterProductView(MethodView):
                 conn.close()
 
 class PrintQRView(MethodView):
+    decorators = [role_required('manager')]
     def get(self, product_id):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -382,6 +383,7 @@ class ProductDetailsView(MethodView):
                 conn.close()
 
 class UpdateProductView(MethodView):
+    decorators = [role_required('admin', 'manager')]
     def post(self, product_id):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -473,6 +475,7 @@ class UpdateProductView(MethodView):
                 conn.close()
 
 class DeleteProductView(MethodView):
+    decorators = [role_required('admin', 'manager')]
     def post(self, product_id):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -505,6 +508,7 @@ class DeleteProductView(MethodView):
                 conn.close()
 
 class RestockProductView(MethodView):
+    decorators = [role_required('admin', 'manager')]
     def post(self):
         try:
             data = request.get_json()

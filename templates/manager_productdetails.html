@@ -146,7 +146,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const updateUrl = "{{ url_for('admin.update_product', product_id=product.ProductID) }}";
+    const updateUrl = "{{ url_for('manager.update_product', product_id=product.ProductID) }}";
     const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
 
     // DOM Elements
@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Print QR Code
     document.querySelector('.print-qr')?.addEventListener('click', function () {
-        window.open(`/print-qr/{{ product.ProductID }}`, '_blank');
+        window.open(`{{ url_for('manager.print_qr', product_id=product.ProductID) }}`, '_blank');
     });
 
     // Delete Product
@@ -299,14 +299,27 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch(`/delete-product/{{ product.ProductID }}`, {
+                fetch(`{{ url_for('manager.delete_product', product_id=product.ProductID) }}`, {
                     method: 'POST'
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Network response was not ok');
+                })
                 .then(data => {
                     if (data.success) {
-                        window.location.href = "{{ url_for('admin.all_products') }}";
+                        window.location.href = "{{ url_for('manager.all_products') }}";
                     }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 });
             }
         });

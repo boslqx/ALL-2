@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function () {
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                fetch('/api/products/restock', {
+                fetch('/manager/api/products/restock', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
