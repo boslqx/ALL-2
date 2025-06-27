@@ -5,7 +5,7 @@ import secrets
 import string
 from datetime import datetime, timedelta
 import base64
-from extensions import mail
+from extensions import mail, apply_role_protection
 from flask_mail import Message
 from io import BytesIO
 import qrcode
@@ -14,7 +14,10 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from werkzeug.utils import secure_filename
 
+
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
+apply_role_protection(manager_bp, 'manager')
+
 
 # Utility Functions
 def get_manager_name(user_id):
@@ -955,7 +958,7 @@ manager_bp.add_url_rule('/manager/product/<int:product_id>', view_func=ProductDe
 manager_bp.add_url_rule('/manager/update-product/<int:product_id>', view_func=UpdateProductView.as_view('update_product'), methods=['POST'])
 manager_bp.add_url_rule('/manager/delete-product/<int:product_id>', view_func=DeleteProductView.as_view('delete_product'), methods=['POST'])
 manager_bp.add_url_rule('/manager/restock-product', view_func=RestockProductView.as_view('restock_product'), methods=['POST'])
-manager_bp.add_url_rule('/manager/api/products', view_func=ProductsAPIView.as_view('get_manager_products'))  # Changed from /api/products
+manager_bp.add_url_rule('/manager/api/products', view_func=ProductsAPIView.as_view('get_manager_products'))
 manager_bp.add_url_rule('/manager/register-product', view_func=RegisterProductView.as_view('register_product'), methods=['GET', 'POST'])
 manager_bp.add_url_rule('/manager/print-qr/<product_id>', view_func=PrintQRView.as_view('print_qr'))
 manager_bp.add_url_rule('/manager/sales-data', view_func=SalesDataView.as_view('sales_data'))

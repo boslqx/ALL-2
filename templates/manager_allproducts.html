@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function loadProducts() {
         showLoading();
-        fetch('/api/products')
+        fetch('/manager/api/products')
             .then(handleResponse)
             .then(products => {
                 allProducts = products;

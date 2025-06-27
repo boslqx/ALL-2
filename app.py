@@ -6,7 +6,7 @@ from routes.admin import admin_bp
 from routes.manager import manager_bp
 from routes.cashier import cashier_bp
 from routes.register import register_bp
-from extensions import mail  
+from extensions import mail, role_required, admin_required, manager_required, cashier_required
 import os
 
 # Path to templates folder
@@ -47,5 +47,9 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+
+@app.errorhandler(403)
+def forbidden(error):
+    return render_template('errors/403.html'), 403
 
 
