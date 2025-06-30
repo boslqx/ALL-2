@@ -10,7 +10,7 @@
 <body>
     <div class="sidebar">
         <div class="logo">
-            <h2>{{ cashier_name }}</h2>
+            <img src="{{ url_for('static', filename='cover.png') }}" alt="Admin Logo" class="sidebar-logo">
         </div>
         <ul class="nav-menu">
             <li class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
