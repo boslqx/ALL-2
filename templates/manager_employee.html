@@ -29,10 +29,6 @@
                 <input type="email" id="employeeEmail" name="email" required>
             </div>
             <div class="form-group">
-                <label for="employeeUsername">Username:</label>
-                <input type="text" id="employeeUsername" name="username" required>
-            </div>
-            <div class="form-group">
                 <label for="employeeRole">Role:</label>
                 <select id="employeeRole" name="role" required>
                     <option value="cashier">Cashier</option>
@@ -59,7 +55,6 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
                         <th>Status</th>
@@ -107,7 +102,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const formData = {
                 name: document.getElementById('employeeName').value,
                 email: document.getElementById('employeeEmail').value,
-                username: document.getElementById('employeeUsername').value,
                 role: document.getElementById('employeeRole').value
             };
 
@@ -163,7 +157,7 @@ function renderEmployees(employees) {
 
     tbody.innerHTML = '';
     if (employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No employees found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No employees found</td></tr>';
         return;
     }
 
@@ -171,7 +165,6 @@ function renderEmployees(employees) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${employee.Name}</td>
-            <td>${employee.Username}</td>
             <td>${employee.Email || 'N/A'}</td>
             <td>${employee.Role === 'admin' ? 'Admin' : 'Cashier'}</td>
             <td>${employee.IsActive ? 'Active' : 'Inactive'}</td>

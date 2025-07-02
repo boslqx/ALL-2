@@ -2,7 +2,6 @@
 {% block content %}
  <div id="products" class="section">
     <div class="products-container">
-        <!-- Header with title and search -->
         <div class="products-header">
             <h2 class="products-title">Products</h2>
             <div class="search-container">
@@ -59,7 +58,6 @@
             </div>
         </div>
 
-        <!-- Products will be loaded here dynamically -->
         <div class="products-grid" id="products-grid">
 
         </div>
@@ -212,16 +210,13 @@ function scanQRCode() {
     }
 }
 
-// DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function () {
     const productsGrid = document.getElementById('products-grid');
     const searchInput = document.querySelector('.search-input');
     const searchButton = document.querySelector('.search-button');
 
-    // Initialize
     loadProducts();
 
-    // Event Listeners
     document.getElementById('apply-filters').addEventListener('click', applyFilters);
     searchButton.addEventListener('click', performSearch);
     searchInput.addEventListener('keyup', e => {
@@ -282,7 +277,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Helper Functions
     function loadProducts() {
         showLoading();
         fetch('/api/products')
@@ -316,7 +310,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (categoryFilter !== 'all') {
             if (categoryFilter === 'Other') {
-                // Filter for categories that aren't in our main list
                 const mainCategories = [
                     'Food & Beverages',
                     'Health & Personal',
@@ -325,7 +318,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 ];
                 filtered = filtered.filter(p => !mainCategories.includes(p.Category));
             } else {
-                // Filter for specific category
                 filtered = filtered.filter(p => p.Category === categoryFilter);
             }
         }
@@ -428,7 +420,6 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
         }).join('');
 
-        // Attach buttons
         document.querySelectorAll('.details-button').forEach(button => {
             button.addEventListener('click', function() {
                 showProductDetails(this.getAttribute('data-id'));

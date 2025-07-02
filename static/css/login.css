@@ -28,7 +28,7 @@ body {
     overflow: hidden;
 }
 
-/* Optional animation for shifting background */
+/* shifting background */
 @keyframes gradientShift {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -48,13 +48,13 @@ body::after {
 }
 
 body::before {
-    background: #93c5fd; /* Pale Blue */
+    background: #93c5fd; 
     top: -150px;
     left: -150px;
 }
 
 body::after {
-    background: #e879f9; /* Light Magenta */
+    background: #e879f9; 
     bottom: -150px;
     right: -150px;
 }
@@ -86,7 +86,7 @@ body::after {
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 8px auto 0 auto;  /* small top margin, no bottom */
+    margin: 8px auto 0 auto;  
     padding: 0;
 }              
 
@@ -241,39 +241,50 @@ body::after {
     color: #1e40af;
 }
 
-/* 👁️ Password field wrapper for eye icon */
+/* Password field wrapper for eye icon */
 .password-wrapper {
     position: relative;
 }
 
 .password-wrapper input[type="password"],
 .password-wrapper input[type="text"] {
-    padding-right: 40px; /* space for the eye icon */
+    padding-right: 40px;
 }
 
-/* 👁️ Eye icon inside password field */
+/* Eye icon inside password field */
 .toggle-password {
     position: absolute;
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    color: #6b7280; /* optional: subtle gray */
+    color: #6b7280; 
 }
 
-/* ✅ Password strength text */
-#password-strength {
-    display: block;
-    margin-top: 4px;
-    font-size: 0.85rem;
-}
-
-/* 📋 Password requirements list */
-.password-requirements {
-    font-size: 0.85rem;
-    margin-top: 10px;
-    color: #555;
-    text-align: left;
-    padding-left: 20px;
-    list-style-type: disc;
-}
+.password-strength-meter {
+            height: 5px;
+            background: #e0e0e0;
+            margin-top: 5px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .password-strength-meter-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .message-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }

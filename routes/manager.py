@@ -46,14 +46,14 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def send_account_email(name, email, username, password, role):
+def send_account_email(name, email, password, role):
     try:
         subject = "Your New Account Details"
         html = f"""
         <h2>Welcome to the System, {name}!</h2>
         <p>Your account has been created with the following details:</p>
         <ul>
-            <li><strong>Username:</strong> {username}</li>
+            <li><strong>Email:</strong> {email}</li>
             <li><strong>Temporary Password:</strong> {password}</li>
             <li><strong>Role:</strong> {role.capitalize()}</li>
         </ul>
@@ -141,7 +141,7 @@ class ManagerProfileAPIView(MethodView):
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT UserID as id, Username, Name as name, Email as email, Role as role
+                SELECT UserID as id, Passcode, Name as name, Email as email, Role as role
                 FROM User 
                 WHERE UserID = ?
             """, (user_id,))
@@ -178,7 +178,7 @@ class ManagerDashboardStatsAPIView(MethodView):
 
             cursor.execute("""
                 SELECT A.Description, A.ActionType, A.Timestamp, 
-                       COALESCE(U.Name, U.Username) AS UserName
+                       COALESCE(U.Name, U.Passcode) AS Passcode
                 FROM ActivityLog A
                 LEFT JOIN User U ON A.UserID = U.UserID
                 WHERE DATE(A.Timestamp) = DATE('now')
@@ -259,9 +259,9 @@ class ActivityLogsView(MethodView):
             query = """
                 SELECT 
                     ActivityLog.*, 
-                    User.Name as UserName,
+                    User.Name as Name,
                     User.Role as Role,
-                    User.Username as Username
+                    User.Passcode as Passcode
                 FROM ActivityLog 
                 LEFT JOIN User ON ActivityLog.UserID = User.UserID
                 WHERE 1=1
@@ -306,7 +306,7 @@ class AllUsersView(MethodView):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT UserID, Name, Username, Email, Role 
+                SELECT UserID, Name, Passcode, Email, Role 
                 FROM User
                 ORDER BY Name
             """)
@@ -324,15 +324,17 @@ class AddEmployeeView(MethodView):
             data = request.get_json()
             name = data.get('name')
             email = data.get('email')
-            username = data.get('username')
             role = data.get('role', 'cashier')
 
-            if not all([name, username, email]):
-                return jsonify({'error': 'Name, username and email are required'}), 400
+            if not all([name, email]):
+                return jsonify({'error': 'Name and email are required'}), 400
 
             token = secrets.token_urlsafe(32)
             expiry = datetime.utcnow() + timedelta(hours=24)
             temp_password = generate_temp_password()
+            
+            # Generate a random 6-digit passcode
+            passcode = ''.join(secrets.choice(string.digits) for _ in range(6))
 
             from werkzeug.security import generate_password_hash
             hashed_temp_password = generate_password_hash(temp_password)
@@ -340,18 +342,21 @@ class AddEmployeeView(MethodView):
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
             cursor = conn.cursor()
 
-            cursor.execute("SELECT UserID FROM User WHERE Username = ? OR Email = ?", (username, email))
+            # Check if passcode or email already exists
+            cursor.execute("SELECT UserID FROM User WHERE Passcode = ? OR Email = ?", (passcode, email))
             if cursor.fetchone():
-                return jsonify({'error': 'Username or email already exists'}), 400
+                return jsonify({'error': 'Passcode or email already exists'}), 400
 
+            # Insert new employee
             cursor.execute("""
-                INSERT INTO User (Name, Username, Email, Role, Password, registration_token, token_expiry, IsActive)
+                INSERT INTO User (Name, Passcode, Email, Role, Password, registration_token, token_expiry, IsActive)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (name, username, email, role, hashed_temp_password, token, expiry, False))
+            """, (name, passcode, email, role, hashed_temp_password, token, expiry, False))
 
             conn.commit()
             registration_url = url_for('register.register_with_token', token=token, _external=True)
 
+            # Send registration email
             try:
                 msg = Message(
                     subject="Complete Your Account Registration",
@@ -362,6 +367,7 @@ class AddEmployeeView(MethodView):
                 <h2>Welcome to the System, {name}!</h2>
                 <p>Your manager has created an account for you.</p>
                 <p>Your temporary password is: <strong>{temp_password}</strong></p>
+                <p>Your passcode is: <strong>{passcode}</strong></p>
                 <p>Please complete your registration by clicking the link below:</p>
                 <p><a href="{registration_url}">{registration_url}</a></p>
                 <p>This link will expire in 24 hours.</p>
@@ -374,7 +380,8 @@ class AddEmployeeView(MethodView):
                 return jsonify({
                     'message': 'Employee added but email could not be sent. Please provide them with this registration link manually.',
                     'registration_url': registration_url,
-                    'temp_password': temp_password
+                    'temp_password': temp_password,
+                    'passcode': passcode
                 })
 
             return jsonify({'message': 'Employee added successfully. Registration email sent.'})
@@ -393,7 +400,7 @@ class GetEmployeesView(MethodView):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT UserID, Name, Username, Email, Role, IsActive 
+                SELECT UserID, Name, Passcode, Email, Role, IsActive 
                 FROM User 
                 WHERE Role != 'manager'
                 ORDER BY Name
