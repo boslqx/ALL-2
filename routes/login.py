@@ -8,7 +8,8 @@ import re
 from datetime import datetime, timedelta
 from flask_mail import Message
 from extensions import mail
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+
 
 
 login_bp = Blueprint('login', __name__, template_folder='../templates')
@@ -128,7 +129,8 @@ def reset_password():
         # Update user password
         user = User.query.filter_by(Email=session['reset_email']).first()
         if user:
-            user.Password = new_password  # You should hash this password in production
+            from werkzeug.security import generate_password_hash
+            user.Password = generate_password_hash(new_password)
             db.session.commit()
             
             # Clear the session

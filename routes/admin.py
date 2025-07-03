@@ -104,7 +104,7 @@ class ProfileAPIView(MethodView):
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT UserID as id, Username, Name as name, Email as email, Role as role
+                SELECT UserID as id, Passcode, Name as name, Email as email, Role as role
                 FROM User 
                 WHERE UserID = ?
             """, (user_id,))
@@ -137,7 +137,7 @@ class DashboardStatsAPIView(MethodView):
             today = datetime.now().strftime('%Y-%m-%d')
             cursor.execute("""
                 SELECT A.Description, A.ActionType, A.Timestamp, 
-                       COALESCE(U.Name, U.Username) AS UserName
+                       COALESCE(U.Name, U.Passcode) AS Passcode
                 FROM ActivityLog A
                 LEFT JOIN User U ON A.UserID = U.UserID
                 WHERE DATE(A.Timestamp) = ?
@@ -566,14 +566,14 @@ class AdminUsersAPIView(MethodView):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
 
-            cursor.execute("SELECT UserID, Username, Name FROM User WHERE Role = 'admin'")
+            cursor.execute("SELECT UserID, Passcode, Name FROM User WHERE Role = 'admin'")
             rows = cursor.fetchall()
 
             users = []
             for row in rows:
                 users.append({
                     'UserID': row['UserID'],
-                    'Username': row['Username'],
+                    'Passcode': row['Passcode'],
                     'Name': row['Name']
                 })
 
@@ -601,7 +601,7 @@ class ActivityLogsAPIView(MethodView):
                 SELECT 
                     A.Timestamp,
                     U.UserID,
-                    COALESCE(U.Name, U.Username) AS UserName,
+                    COALESCE(U.Name, U.Passcode) AS Passcode,
                     A.ActionType,
                     A.Description
                 FROM ActivityLog A
