@@ -438,16 +438,16 @@ def generate_receipt(transaction_id, transaction_details, cashier_name, total_am
 
         # Header
         p.setFont("Helvetica-Bold", 16)
-        p.drawString(1 * inch, height - 1 * inch, "Your Store Name")
+        p.drawString(1 * inch, height - 1 * inch, "Wanton Convenience Store")
         p.setFont("Helvetica", 12)
-        p.drawString(1 * inch, height - 1.25 * inch, "123 Store Address")
-        p.drawString(1 * inch, height - 1.5 * inch, "Phone: (123) 456-7890")
+        p.drawString(1 * inch, height - 1.25 * inch, "Bukit Jambul, Penang")
+        p.drawString(1 * inch, height - 1.5 * inch, "Phone: 016 750-9149")
         p.line(1 * inch, height - 1.6 * inch, width - 1 * inch, height - 1.6 * inch)
 
 
         # Transaction Info
         p.setFont("Helvetica-Bold", 14)
-        p.drawString(1 * inch, height - 2 * inch, f"Receipt #: {transaction_id}")
+        p.drawString(1 * inch, height - 2 * inch, f"Transaction ID: {transaction_id}")
         p.setFont("Helvetica", 12)
         p.drawString(1 * inch, height - 2.25 * inch, f"Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}")
         p.drawString(1 * inch, height - 2.5 * inch, f"Cashier: {cashier_name}")
@@ -488,18 +488,15 @@ def generate_receipt(transaction_id, transaction_details, cashier_name, total_am
 
 
         # Totals
-        tax = subtotal * 0.06
-        total = subtotal + tax
+        total = subtotal
 
 
         p.line(1 * inch, y_position - 0.1 * inch, width - 1 * inch, y_position - 0.1 * inch)
         p.setFont("Helvetica-Bold", 12)
         p.drawString(5 * inch, y_position - 0.3 * inch, "Subtotal:")
         p.drawString(6.5 * inch, y_position - 0.3 * inch, f"RM{subtotal:.2f}")
-        p.drawString(5 * inch, y_position - 0.6 * inch, "Tax (6%):")
-        p.drawString(6.5 * inch, y_position - 0.6 * inch, f"RM{tax:.2f}")
-        p.drawString(5 * inch, y_position - 0.9 * inch, "Total:")
-        p.drawString(6.5 * inch, y_position - 0.9 * inch, f"RM{total:.2f}")
+        p.drawString(5 * inch, y_position - 0.6 * inch, "Total:")
+        p.drawString(6.5 * inch, y_position - 0.6 * inch, f"RM{total:.2f}")
 
 
         # Footer

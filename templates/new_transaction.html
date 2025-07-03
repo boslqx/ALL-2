@@ -1,260 +1,195 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Transaction</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* QR Scanner Feedback */
-        .scanner-feedback {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.7);get
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 100;
-            display: none;
-        }
-        
-        .scanner-active {
-            display: block;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-        
-        /* Scanner overlay */
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-        
-        .scanner-frame {
-            width: 70%;
-            height: 200px;
-            border: 3px solid #4CAF50;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .scanner-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        
-        #scanner-video {
-            width: 100%;
-            height: auto;
-        }
-        
-        /* Loading spinner */
-        .loading-spinner {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-        
-        .no-products {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="logo">
-            <h2>{{ cashier_name }}</h2>
+
+{% extends 'cashier_base.html' %}
+{% block title %}New Transaction{% endblock %}
+
+{% block content %}
+<style>
+    /* (Keep all your original CSS here as it is) */
+    .scanner-feedback {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 100;
+        display: none;
+    }
+    .scanner-active { display: block; animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    .scanner-overlay {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    .scanner-frame {
+        width: 70%; height: 200px;
+        border: 3px solid #4CAF50;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    .scanner-container {
+        position: relative;
+        width: 100%; height: 100%;
+    }
+    #scanner-video { width: 100%; height: auto; }
+    .loading-spinner, .no-products {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
+
+        .product-selection {
+        width: 65%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .transaction-cart {
+        width: 35%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: sticky;
+        top: 80px;
+    }
+
+</style>
+
+<div class="main-content new-transaction">
+    <div class="transaction-header">
+        <button class="back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>New Transaction</h1>
+        <div class="search-container">
+            <input type="text" id="product-search" placeholder="Search products..." class="search-input">
+            <button class="search-button" id="search-button"><i class="fas fa-search"></i></button>
         </div>
-        <ul class="nav-menu">
-            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </li>
-            <li class="nav-item active">
-                <i class="fas fa-cash-register"></i>
-                <span>New Transaction</span>
-            </li>
-            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
-                <i class="fas fa-history"></i>
-                <span>Transaction History</span>
-            </li>
-            <li class="nav-item logout" onclick="showLogoutModal()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </li>
-        </ul>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content new-transaction">
-        <div class="transaction-header">
-            <button class="back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h1>New Transaction</h1>
-            <div class="search-container">
-                <input type="text" id="product-search" placeholder="Search products..." class="search-input">
-                <button class="search-button" id="search-button">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="transaction-body">
-            <!-- Product Selection -->
-            <div class="product-selection">
-                <div class="filters">
-                    <div class="filter-group">
-                        <label for="category-filter">Category:</label>
-                        <select id="category-filter" class="filter-select">
-                            <option value="">All Categories</option>
-                            {% for category in categories %}
-                            <option value="{{ category }}">{{ category }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="stock-filter">Stock:</label>
-                        <select id="stock-filter" class="filter-select">
-                            <option value="all">All Stock</option>
-                            <option value="low">Low Stock (<10)</option>
-                            <option value="out">Out of Stock</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="sort-filter">Sort By:</label>
-                        <select id="sort-filter" class="filter-select">
-                            <option value="name-asc">Name (A-Z)</option>
-                            <option value="name-desc">Name (Z-A)</option>
-                            <option value="price-asc">Price (Low-High)</option>
-                            <option value="price-desc">Price (High-Low)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group filter-button-group">
-                        <button id="apply-filters" class="action-button">
-                            <i class="fas fa-filter"></i> Apply Filters
-                        </button>
-                    </div>
+    <div class="transaction-body">
+        <!-- Product Selection -->
+        <div class="product-selection">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="category-filter">Category:</label>
+                    <select id="category-filter" class="filter-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-
-                <div class="product-list" id="product-list">
-                    <!-- Products will be loaded here dynamically -->
-                    <div class="loading-spinner">
-                        <i class="fas fa-spinner fa-spin"></i> Loading products...
-                    </div>
+                <div class="filter-group">
+                    <label for="stock-filter">Stock:</label>
+                    <select id="stock-filter" class="filter-select">
+                        <option value="all">All Stock</option>
+                        <option value="low">Low Stock (&lt;10)</option>
+                        <option value="out">Out of Stock</option>
+                    </select>
                 </div>
-            </div>
-
-            <!-- Transaction Cart -->
-            <div class="transaction-cart">
-                <div class="cart-header">
-                    <h2>Current Order</h2>
-                    <button id="scan-toggle" class="scan-button" onclick="toggleScanner()">
-                        <i class="fas fa-qrcode"></i> Scan QR
-                    </button>
+                <div class="filter-group">
+                    <label for="sort-filter">Sort By:</label>
+                    <select id="sort-filter" class="filter-select">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="price-asc">Price (Low-High)</option>
+                        <option value="price-desc">Price (High-Low)</option>
+                    </select>
                 </div>
-
-                <!-- QR Scanner -->
-                <div id="qr-scanner" style="display: none;">
-                    <div class="scanner-container">
-                        <video id="scanner-video" playsinline></video>
-                        <div class="scanner-overlay">
-                            <div class="scanner-frame"></div>
-                            <p>Align QR code within the frame</p>
-                        </div>
-                        <div id="scanner-feedback" class="scanner-feedback">Scanning for QR codes...</div>
-                    </div>
-                    <div class="scanner-controls">
-                        <button class="action-button" onclick="stopScanner()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                        <button class="action-button primary" onclick="completeScanning()">
-                            <i class="fas fa-check"></i> Done
-                        </button>
-                    </div>
-                </div>
-
-                <div class="cart-items" id="cart-items">
-                    <div class="empty-cart">
-                        <i class="fas fa-shopping-cart"></i>
-                        <p>No items selected yet</p>
-                    </div>
-                </div>
-
-                <div class="order-summary">
-                    <div class="summary-row">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">RM0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Tax (6%):</span>
-                        <span id="tax">RM0.00</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total:</span>
-                        <span id="total">RM0.00</span>
-                    </div>
-                    <button class="checkout-button" id="checkout-button" onclick="processCheckout()" disabled>
-                        <i class="fas fa-credit-card"></i> Proceed to Payment
+                <div class="filter-group filter-button-group">
+                    <button id="apply-filters" class="action-button">
+                        <i class="fas fa-filter"></i> Apply Filters
                     </button>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Logout Modal -->
-    <div id="logoutModal" class="modal">
-        <div class="modal-content">
-            <p>Are you sure you want to log out?</p>
-            <div class="modal-buttons">
-                <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
-                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            <div class="product-list" id="product-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Success Modal -->
-    <div id="successModal" class="modal">
-        <div class="modal-content">
-            <div class="success-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <h3>Transaction Successful!</h3>
-            <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>
-            Total Amount: <span id="transaction-amount"></span></p>
-            <div class="modal-buttons">
-                <button class="action-button primary" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
-                    New Transaction
-                </button>
-                <button class="action-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
-                    Back to Dashboard
+        <!-- Transaction Cart -->
+        <div class="transaction-cart">
+            <div class="cart-header">
+                <h2>Current Order</h2>
+                <button id="scan-toggle" class="scan-button" onclick="toggleScanner()">
+                    <i class="fas fa-qrcode"></i> Scan QR
                 </button>
             </div>
+
+            <!-- QR Scanner -->
+            <div id="qr-scanner" style="display: none;">
+                <div class="scanner-container">
+                    <video id="scanner-video" playsinline></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame"></div>
+                        <p>Align QR code within the frame</p>
+                    </div>
+                    <div id="scanner-feedback" class="scanner-feedback">Scanning for QR codes...</div>
+                </div>
+                <div class="scanner-controls">
+                    <button class="action-button" onclick="stopScanner()"><i class="fas fa-times"></i> Cancel</button>
+                    <button class="action-button primary" onclick="completeScanning()"><i class="fas fa-check"></i> Done</button>
+                </div>
+            </div>
+
+            <div class="cart-items" id="cart-items">
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>No items selected yet</p>
+                </div>
+            </div>
+
+            <div class="order-summary">
+                <div class="summary-row"><span>Subtotal:</span><span id="subtotal">RM0.00</span></div>
+                <div class="summary-row total"><span>Total:</span><span id="total">RM0.00</span></div>
+                <button class="checkout-button" id="checkout-button" onclick="processCheckout()" disabled>
+                    <i class="fas fa-credit-card"></i> Proceed to Payment
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script>
+<!-- Logout Modal -->
+<div id="logoutModal" class="modal">
+    <div class="modal-content">
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-buttons">
+            <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+            <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="modal">
+    <div class="modal-content">
+        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+        <h3>Transaction Successful!</h3>
+        <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>Total Amount: <span id="transaction-amount"></span></p>
+        <div class="modal-buttons">
+            <button class="action-button primary" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">New Transaction</button>
+            <button class="action-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">Back to Dashboard</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
         // Cart items
         let cart = [];
         let scannerActive = false;
@@ -301,52 +236,48 @@
             const categoryFilter = document.getElementById('category-filter').value;
             const stockFilter = document.getElementById('stock-filter').value;
             const sortFilter = document.getElementById('sort-filter').value;
-            
-            // Start with all products
+
             let filteredProducts = [...allProducts];
-            
-            // Apply search filter
+
             if (searchTerm) {
                 filteredProducts = filteredProducts.filter(product => {
-                    const nameMatch = product.name?.toLowerCase().includes(searchTerm) || false;
-                    const brandMatch = product.brand?.toLowerCase().includes(searchTerm) || false;
+                    const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
+                    const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
                     return nameMatch || brandMatch;
                 });
             }
-            
-            // Apply category filter
+
             if (categoryFilter) {
                 filteredProducts = filteredProducts.filter(product => 
-                    product.category === categoryFilter
+                    product.Category === categoryFilter
                 );
             }
-            
-            // Apply stock filter
+
             if (stockFilter === 'low') {
                 filteredProducts = filteredProducts.filter(product => 
-                    product.stock < 10
+                    product.StockQuantity < 10
                 );
             } else if (stockFilter === 'out') {
                 filteredProducts = filteredProducts.filter(product => 
-                    product.stock === 0
+                    product.StockQuantity === 0
                 );
             }
-            
-            // Apply sorting
+
             switch(sortFilter) {
                 case 'name-asc':
-                    filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+                    filteredProducts.sort((a, b) => a.ProductName.localeCompare(b.ProductName));
                     break;
                 case 'name-desc':
-                    filteredProducts.sort((a, b) => b.name.localeCompare(a.name));
+                    filteredProducts.sort((a, b) => b.ProductName.localeCompare(a.ProductName));
                     break;
                 case 'price-asc':
-                    filteredProducts.sort((a, b) => a.price - b.price);
+                    filteredProducts.sort((a, b) => a.Price - b.Price);
                     break;
                 case 'price-desc':
-                    filteredProducts.sort((a, b) => b.price - a.price);
+                    filteredProducts.sort((a, b) => b.Price - a.Price);
                     break;
             }
+
             
             renderProducts(filteredProducts);
         }
@@ -466,7 +397,6 @@
         function updateCartDisplay() {
             const cartItems = document.getElementById('cart-items');
             const subtotalElement = document.getElementById('subtotal');
-            const taxElement = document.getElementById('tax');
             const totalElement = document.getElementById('total');
             const checkoutButton = document.getElementById('checkout-button');
             
@@ -478,7 +408,6 @@
                     </div>
                 `;
                 subtotalElement.textContent = 'RM0.00';
-                taxElement.textContent = 'RM0.00';
                 totalElement.textContent = 'RM0.00';
                 checkoutButton.disabled = true;
                 return;
@@ -486,12 +415,10 @@
             
             // Calculate totals
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.06;
-            const total = subtotal + tax;
+            const total = subtotal;
             
             // Update totals display
             subtotalElement.textContent = `RM${subtotal.toFixed(2)}`;
-            taxElement.textContent = `RM${tax.toFixed(2)}`;
             totalElement.textContent = `RM${total.toFixed(2)}`;
             checkoutButton.disabled = false;
             
@@ -738,5 +665,5 @@
             document.getElementById('logoutModal').style.display = 'flex';
         }
     </script>
-</body>
-</html>
+</script>
+{% endblock %}

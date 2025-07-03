@@ -1,0 +1,61 @@
+<!-- templates/cashier_base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cashier Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">
+            <h2>{{ cashier_name }}</h2>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item {% if active_tab == 'dashboard' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'new_transaction' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.new_transaction') }}'">
+                <i class="fas fa-cash-register"></i>
+                <span>New Transaction</span>
+            </li>
+            <li class="nav-item {% if active_tab == 'transaction_history' %}active{% endif %}" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
+                <i class="fas fa-history"></i>
+                <span>Transaction History</span>
+            </li>
+            <li class="nav-item logout" onclick="showLogoutModal()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <p>Are you sure you want to log out?</p>
+            <div class="modal-buttons">
+                <button id="cancelLogout" class="cancel-btn">No</button>
+                <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+
+        document.getElementById('cancelLogout').addEventListener('click', function () {
+            document.getElementById('logoutModal').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

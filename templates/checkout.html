@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cashier.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
+{% extends "cashier_base.html" %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+
+<style>
         /* POS-specific styles */
         .checkout-container {
             display: flex;
@@ -14,7 +10,6 @@
             gap: 20px;
             padding: 20px;
         }
-
 
         /* Order Items Panel */
         .order-panel {
@@ -334,33 +329,6 @@
             }
         }
     </style>
-</head>
-<body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="logo">
-            <h2>{{ cashier_name }}</h2>
-        </div>
-        <ul class="nav-menu">
-            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </li>
-            <li class="nav-item active">
-                <i class="fas fa-cash-register"></i>
-                <span>Checkout</span>
-            </li>
-            <li class="nav-item" onclick="window.location.href='{{ url_for('cashier.transaction_history') }}'">
-                <i class="fas fa-history"></i>
-                <span>Transaction History</span>
-            </li>
-            <li class="nav-item logout" onclick="showLogoutModal()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </li>
-        </ul>
-    </div>
-
 
     <!-- Main Checkout Content -->
     <div class="main-content">
@@ -375,7 +343,6 @@
                     </div>
                 </div>
             </div>
-
 
             <!-- Payment Method Panel -->
             <div class="payment-panel">
@@ -553,8 +520,7 @@
             </div>
         </div>
     </div>
-
-
+    <!-- All your scripts -->
     <script>
         // Global variables
         let cart = JSON.parse(sessionStorage.getItem('cart')) || [];
@@ -625,8 +591,7 @@
         // Update order totals
         function updateTotals() {
             const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.06;
-            const total = subtotal + tax;
+            const total = subtotal;
            
             // Update display
             document.getElementById('displayTotal').textContent = `RM${total.toFixed(2)}`;
@@ -1031,9 +996,7 @@
             document.getElementById('logoutModal').style.display = 'flex';
         }
     </script>
-</body>
-</html>
-
+{% endblock %}
 
 
 
