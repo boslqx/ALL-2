@@ -14,7 +14,7 @@ body {
 /* Sidebar Styles */
 .sidebar {
     width: 240px;
-    background: linear-gradient(to bottom, #2a3f54 0%, #3b4e63 50%, #5f738c 100%);
+    background: linear-gradient(to bottom, #3f67ec 0%, #1e40af 50%, #2f4c7e 100%);
     color: white;
     padding: 20px 0;
     box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
@@ -23,16 +23,18 @@ body {
 }
 
 .logo {
+    padding: 0;
+    margin-bottom: 5px;     
     text-align: center;
-    padding: 15px 0 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 20px;
 }
-
-.logo h2 {
-    font-weight: 300;
-    font-size: 1.4rem;
-    letter-spacing: 1px;
+ 
+.sidebar-logo {
+    width: 200px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 8px auto 0 auto;  
+    padding: 0;
 }
 
 .nav-menu {

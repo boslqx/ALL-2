@@ -5,7 +5,7 @@ import secrets
 import string
 from datetime import datetime, timedelta
 import base64
-from extensions import mail
+from extensions import mail, apply_role_protection
 from flask_mail import Message
 from io import BytesIO
 import qrcode
@@ -14,7 +14,10 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from werkzeug.utils import secure_filename
 
+
 manager_bp = Blueprint('manager', __name__, template_folder='../templates')
+apply_role_protection(manager_bp, 'manager')
+
 
 # Utility Functions
 def get_manager_name(user_id):
@@ -43,14 +46,14 @@ def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def send_account_email(name, email, username, password, role):
+def send_account_email(name, email, password, role):
     try:
         subject = "Your New Account Details"
         html = f"""
         <h2>Welcome to the System, {name}!</h2>
         <p>Your account has been created with the following details:</p>
         <ul>
-            <li><strong>Username:</strong> {username}</li>
+            <li><strong>Email:</strong> {email}</li>
             <li><strong>Temporary Password:</strong> {password}</li>
             <li><strong>Role:</strong> {role.capitalize()}</li>
         </ul>
@@ -126,7 +129,36 @@ class DashboardView(MethodView):
                             manager_name=get_manager_name(session.get('user_id')),
                             active_tab='Dashboard')
 
-class DashboardDataView(MethodView):
+class ManagerProfileAPIView(MethodView):
+    def get(self):
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        try:
+            conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT UserID as id, Passcode, Name as name, Email as email, Role as role
+                FROM User 
+                WHERE UserID = ?
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+                
+            return jsonify(dict(user))
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+class ManagerDashboardStatsAPIView(MethodView):
     def get(self):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -135,25 +167,39 @@ class DashboardDataView(MethodView):
             cursor.execute("SELECT COUNT(*) FROM Product")
             total_products = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity < 10")
+            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity <= 5")
             low_stock_items = cursor.fetchone()[0]
 
             cursor.execute("""
-                SELECT COUNT(*) FROM Sale 
-                WHERE Timestamp >= DATE('now', '-7 days')
+                SELECT COUNT(*) FROM "Transaction" 
+                WHERE Datetime >= DATE('now', '-7 days')
             """)
             recent_sales = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT A.Description, A.ActionType, A.Timestamp, 
+                       COALESCE(U.Name, U.Passcode) AS Passcode
+                FROM ActivityLog A
+                LEFT JOIN User U ON A.UserID = U.UserID
+                WHERE DATE(A.Timestamp) = DATE('now')
+                ORDER BY A.Timestamp DESC
+                LIMIT 5
+            """)
+            recent_activities = [dict(row) for row in cursor.fetchall()]
 
             return jsonify({
                 'total_products': total_products,
                 'low_stock_items': low_stock_items,
-                'recent_sales': recent_sales
+                'recent_sales': recent_sales,
+                'recent_activities': recent_activities  # ✅
             })
+
         except Exception as e:
             return jsonify({'error': str(e)}), 500
         finally:
             if 'conn' in locals():
                 conn.close()
+
 
 class AllProductsView(MethodView):
     def get(self):
@@ -213,9 +259,9 @@ class ActivityLogsView(MethodView):
             query = """
                 SELECT 
                     ActivityLog.*, 
-                    User.Name as UserName,
+                    User.Name as Name,
                     User.Role as Role,
-                    User.Username as Username
+                    User.Passcode as Passcode
                 FROM ActivityLog 
                 LEFT JOIN User ON ActivityLog.UserID = User.UserID
                 WHERE 1=1
@@ -260,7 +306,7 @@ class AllUsersView(MethodView):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT UserID, Name, Username, Email, Role 
+                SELECT UserID, Name, Passcode, Email, Role 
                 FROM User
                 ORDER BY Name
             """)
@@ -278,15 +324,17 @@ class AddEmployeeView(MethodView):
             data = request.get_json()
             name = data.get('name')
             email = data.get('email')
-            username = data.get('username')
             role = data.get('role', 'cashier')
 
-            if not all([name, username, email]):
-                return jsonify({'error': 'Name, username and email are required'}), 400
+            if not all([name, email]):
+                return jsonify({'error': 'Name and email are required'}), 400
 
             token = secrets.token_urlsafe(32)
             expiry = datetime.utcnow() + timedelta(hours=24)
             temp_password = generate_temp_password()
+            
+            # Generate a random 6-digit passcode
+            passcode = ''.join(secrets.choice(string.digits) for _ in range(6))
 
             from werkzeug.security import generate_password_hash
             hashed_temp_password = generate_password_hash(temp_password)
@@ -294,18 +342,21 @@ class AddEmployeeView(MethodView):
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
             cursor = conn.cursor()
 
-            cursor.execute("SELECT UserID FROM User WHERE Username = ? OR Email = ?", (username, email))
+            # Check if passcode or email already exists
+            cursor.execute("SELECT UserID FROM User WHERE Passcode = ? OR Email = ?", (passcode, email))
             if cursor.fetchone():
-                return jsonify({'error': 'Username or email already exists'}), 400
+                return jsonify({'error': 'Passcode or email already exists'}), 400
 
+            # Insert new employee
             cursor.execute("""
-                INSERT INTO User (Name, Username, Email, Role, Password, registration_token, token_expiry, IsActive)
+                INSERT INTO User (Name, Passcode, Email, Role, Password, registration_token, token_expiry, IsActive)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (name, username, email, role, hashed_temp_password, token, expiry, False))
+            """, (name, passcode, email, role, hashed_temp_password, token, expiry, False))
 
             conn.commit()
             registration_url = url_for('register.register_with_token', token=token, _external=True)
 
+            # Send registration email
             try:
                 msg = Message(
                     subject="Complete Your Account Registration",
@@ -316,6 +367,7 @@ class AddEmployeeView(MethodView):
                 <h2>Welcome to the System, {name}!</h2>
                 <p>Your manager has created an account for you.</p>
                 <p>Your temporary password is: <strong>{temp_password}</strong></p>
+                <p>Your passcode is: <strong>{passcode}</strong></p>
                 <p>Please complete your registration by clicking the link below:</p>
                 <p><a href="{registration_url}">{registration_url}</a></p>
                 <p>This link will expire in 24 hours.</p>
@@ -328,7 +380,8 @@ class AddEmployeeView(MethodView):
                 return jsonify({
                     'message': 'Employee added but email could not be sent. Please provide them with this registration link manually.',
                     'registration_url': registration_url,
-                    'temp_password': temp_password
+                    'temp_password': temp_password,
+                    'passcode': passcode
                 })
 
             return jsonify({'message': 'Employee added successfully. Registration email sent.'})
@@ -347,7 +400,7 @@ class GetEmployeesView(MethodView):
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT UserID, Name, Username, Email, Role, IsActive 
+                SELECT UserID, Name, Passcode, Email, Role, IsActive 
                 FROM User 
                 WHERE Role != 'manager'
                 ORDER BY Name
@@ -893,7 +946,9 @@ def inject_manager_name():
 # Register Views
 manager_bp.add_url_rule('/manager', view_func=DashboardView.as_view('manager'))
 manager_bp.add_url_rule('/manager/dashboard', view_func=DashboardView.as_view('dashboard'))
-manager_bp.add_url_rule('/manager/dashboard-data', view_func=DashboardDataView.as_view('dashboard_data'))
+manager_bp.add_url_rule('/manager/dashboard-data', view_func=ManagerDashboardStatsAPIView.as_view('dashboard_data'))
+manager_bp.add_url_rule('/manager/api/profile', view_func=ManagerProfileAPIView.as_view('manager_profile_api'))
+manager_bp.add_url_rule('/manager/api/dashboard-stats', view_func=ManagerDashboardStatsAPIView.as_view('manager_dashboard_stats'))
 manager_bp.add_url_rule('/manager/all-products', view_func=AllProductsView.as_view('all_products'))
 manager_bp.add_url_rule('/manager/new-transaction', view_func=NewTransactionView.as_view('new_transaction'))
 manager_bp.add_url_rule('/manager/register', view_func=RegisterPageView.as_view('register_page'))
@@ -909,10 +964,10 @@ manager_bp.add_url_rule('/manager/remove-employee', view_func=RemoveEmployeeView
 manager_bp.add_url_rule('/manager/product/<int:product_id>', view_func=ProductDetailsView.as_view('product_details'))
 manager_bp.add_url_rule('/manager/update-product/<int:product_id>', view_func=UpdateProductView.as_view('update_product'), methods=['POST'])
 manager_bp.add_url_rule('/manager/delete-product/<int:product_id>', view_func=DeleteProductView.as_view('delete_product'), methods=['POST'])
-manager_bp.add_url_rule('/manager/restock-product', view_func=RestockProductView.as_view('restock_product'), methods=['POST'])
-manager_bp.add_url_rule('/api/products', view_func=ProductsAPIView.as_view('get_products'))
+manager_bp.add_url_rule('/manager/api/products/restock', view_func=RestockProductView.as_view('restock_product_api'), methods=['POST'])
+manager_bp.add_url_rule('/manager/api/products', view_func=ProductsAPIView.as_view('get_manager_products'))
 manager_bp.add_url_rule('/manager/register-product', view_func=RegisterProductView.as_view('register_product'), methods=['GET', 'POST'])
 manager_bp.add_url_rule('/manager/print-qr/<product_id>', view_func=PrintQRView.as_view('print_qr'))
 manager_bp.add_url_rule('/manager/sales-data', view_func=SalesDataView.as_view('sales_data'))
 manager_bp.add_url_rule('/manager/inventory-report-data', view_func=InventoryReportDataView.as_view('inventory_report_data'))
-manager_bp.add_url_rule('/api/product-categories', view_func=ProductCategoriesView.as_view('get_product_categories'))
+manager_bp.add_url_rule('/manager/api/product-categories', view_func=ProductCategoriesView.as_view('get_product_categories'))

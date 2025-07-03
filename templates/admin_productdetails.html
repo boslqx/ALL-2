@@ -58,7 +58,6 @@
                             <option value="Other" {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}selected{% endif %}>Other</option>
                         </select>
 
-                        <!-- Custom "Other" Category Input -->
                         <div class="other-category-container" style="display: {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}block{% else %}none{% endif %};">
                             <input type="text" id="other-category" class="category-select" 
                                 value="{% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}{{ product.Category }}{% endif %}" 
@@ -149,17 +148,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const updateUrl = "{{ url_for('admin.update_product', product_id=product.ProductID) }}";
     const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
 
-    // DOM Elements
     const fileInput = document.getElementById('image-upload');
     const previewImg = document.getElementById('preview-img');
     const removeBtn = document.querySelector('.remove-image');
     const uploadOverlay = document.querySelector('.upload-overlay.edit-mode');
     const imagePreviewContainer = document.querySelector('.image-preview-container');
     
-    // Initialize upload overlay state
     if (uploadOverlay) {
-        uploadOverlay.style.display = 'none'; // Start hidden
-        uploadOverlay.style.cursor = 'pointer'; // Clickable when visible
+        uploadOverlay.style.display = 'none'; 
+        uploadOverlay.style.cursor = 'pointer';
     }
 
     document.getElementById('edit-button').addEventListener('click', function () {
@@ -187,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Click handler for image container
     if (imagePreviewContainer) {
         imagePreviewContainer.addEventListener('click', function(e) {
-            // Only trigger in edit mode when clicking overlay/empty space
             if (uploadOverlay && uploadOverlay.style.display === 'flex' && 
                 (e.target === this || e.target === uploadOverlay || uploadOverlay.contains(e.target))) {
                 fileInput.click();

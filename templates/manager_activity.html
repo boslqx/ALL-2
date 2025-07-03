@@ -6,7 +6,7 @@
 <div class="activity-logs-container">
     <h2>Inventory Activity Log</h2>
     <span id="log-status" class="status-message"></span>
-    
+
     <!-- Enhanced Filter Options -->
     <div class="activity-filter-options">
         <div class="activity-filter-group">
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch('/manager/get-all-users');  // Changed endpoint
             if (!response.ok) throw new Error('Failed to fetch users');
-            
+
             allUsers = await response.json();
             const userFilter = document.getElementById('user-filter');
             userFilter.innerHTML = '<option value="all">All Users</option>';
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
             tbody.innerHTML = `
                 <tr class="error-row">
                     <td colspan="5">
-                        <i class="fas fa-exclamation-triangle"></i> 
+                        <i class="fas fa-exclamation-triangle"></i>
                         Error loading logs: ${error.message}
                     </td>
                 </tr>

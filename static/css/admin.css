@@ -26,7 +26,7 @@ body {
 
 .logo {
     padding: 0;
-    margin-bottom: 5px;     /* slight spacing between logo and nav */
+    margin-bottom: 5px;     
     text-align: center;
 }
  
@@ -35,7 +35,7 @@ body {
     max-width: 100%;
     height: auto;
     display: block;
-    margin: 8px auto 0 auto;  /* small top margin, no bottom */
+    margin: 8px auto 0 auto;  
     padding: 0;
 }
 
@@ -43,7 +43,7 @@ body {
     list-style: none;
     padding: 0 15px;
     flex-grow: 1;
-    margin-top: 0;  /* in case nav-menu is pushing down */
+    margin-top: 0;  
 }
 
 
@@ -85,8 +85,8 @@ body {
 .main-content {
     flex: 1;
     padding: 20px;
-    margin-left: 240px;
     min-height: 100vh;
+    margin-left: 240px;
 }
 
 /* ===== Logout Section ===== */
@@ -346,7 +346,7 @@ body {
     flex: 1;
     margin-right: 40px;
     color: #1a202c;
-    font-weight: 450; /* Slightly heavier than regular */
+    font-weight: 450;
     font-size: 1rem;
     padding: 2px 0;
     font-family: 'Segoe UI Semibold', system-ui, -apple-system, sans-serif;
@@ -370,7 +370,7 @@ body {
         width: calc(100% - 50px);
         margin-right: 0;
         margin-bottom: 12px;
-        font-size: 1.02rem; /* Slightly larger on mobile */
+        font-size: 1.02rem;
     }
 }
 
@@ -532,8 +532,8 @@ body {
 /* ===== Shared Container Styles ===== */
 .products-container{
     width: 100%;
-    max-width: 1200px; /* Default max-width */
-    margin: 0 auto; /* Center the content */
+    max-width: 1200px; 
+    margin: 0 auto; 
     padding: 20px;
     background: white;
     border-radius: 8px;
@@ -586,21 +586,21 @@ body {
 /* Filter options */
 .filter-options {
     display: flex;
-    flex-wrap: nowrap; /* Changed from wrap to nowrap */
-    gap: 10px; /* Reduced gap */
+    flex-wrap: nowrap;
+    gap: 10px; 
     align-items: flex-end;
     margin-bottom: 20px;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto; /* For horizontal scrolling if needed */
+    overflow-x: auto;
 }
 
 .filter-group {
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Changed from 180px */
-    flex: 1 1 auto; /* Allow flexible sizing */
-    margin-right: 10px; /* Added for spacing */
+    min-width: 0; 
+    flex: 1 1 auto;
+    margin-right: 10px;
 }
 
 .filter-group:last-child {
@@ -611,30 +611,30 @@ body {
     font-weight: bold;
     margin-bottom: 5px;
     text-transform: uppercase;
-    font-size: 0.8em; /* Slightly smaller */
-    color: #555; /* Dark gray for better contrast */
-    white-space: nowrap; /* Prevent label wrapping */
+    font-size: 0.8em; 
+    color: #555; 
+    white-space: nowrap; 
 }
 
 .filter-select {
-    padding: 8px 10px; /* Slightly adjusted padding */
+    padding: 8px 10px; 
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 0.9em; /* Slightly smaller */
+    font-size: 0.9em; 
     width: 100%;
-    min-width: 120px; /* Minimum width */
+    min-width: 120px; 
 }
 
 .filter-button-group {
     display: flex;
     align-items: flex-end;
     height: 100%;
-    margin-left: auto; /* Push button to the right */
-    flex-shrink: 0; /* Prevent button from shrinking */
+    margin-left: auto; 
+    flex-shrink: 0; 
 }
 
 .action-button {
-    padding: 8px 20px; /* Wider padding */
+    padding: 8px 20px;
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -645,7 +645,7 @@ body {
     align-items: center;
     gap: 8px;
     height: 38px;
-    white-space: nowrap; /* Prevent button text wrapping */
+    white-space: nowrap;
 }
 
 .action-button:hover {
@@ -935,24 +935,25 @@ body {
 
 /* Hide the button by default (non-edit mode) */
 .upload-overlay {
-    display: none; /* Hidden by default */
+    display: none; 
 }
 
 /* Only show in edit mode */
 .upload-overlay.edit-mode {
-    display: flex !important; /* Force visible only in edit mode */
+    display: flex !important; 
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
-    cursor: pointer; /* Only clickable in edit mode */
+    cursor: pointer; 
 }
 
 /* Disable pointer events when not in edit mode */
 #product-details .image-preview-container:not(.edit-mode) {
-    pointer-events: none; /* Block interactions */
+    pointer-events: none; 
 }
+
 /* Back Button */
 .back-button {
     display: inline-block;
@@ -980,7 +981,7 @@ body {
   width: 100%;
   height: 100%;
   background: rgba(0,0,0,0.5);
-  display: none; /* Hidden by default */
+  display: none; 
   justify-content: center;
   align-items: center;
   z-index: 1000;
@@ -998,7 +999,7 @@ body {
 .restock-modal-content h3 {
   margin-top: 0;
   color: #333;
-  font-size: 1.2rem; /* Explicit size to avoid inheritance */
+  font-size: 1.2rem; 
 }
 
 /* Scoped form styles */
@@ -1426,7 +1427,7 @@ body {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
-    padding-bottom: 5px; /* Space for scrollbar */
+    padding-bottom: 5px; 
     padding-top: 40px;
 }
 
@@ -1457,8 +1458,8 @@ body {
 
 /* Date picker specific styles */
 .activity-filter-group input[type="date"] {
-    padding: 7px 10px; /* Slightly different padding for date inputs */
-    height: 36px; /* Match select height */
+    padding: 7px 10px; 
+    height: 36px; 
 }
 
 /* Button group - slightly wider than allproducts version */
@@ -1472,7 +1473,7 @@ body {
 /* Modified button styles for activity logs */
 .activity-action-button {
     padding: 8px 16px;
-    background-color: #3498db; /* Blue instead of green */
+    background-color: #3498db;
     color: white;
     border: none;
     border-radius: 4px;

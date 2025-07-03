@@ -20,7 +20,6 @@
             <label for="user-filter">User</label>
             <select class="activity-filter-select" id="user-filter">
                 <option value="all">All Users</option>
-                <!-- Dynamically filled -->
             </select>
         </div>
 
@@ -56,7 +55,6 @@
                 </tr>
             </thead>
             <tbody id="logs-body">
-                <!-- Logs will be loaded here dynamically -->
             </tbody>
         </table>
     </div>
@@ -66,10 +64,8 @@
 document.addEventListener('DOMContentLoaded', function () {
     let allUsers = [];
 
-    // Initialize
     loadUsers().then(loadActivityLogs);
 
-    // Event Listeners
     document.getElementById('apply-filters').addEventListener('click', loadActivityLogs);
     document.getElementById('reset-filters').addEventListener('click', resetFilters);
 
@@ -125,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const logs = await response.json();
             if (logs.error) throw new Error(logs.error);
 
-            // Sort logs by timestamp in descending order (newest first)
             logs.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
 
             renderLogs(logs);

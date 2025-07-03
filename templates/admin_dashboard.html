@@ -86,7 +86,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch dashboard data
     fetchDashboardData();
     fetchProfileData();
 });
@@ -96,12 +95,10 @@ async function fetchDashboardData() {
         const response = await fetch('/admin/api/dashboard-stats');
         const data = await response.json();
         
-        // Update summary cards
         document.getElementById('total-products').textContent = data.total_products;
         document.getElementById('low-stock').textContent = data.low_stock_items;
         document.getElementById('recent-activity').textContent = data.recent_activities_count + ' today';
         
-        // Render recent activities
         const activitiesList = document.getElementById('recent-activities-list');
         activitiesList.innerHTML = '';
         
@@ -140,7 +137,6 @@ async function fetchProfileData() {
         const response = await fetch('/admin/api/profile');
         const data = await response.json();
         
-        // Update profile information
         document.getElementById('profile-name').textContent = data.name || 'N/A';
         document.getElementById('profile-email').textContent = data.email || 'N/A';
         document.getElementById('profile-id').textContent = data.id || 'N/A';
@@ -148,7 +144,6 @@ async function fetchProfileData() {
         
     } catch (error) {
         console.error('Error loading profile data:', error);
-        // Set error state
         document.getElementById('profile-name').textContent = 'Error loading';
         document.getElementById('profile-email').textContent = 'Error loading';
         document.getElementById('profile-id').textContent = 'Error loading';

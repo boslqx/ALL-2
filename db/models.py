@@ -9,7 +9,7 @@ class User(db.Model):
     __tablename__ = 'User'
 
     UserID = db.Column(db.Integer, primary_key=True)
-    Username = db.Column(db.String(20), unique=True, nullable=False)
+    Passcode = db.Column(db.String(20), unique=True, nullable=False)
     Password = db.Column(db.String(20), nullable=False)
     Role = db.Column(db.String(15), nullable=False)
     Name = db.Column(db.String(50), nullable=False)
@@ -23,7 +23,8 @@ class User(db.Model):
     transactions = db.relationship('Transaction', backref='cashier', lazy=True)
 
     def __repr__(self):
-        return f"<User {self.Username}>"
+        return f"<User {self.Passcode}>"
+
 
 
 # Product Table

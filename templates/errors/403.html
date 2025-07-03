@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>403 Forbidden</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 60px;
+            background-color: #f8f9fa;
+        }
+        .error {
+            font-size: 48px;
+            color: #e74c3c;
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error">403 Forbidden</div>
+    <p>You do not have access to this page.</p>
+    <a href="{{ url_for('login.login') }}">Return to Login</a>
+</body>
+</html>

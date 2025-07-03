@@ -27,6 +27,11 @@
         <label for="end-date">To:</label>
         <input type="date" id="end-date" class="filter-select">
     </div>
+        <div class="report-actions">
+    <button id="print-report" class="action-button">
+        <i class="fas fa-file-pdf"></i> Export to PDF
+    </button>
+</div>
 
     <button id="refresh-sales" class="action-button">
         <i class="fas fa-sync-alt"></i> Refresh
@@ -130,6 +135,8 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 let dailySalesChart, categorySalesChart, monthlySalesChart, forecastChart;
 
@@ -456,45 +463,64 @@ function generateForecast() {
     const historicalData = dailySalesChart.data.datasets[0].data;
     const labels = dailySalesChart.data.labels;
 
-
     if (!historicalData || historicalData.length === 0) {
         alert('Please load sales data first');
         return;
     }
 
-    // Convert historical data to time series format
-    const timeSeries = historicalData.map((value, index) => ({
-        x: index,
-        y: value
-    }));
-
+    // Simple forecast methods
     let forecastData = [];
     let projectedRevenue = 0;
     let growthRate = 0;
     let confidenceLevel = "Medium";
 
+    // Calculate simple average of historical data
+    const sum = historicalData.reduce((a, b) => a + b, 0);
+    const avg = sum / historicalData.length;
+
     // Apply selected forecasting method
     switch(method) {
         case 'moving-average':
-            forecastData = movingAverageForecast(historicalData, period);
-            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
-            growthRate = calculateGrowthRate(historicalData, forecastData);
+            // Simple moving average - use last 3 days average
+            const last3Days = historicalData.slice(-3);
+            const movingAvg = last3Days.reduce((a, b) => a + b, 0) / last3Days.length;
+            forecastData = Array(period).fill(movingAvg);
             confidenceLevel = "High";
             break;
 
         case 'exponential-smoothing':
-            forecastData = exponentialSmoothingForecast(historicalData, period);
-            projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
-            growthRate = calculateGrowthRate(historicalData, forecastData);
+            // Simple weighted average (50% last day, 30% day before, 20% day before that)
+            const weights = [0.5, 0.3, 0.2];
+            const lastDays = historicalData.slice(-3);
+            let weightedSum = 0;
+            for (let i = 0; i < lastDays.length; i++) {
+                weightedSum += lastDays[i] * (weights[i] || 0);
+            }
+            forecastData = Array(period).fill(weightedSum);
             confidenceLevel = "Medium";
             break;
 
         case 'linear-regression':
-            forecastData = linearRegressionForecast(timeSeries, period);
-            projectedRevenue = forecastData.reduce((sum, val) => sum + val.y, 0);
-            growthRate = calculateGrowthRate(historicalData, forecastData.map(d => d.y));
+            // Simple linear projection based on last 7 days trend
+            const lastWeek = historicalData.slice(-7);
+            if (lastWeek.length >= 2) {
+                const firstVal = lastWeek[0];
+                const lastVal = lastWeek[lastWeek.length - 1];
+                const trend = (lastVal - firstVal) / (lastWeek.length - 1);
+                forecastData = Array(period).fill(0).map((_, i) => lastVal + (trend * (i + 1)));
+            } else {
+                forecastData = Array(period).fill(avg);
+            }
             confidenceLevel = "Low";
             break;
+    }
+
+    projectedRevenue = forecastData.reduce((sum, val) => sum + val, 0);
+
+    // Simple growth rate calculation
+    if (historicalData.length > 0 && avg > 0) {
+        const forecastAvg = forecastData.reduce((a, b) => a + b, 0) / forecastData.length;
+        growthRate = ((forecastAvg - avg) / avg) * 100;
     }
 
     // Generate forecast dates
@@ -509,107 +535,13 @@ function generateForecast() {
     // Update forecast chart
     forecastChart.data.labels = [...labels, ...forecastDates];
     forecastChart.data.datasets[0].data = [...historicalData, ...Array(period).fill(null)];
-    forecastChart.data.datasets[1].data = [...Array(historicalData.length).fill(null), ...forecastData.map(d => d.y || d)];
+    forecastChart.data.datasets[1].data = [...Array(historicalData.length).fill(null), ...forecastData];
     forecastChart.update();
 
     // Update forecast summary
     document.getElementById('projected-revenue').textContent = `RM${projectedRevenue.toFixed(2)}`;
     document.getElementById('growth-rate').textContent = `${growthRate.toFixed(2)}%`;
     document.getElementById('confidence-level').textContent = confidenceLevel;
-}
-
-function movingAverageForecast(data, period, windowSize = 7) {  // Increased default window size
-    if (data.length < windowSize) {
-        windowSize = data.length;
-    }
-
-    // Calculate weighted average (more recent days have higher weight)
-    const lastWindow = data.slice(-windowSize);
-    let totalWeight = 0;
-    let weightedSum = 0;
-
-    lastWindow.forEach((value, index) => {
-        const weight = (index + 1) / windowSize; // Linear weights
-        weightedSum += value * weight;
-        totalWeight += weight;
-    });
-
-    const weightedAvg = weightedSum / totalWeight;
-
-    // Add some noise/variation to the forecast
-    const forecast = [];
-    for (let i = 0; i < period; i++) {
-        // Add slight random variation (±10% of average)
-        const variation = weightedAvg * 0.1 * (Math.random() - 0.5);
-        forecast.push(weightedAvg + variation);
-    }
-
-    return forecast;
-}
-function exponentialSmoothingForecast(data, period, alpha = 0.5) {  // More responsive alpha
-    if (data.length === 0) return [];
-
-    // Calculate initial level as average of first few points
-    const initialPoints = Math.min(5, data.length);
-    let lastSmoothed = data.slice(0, initialPoints).reduce((a, b) => a + b, 0) / initialPoints;
-
-    // Smooth the historical data
-    for (let i = 0; i < data.length; i++) {
-        lastSmoothed = alpha * data[i] + (1 - alpha) * lastSmoothed;
-    }
-
-    // Forecast with trend adjustment
-    const forecast = [];
-    for (let i = 0; i < period; i++) {
-        // Add slight trend based on recent changes
-        const recentChange = data.length > 1 ?
-            data[data.length-1] - data[data.length-2] : 0;
-        forecast.push(lastSmoothed + (recentChange * 0.5));
-    }
-
-    return forecast;
-}
-
-function linearRegressionForecast(data, period) {
-    if (data.length < 2) return [];
-
-    // Convert to regression-js format
-    const points = data.map((value, index) => [index, value]);
-
-    // Perform regression with forced non-negative intercept
-    const result = regression.linear(points, {
-        precision: 3,
-        order: 1
-    });
-
-    // Cap the forecast to not go below zero
-    const lastX = data.length - 1;
-    const forecast = [];
-    for (let i = 1; i <= period; i++) {
-        const prediction = result.predict(lastX + i)[1];
-        forecast.push({
-            x: lastX + i,
-            y: Math.max(0, prediction) // Ensure no negative forecasts
-        });
-    }
-
-    return forecast;
-}
-
-function calculateGrowthRate(historical, forecast) {
-    if (historical.length === 0 || forecast.length === 0) return 0;
-
-    const historicalAvg = historical.reduce((sum, val) => sum + val, 0) / historical.length;
-    const forecastAvg = forecast.reduce((sum, val) => sum + (val.y || val), 0) / forecast.length;
-
-    // Handle cases where historical average is zero
-    if (Math.abs(historicalAvg) < 0.01) {
-        return forecastAvg > 0 ? Infinity : -Infinity;
-    }
-
-    // Cap growth rate at ±1000% to avoid extreme values
-    const rawRate = ((forecastAvg - historicalAvg) / historicalAvg) * 100;
-    return Math.max(-1000, Math.min(1000, rawRate));
 }
 
 function updateMonthlySalesChart(dailyData) {
@@ -678,7 +610,73 @@ function initMonthlyChart() {
         }
     });
 }
+// PDF Export Functionality
+document.getElementById('print-report').addEventListener('click', generatePDF);
 
+function generatePDF() {
+    // Initialize jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'pt', 'a4');
+
+    // Get the report container
+    const element = document.querySelector('.sales-report-container');
+
+    // Options for html2canvas
+    const options = {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        ignoreElements: function(el) {
+            // Ignore filter elements and buttons
+            return el.classList.contains('report-filters') ||
+                   el.classList.contains('action-button') ||
+                   el.id === 'generate-forecast';
+        }
+    };
+
+    // Show loading indicator
+    const loading = document.createElement('div');
+    loading.style.position = 'fixed';
+    loading.style.top = '0';
+    loading.style.left = '0';
+    loading.style.width = '100%';
+    loading.style.height = '100%';
+    loading.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    loading.style.display = 'flex';
+    loading.style.justifyContent = 'center';
+    loading.style.alignItems = 'center';
+    loading.style.zIndex = '9999';
+    loading.innerHTML = '<div style="color: white; font-size: 24px;">Generating PDF...</div>';
+    document.body.appendChild(loading);
+
+    // Convert the report to canvas
+    html2canvas(element, options).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = doc.internal.pageSize.getWidth() - 40;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Add title and date
+        doc.setFontSize(18);
+        doc.text('Sales Report', 40, 30);
+        doc.setFontSize(12);
+        doc.text('Generated: ' + new Date().toLocaleDateString(), 40, 50);
+
+        // Add the image
+        doc.addImage(imgData, 'PNG', 20, 70, imgWidth, imgHeight);
+
+        // Save the PDF
+        doc.save('sales-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
+
+        // Remove loading indicator
+        document.body.removeChild(loading);
+    }).catch(error => {
+        console.error('Error generating PDF:', error);
+        document.body.removeChild(loading);
+        alert('Error generating PDF. Please try again.');
+    });
+}
 
 // Initialize charts on page load
 initMonthlyChart();
