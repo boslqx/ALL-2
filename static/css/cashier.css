@@ -669,6 +669,7 @@ body {
     display: flex;
     gap: 15px;
     margin-bottom: 15px;
+    align-items: flex-end;
 }
 
 .filter-group {
