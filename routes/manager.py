@@ -191,7 +191,7 @@ class ManagerDashboardStatsAPIView(MethodView):
                 'total_products': total_products,
                 'low_stock_items': low_stock_items,
                 'recent_sales': recent_sales,
-                'recent_activities': recent_activities  # ✅
+                'recent_activities': recent_activities 
             })
 
         except Exception as e:

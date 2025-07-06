@@ -2,10 +2,9 @@ from flask_mail import Mail
 from functools import wraps
 from flask import abort, session, redirect, url_for, flash, request
 
-# Initialize Flask-Mail
 mail = Mail()
 
-# Generic role-based decorator
+# role-based decorator
 def role_required(*allowed_roles):
     def decorator(f):
         @wraps(f)
@@ -22,7 +21,7 @@ def role_required(*allowed_roles):
         return decorated_function
     return decorator
 
-# Specific role decorators for convenience
+# Specific role decorators
 def admin_required(f):
     return role_required('admin')(f)
 
@@ -32,10 +31,10 @@ def manager_required(f):
 def cashier_required(f):
     return role_required('cashier')(f)
 
-# Apply to blueprint safely (with static exception)
+# Apply to blueprint
 def apply_role_protection(blueprint, role_name):
     @blueprint.before_request
     def before():
         if request.path.startswith('/static/'):
-            return  # Allow static files through
+            return 
         return role_required(role_name)(lambda: None)()

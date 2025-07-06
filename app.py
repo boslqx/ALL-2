@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 from routes.login import login_bp
@@ -49,7 +49,9 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 @app.errorhandler(403)
-def forbidden(error):
-    return render_template('errors/403.html'), 403
+def forbidden(e):
+    if request.path.startswith("/cashier/api/"):
+        return jsonify({'error': 'Forbidden'}), 403
+    return render_template('403.html'), 403
 
 
