@@ -214,7 +214,7 @@
         // Load products from server
         function loadProducts() {
             showLoading();
-            fetch('/manager/search-products')
+            fetch('/manager/api/search-products')
                 .then(response => {
                     if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
@@ -639,7 +639,7 @@
         function fetchProduct(productId) {
             console.log("Fetching product:", productId);
             
-            fetch(`/manager/get-product/${productId}`)
+            fetch(`/manager/api/get-product/${productId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
