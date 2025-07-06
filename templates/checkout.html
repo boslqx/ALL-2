@@ -331,153 +331,151 @@
     </style>
 
     <!-- Main Checkout Content -->
-    <div class="main-content">
-        <div class="checkout-container">
-            <!-- Order Items Panel -->
-            <div class="order-panel">
-                <h2>Order Items</h2>
-                <div id="orderItems">
-                    <div class="empty-cart">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading order items...</p>
-                    </div>
+    <div class="checkout-container">
+        <!-- Order Items Panel -->
+        <div class="order-panel">
+            <h2>Order Items</h2>
+            <div id="orderItems">
+                <div class="empty-cart">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading order items...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Method Panel -->
+        <div class="payment-panel">
+            <h2>Payment Method</h2>
+            
+            <div class="payment-method" data-method="cash" onclick="selectPaymentMethod('cash')">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Cash</span>
+            </div>
+            <div class="payment-details" id="cashDetails">
+                <div class="payment-field">
+                    <label>Amount Paid</label>
+                    <input type="number" id="cashReceived" placeholder="0.00" readonly>
+                </div>
+                <div class="payment-field">
+                    <label>Change</label>
+                    <input type="text" id="cashChange" placeholder="0.00" readonly>
                 </div>
             </div>
 
-            <!-- Payment Method Panel -->
-            <div class="payment-panel">
-                <h2>Payment Method</h2>
-               
-                <div class="payment-method" data-method="cash" onclick="selectPaymentMethod('cash')">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Cash</span>
-                </div>
-                <div class="payment-details" id="cashDetails">
-                    <div class="payment-field">
-                        <label>Amount Paid</label>
-                        <input type="number" id="cashReceived" placeholder="0.00" readonly>
-                    </div>
-                    <div class="payment-field">
-                        <label>Change</label>
-                        <input type="text" id="cashChange" placeholder="0.00" readonly>
-                    </div>
-                </div>
 
-
-                <div class="payment-method" data-method="ewallet" onclick="selectPaymentMethod('ewallet')">
-                    <i class="fas fa-wallet"></i>
-                    <span>E-Wallet</span>
+            <div class="payment-method" data-method="ewallet" onclick="selectPaymentMethod('ewallet')">
+                <i class="fas fa-wallet"></i>
+                <span>E-Wallet</span>
+            </div>
+            <div class="payment-details" id="ewalletDetails">
+                <div>
+                    <p style="margin-bottom: 10px;">Scan the QR code to pay</p>
                 </div>
-                <div class="payment-details" id="ewalletDetails">
-                    <div>
-                        <p style="margin-bottom: 10px;">Scan the QR code to pay</p>
-                    </div>
-                </div>
-
-
-                <div class="payment-method" data-method="card" onclick="selectPaymentMethod('card')">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Debit/Credit Card</span>
-                </div>
-                <div class="payment-details" id="cardDetails">
-                    <div class="payment-field">
-                        <label>Card Number</label>
-                        <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" readonly>
-                    </div>
-                    <div class="payment-field">
-                        <label>Expiry Date</label>
-                        <input type="text" id="cardExpiry" placeholder="MM/YY" readonly>
-                    </div>
-                    <div class="payment-field">
-                        <label>CVV</label>
-                        <input type="text" id="cardCVV" placeholder="123" readonly>
-                    </div>
-                </div>
-
-
-                <button class="complete-btn" onclick="completeTransaction()">
-                    <i class="fas fa-check-circle"></i> Complete Payment
-                </button>
             </div>
 
 
-            <!-- Right Panel (Dynamic based on payment method) -->
-            <div class="right-panel" id="rightPanel">
-                <!-- Cash Payment Display (Default) -->
-                <div class="cash-display" id="cashDisplay">
-                    <div class="amount-row">
-                        <span>Total:</span>
-                        <span id="displayTotal">RM0.00</span>
-                    </div>
-                    <div class="amount-row">
-                        <span>Paid:</span>
-                        <span id="displayPaid">RM0.00</span>
-                    </div>
-                    <div class="amount-row">
-                        <span>Change:</span>
-                        <span id="displayChange">RM0.00</span>
-                    </div>
-                    <div class="amount-row total">
-                        <span>Amount Due:</span>
-                        <span id="displayDue">RM0.00</span>
-                    </div>
+            <div class="payment-method" data-method="card" onclick="selectPaymentMethod('card')">
+                <i class="fas fa-credit-card"></i>
+                <span>Debit/Credit Card</span>
+            </div>
+            <div class="payment-details" id="cardDetails">
+                <div class="payment-field">
+                    <label>Card Number</label>
+                    <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" readonly>
                 </div>
-               
-                <!-- Calculator for Cash Payments -->
-                <div class="calculator-display" id="calcDisplay">0</div>
-                <div class="calculator-buttons" id="cashCalculator">
-                    <button class="calc-btn" onclick="calcInput('7')">7</button>
-                    <button class="calc-btn" onclick="calcInput('8')">8</button>
-                    <button class="calc-btn" onclick="calcInput('9')">9</button>
-                    <button class="calc-btn operator" onclick="calcInput('/')">/</button>
-                    <button class="calc-btn" onclick="calcInput('4')">4</button>
-                    <button class="calc-btn" onclick="calcInput('5')">5</button>
-                    <button class="calc-btn" onclick="calcInput('6')">6</button>
-                    <button class="calc-btn operator" onclick="calcInput('*')">×</button>
-                    <button class="calc-btn" onclick="calcInput('1')">1</button>
-                    <button class="calc-btn" onclick="calcInput('2')">2</button>
-                    <button class="calc-btn" onclick="calcInput('3')">3</button>
-                    <button class="calc-btn operator" onclick="calcInput('-')">-</button>
-                    <button class="calc-btn" onclick="calcInput('0')">0</button>
-                    <button class="calc-btn" onclick="calcInput('.')">.</button>
-                    <button class="calc-btn primary" onclick="calcEquals()">=</button>
-                    <button class="calc-btn operator" onclick="calcInput('+')">+</button>
-                    <button class="calc-btn" onclick="calcClear()">C</button>
-                    <button class="calc-btn" onclick="calcBackspace()">⌫</button>
-                    <button class="calc-btn primary" onclick="applyToPayment()">Enter</button>
-                    <button class="calc-btn danger" onclick="clearCalculator()">Clear</button>
+                <div class="payment-field">
+                    <label>Expiry Date</label>
+                    <input type="text" id="cardExpiry" placeholder="MM/YY" readonly>
                 </div>
+                <div class="payment-field">
+                    <label>CVV</label>
+                    <input type="text" id="cardCVV" placeholder="123" readonly>
+                </div>
+            </div>
 
 
-                <!-- Card Payment Display -->
-                <div class="card-display" id="cardDisplay">
-                    <div class="current-field-display" id="currentFieldDisplay">Card Number</div>
-                    <div class="account-number" id="currentFieldValue"></div>
-                    <div class="calculator-buttons" id="cardCalculator">
-                        <button class="calc-btn" onclick="cardInput('7')">7</button>
-                        <button class="calc-btn" onclick="cardInput('8')">8</button>
-                        <button class="calc-btn" onclick="cardInput('9')">9</button>
-                        <button class="calc-btn operator" onclick="nextCardField()">Next</button>
-                        <button class="calc-btn" onclick="cardInput('4')">4</button>
-                        <button class="calc-btn" onclick="cardInput('5')">5</button>
-                        <button class="calc-btn" onclick="cardInput('6')">6</button>
-                        <button class="calc-btn operator" onclick="prevCardField()">Prev</button>
-                        <button class="calc-btn" onclick="cardInput('1')">1</button>
-                        <button class="calc-btn" onclick="cardInput('2')">2</button>
-                        <button class="calc-btn" onclick="cardInput('3')">3</button>
-                        <button class="calc-btn operator" onclick="cardInput('/')">/</button>
-                        <button class="calc-btn" onclick="cardInput('0')">0</button>
-                        <button class="calc-btn" onclick="cardBackspace()">⌫</button>
-                        <button class="calc-btn primary" onclick="applyCardField()">Enter</button>
-                        <button class="calc-btn danger" onclick="clearCardField()">Clear</button>
-                    </div>
-                </div>
+            <button class="complete-btn" onclick="completeTransaction()">
+                <i class="fas fa-check-circle"></i> Complete Payment
+            </button>
+        </div>
 
 
-                <!-- E-Wallet Display -->
-                <div class="ewallet-display" id="ewalletDisplay">
-                    <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-wallet QR Code">
+        <!-- Right Panel (Dynamic based on payment method) -->
+        <div class="right-panel" id="rightPanel">
+            <!-- Cash Payment Display (Default) -->
+            <div class="cash-display" id="cashDisplay">
+                <div class="amount-row">
+                    <span>Total:</span>
+                    <span id="displayTotal">RM0.00</span>
                 </div>
+                <div class="amount-row">
+                    <span>Paid:</span>
+                    <span id="displayPaid">RM0.00</span>
+                </div>
+                <div class="amount-row">
+                    <span>Change:</span>
+                    <span id="displayChange">RM0.00</span>
+                </div>
+                <div class="amount-row total">
+                    <span>Amount Due:</span>
+                    <span id="displayDue">RM0.00</span>
+                </div>
+            </div>
+            
+            <!-- Calculator for Cash Payments -->
+            <div class="calculator-display" id="calcDisplay">0</div>
+            <div class="calculator-buttons" id="cashCalculator">
+                <button class="calc-btn" onclick="calcInput('7')">7</button>
+                <button class="calc-btn" onclick="calcInput('8')">8</button>
+                <button class="calc-btn" onclick="calcInput('9')">9</button>
+                <button class="calc-btn operator" onclick="calcInput('/')">/</button>
+                <button class="calc-btn" onclick="calcInput('4')">4</button>
+                <button class="calc-btn" onclick="calcInput('5')">5</button>
+                <button class="calc-btn" onclick="calcInput('6')">6</button>
+                <button class="calc-btn operator" onclick="calcInput('*')">×</button>
+                <button class="calc-btn" onclick="calcInput('1')">1</button>
+                <button class="calc-btn" onclick="calcInput('2')">2</button>
+                <button class="calc-btn" onclick="calcInput('3')">3</button>
+                <button class="calc-btn operator" onclick="calcInput('-')">-</button>
+                <button class="calc-btn" onclick="calcInput('0')">0</button>
+                <button class="calc-btn" onclick="calcInput('.')">.</button>
+                <button class="calc-btn primary" onclick="calcEquals()">=</button>
+                <button class="calc-btn operator" onclick="calcInput('+')">+</button>
+                <button class="calc-btn" onclick="calcClear()">C</button>
+                <button class="calc-btn" onclick="calcBackspace()">⌫</button>
+                <button class="calc-btn primary" onclick="applyToPayment()">Enter</button>
+                <button class="calc-btn danger" onclick="clearCalculator()">Clear</button>
+            </div>
+
+
+            <!-- Card Payment Display -->
+            <div class="card-display" id="cardDisplay">
+                <div class="current-field-display" id="currentFieldDisplay">Card Number</div>
+                <div class="account-number" id="currentFieldValue"></div>
+                <div class="calculator-buttons" id="cardCalculator">
+                    <button class="calc-btn" onclick="cardInput('7')">7</button>
+                    <button class="calc-btn" onclick="cardInput('8')">8</button>
+                    <button class="calc-btn" onclick="cardInput('9')">9</button>
+                    <button class="calc-btn operator" onclick="nextCardField()">Next</button>
+                    <button class="calc-btn" onclick="cardInput('4')">4</button>
+                    <button class="calc-btn" onclick="cardInput('5')">5</button>
+                    <button class="calc-btn" onclick="cardInput('6')">6</button>
+                    <button class="calc-btn operator" onclick="prevCardField()">Prev</button>
+                    <button class="calc-btn" onclick="cardInput('1')">1</button>
+                    <button class="calc-btn" onclick="cardInput('2')">2</button>
+                    <button class="calc-btn" onclick="cardInput('3')">3</button>
+                    <button class="calc-btn operator" onclick="cardInput('/')">/</button>
+                    <button class="calc-btn" onclick="cardInput('0')">0</button>
+                    <button class="calc-btn" onclick="cardBackspace()">⌫</button>
+                    <button class="calc-btn primary" onclick="applyCardField()">Enter</button>
+                    <button class="calc-btn danger" onclick="clearCardField()">Clear</button>
+                </div>
+            </div>
+
+
+            <!-- E-Wallet Display -->
+            <div class="ewallet-display" id="ewalletDisplay">
+                <img src="{{ url_for('static', filename='images/tng_qr.png') }}" alt="E-wallet QR Code">
             </div>
         </div>
     </div>

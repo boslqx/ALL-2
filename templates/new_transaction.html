@@ -65,15 +65,16 @@
 
 </style>
 
-<div class="main-content new-transaction">
+<div class="new-transaction-container">
     <div class="transaction-header">
         <button class="back-button" onclick="window.location.href='{{ url_for('cashier.dashboard') }}'">
             <i class="fas fa-arrow-left"></i>
         </button>
         <h1>New Transaction</h1>
         <div class="search-container">
+            <i class="fas fa-search"></i>
             <input type="text" id="product-search" placeholder="Search products..." class="search-input">
-            <button class="search-button" id="search-button"><i class="fas fa-search"></i></button>
+            <button class="search-button" id="search-button"></button>
         </div>
     </div>
 
