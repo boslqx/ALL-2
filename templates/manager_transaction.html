@@ -3,141 +3,668 @@
 {% block title %}New Transaction{% endblock %}
 
 {% block content %}
-<div class="header">
-    <h1>New Transaction</h1>
-</div>
+<style>
+    /* (Keep all your original CSS here as it is) */
+    .scanner-feedback {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 100;
+        display: none;
+    }
+    .scanner-active { display: block; animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    .scanner-overlay {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    .scanner-frame {
+        width: 70%; height: 200px;
+        border: 3px solid #4CAF50;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    .scanner-container {
+        position: relative;
+        width: 100%; height: 100%;
+    }
+    #scanner-video { width: 100%; height: auto; }
+    .loading-spinner, .no-products {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
 
-<div class="transaction-container">
-    <!-- Transaction interface will go here -->
-    <div id="transaction-app">
-        <div class="product-search">
-            <input type="text" placeholder="Search products..." v-model="searchQuery" @input="searchProducts">
-            <div class="search-results" v-if="searchResults.length > 0">
-                <div class="product-item" v-for="product in searchResults" @click="addToCart(product)">
-                    <span>${ product.ProductName }</span>
-                    <span>$${ product.Price }</span>
+        .product-selection {
+        width: 65%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .transaction-cart {
+        width: 35%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: sticky;
+        top: 80px;
+    }
+
+</style>
+
+<div class="new-transaction-container">
+    <div class="transaction-header">
+        <button class="back-button" onclick="window.location.href='{{ url_for('manager.dashboard') }}'">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h1>New Transaction</h1>
+        <div class="search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="product-search" placeholder="Search products..." class="search-input">
+            <button class="search-button" id="search-button"></button>
+        </div>
+    </div>
+
+    <div class="transaction-body">
+        <!-- Product Selection -->
+        <div class="product-selection">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="category-filter">Category:</label>
+                    <select id="category-filter" class="filter-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="stock-filter">Stock:</label>
+                    <select id="stock-filter" class="filter-select">
+                        <option value="all">All Stock</option>
+                        <option value="low">Low Stock (&lt;10)</option>
+                        <option value="out">Out of Stock</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sort-filter">Sort By:</label>
+                    <select id="sort-filter" class="filter-select">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="price-asc">Price (Low-High)</option>
+                        <option value="price-desc">Price (High-Low)</option>
+                    </select>
+                </div>
+                <div class="filter-group filter-button-group">
+                    <button id="apply-filters" class="action-button">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <div class="product-list" id="product-list">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
                 </div>
             </div>
         </div>
-        
-        <div class="cart-section">
-            <h3>Current Transaction</h3>
-            <div class="cart-items">
-                <div class="cart-item" v-for="(item, index) in cart" :key="index">
-                    <span>${ item.ProductName }</span>
-                    <span>$${ item.Price } x ${ item.quantity }</span>
-                    <button @click="removeFromCart(index)">Remove</button>
+
+        <!-- Transaction Cart -->
+        <div class="transaction-cart">
+            <div class="cart-header">
+                <h2>Current Order</h2>
+                <button id="scan-toggle" class="scan-button" onclick="toggleScanner()">
+                    <i class="fas fa-qrcode"></i> Scan QR
+                </button>
+            </div>
+
+            <!-- QR Scanner -->
+            <div id="qr-scanner" style="display: none;">
+                <div class="scanner-container">
+                    <video id="scanner-video" playsinline></video>
+                    <div class="scanner-overlay">
+                        <div class="scanner-frame"></div>
+                        <p>Align QR code within the frame</p>
+                    </div>
+                    <div id="scanner-feedback" class="scanner-feedback">Scanning for QR codes...</div>
+                </div>
+                <div class="scanner-controls">
+                    <button class="action-button" onclick="stopScanner()"><i class="fas fa-times"></i> Cancel</button>
+                    <button class="action-button primary" onclick="completeScanning()"><i class="fas fa-check"></i> Done</button>
                 </div>
             </div>
-            
-            <div class="cart-total">
-                <h4>Total: $${ totalAmount }</h4>
+
+            <div class="cart-items" id="cart-items">
+                <div class="empty-cart">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>No items selected yet</p>
+                </div>
             </div>
-            
-            <button class="complete-btn" @click="completeTransaction">Complete Transaction</button>
+
+            <div class="order-summary">
+                <div class="summary-row"><span>Subtotal:</span><span id="subtotal">RM0.00</span></div>
+                <div class="summary-row total"><span>Total:</span><span id="total">RM0.00</span></div>
+                <button class="checkout-button" id="checkout-button" onclick="processCheckout()" disabled>
+                    <i class="fas fa-credit-card"></i> Proceed to Payment
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-{% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
+<!-- Logout Modal -->
+<div id="logoutModal" class="modal">
+    <div class="modal-content">
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-buttons">
+            <button class="cancel-btn" onclick="document.getElementById('logoutModal').style.display='none'">Cancel</button>
+            <a href="{{ url_for('login.logout') }}" class="confirm-btn">Log Out</a>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="modal">
+    <div class="modal-content">
+        <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+        <h3>Transaction Successful!</h3>
+        <p id="transaction-details">Transaction ID: <span id="transaction-id"></span><br>Total Amount: <span id="transaction-amount"></span></p>
+        <div class="modal-buttons">
+            <button class="action-button primary" onclick="window.location.href='{{ url_for('manager.new_transaction') }}'">New Transaction</button>
+            <button class="action-button" onclick="window.location.href='{{ url_for('manager.dashboard') }}'">Back to Dashboard</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const { createApp, ref, computed } = Vue;
-    
-    createApp({
-        setup() {
-            const searchQuery = ref('');
-            const searchResults = ref([]);
-            const cart = ref([]);
+        // Cart items
+        let cart = [];
+        let scannerActive = false;
+        let videoStream = null;
+        let scanInterval = null;
+        let allProducts = []; // Store all products for client-side filtering
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial products
+            loadProducts();
             
-            const totalAmount = computed(() => {
-                return cart.value.reduce((sum, item) => sum + (item.Price * item.quantity), 0).toFixed(2);
+            // Set up event listeners
+            document.getElementById('search-button').addEventListener('click', applyFilters);
+            document.getElementById('product-search').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') applyFilters();
             });
-            
-            function searchProducts() {
-                if (searchQuery.value.length < 2) {
-                    searchResults.value = [];
-                    return;
-                }
-                
-                fetch(`/api/products?q=${searchQuery.value}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        searchResults.value = data;
-                    });
-            }
-            
-            function addToCart(product) {
-                const existingItem = cart.value.find(item => item.ProductID === product.ProductID);
-                
-                if (existingItem) {
-                    existingItem.quantity += 1;
-                } else {
-                    cart.value.push({
-                        ...product,
-                        quantity: 1
-                    });
-                }
-                
-                searchQuery.value = '';
-                searchResults.value = [];
-            }
-            
-            function removeFromCart(index) {
-                cart.value.splice(index, 1);
-            }
-            
-            function completeTransaction() {
-                if (cart.value.length === 0) return;
-                
-                const transactionData = {
-                    items: cart.value.map(item => ({
-                        productId: item.ProductID,
-                        quantity: item.quantity,
-                        price: item.Price
-                    })),
-                    total: totalAmount.value
-                };
-                
-                fetch('/api/transactions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(transactionData)
+            document.getElementById('apply-filters').addEventListener('click', applyFilters);
+        });
+
+        // Load products from server
+        function loadProducts() {
+            showLoading();
+            fetch('/manager/search-products')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
                 })
-                .then(response => response.json())
-                .then(data => {
-                    Swal.fire({
-                        title: 'Transaction Complete',
-                        text: `Transaction ID: ${data.transactionId}`,
-                        icon: 'success'
-                    });
-                    cart.value = [];
+                .then(products => {
+                    allProducts = products; // Store all products
+                    renderProducts(products);
                 })
                 .catch(error => {
-                    Swal.fire({
-                        title: 'Error',
-                        text: 'Transaction failed',
-                        icon: 'error'
-                    });
+                    console.error('Error loading products:', error);
+                    showError(error);
+                });
+        }
+
+        // Apply all filters and sorting
+        function applyFilters() {
+            showLoading();
+            
+            const searchTerm = document.getElementById('product-search').value.trim().toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const stockFilter = document.getElementById('stock-filter').value;
+            const sortFilter = document.getElementById('sort-filter').value;
+
+            let filteredProducts = [...allProducts];
+
+            if (searchTerm) {
+                filteredProducts = filteredProducts.filter(product => {
+                    const nameMatch = product.ProductName?.toLowerCase().includes(searchTerm) || false;
+                    const brandMatch = product.ProductBrand?.toLowerCase().includes(searchTerm) || false;
+                    return nameMatch || brandMatch;
+                });
+            }
+
+            if (categoryFilter) {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.Category === categoryFilter
+                );
+            }
+
+            if (stockFilter === 'low') {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.StockQuantity < 10
+                );
+            } else if (stockFilter === 'out') {
+                filteredProducts = filteredProducts.filter(product => 
+                    product.StockQuantity === 0
+                );
+            }
+
+            switch(sortFilter) {
+                case 'name-asc':
+                    filteredProducts.sort((a, b) => a.ProductName.localeCompare(b.ProductName));
+                    break;
+                case 'name-desc':
+                    filteredProducts.sort((a, b) => b.ProductName.localeCompare(a.ProductName));
+                    break;
+                case 'price-asc':
+                    filteredProducts.sort((a, b) => a.Price - b.Price);
+                    break;
+                case 'price-desc':
+                    filteredProducts.sort((a, b) => b.Price - a.Price);
+                    break;
+            }
+
+            
+            renderProducts(filteredProducts);
+        }
+        
+        // Helper function to get product image URL
+        function getProductImageUrl(imagePath) {
+            if (!imagePath) return '/static/images/placeholder.png';
+            if (imagePath.includes('static/')) {
+                return imagePath;
+            }
+            return `/static/product_image/${imagePath}`;
+        }
+
+        
+        // Render products
+        function renderProducts(products) {
+            const productList = document.getElementById('product-list');
+            
+            // Debug logging
+            console.group("Product Data Debug");
+            products.forEach(product => {
+                console.log("Product:", {
+                    id: product.ProductID,
+                    name: product.ProductName,
+                    image: product.Image,
+                    resolvedUrl: getProductImageUrl(product.Image)
+                });
+            });
+            console.groupEnd();
+
+            if (products.length === 0) {
+                productList.innerHTML = `
+                    <div class="no-products">
+                        <i class="fas fa-box-open"></i>
+                        <p>No products found matching filters</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            productList.innerHTML = products.map(product => {
+                const imageUrl = getProductImageUrl(product.Image);
+                console.log(`Rendering ${product.ProductName} with image: ${imageUrl}`);
+                
+                return `
+                <div class="product-card" data-id="${product.ProductID}">
+                    <div class="product-image">
+                        <img src="${imageUrl}"
+                            alt="${product.ProductName}"
+                            onerror="this.onerror=null;this.src='/static/images/placeholder.png'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand-name">
+                            <span class="product-brand">${product.ProductBrand || 'No Brand'}</span>
+                            <span class="product-name">${product.ProductName}</span>
+                        </div>
+                        <div class="product-details">
+                            <span class="price">RM${product.Price.toFixed(2)}</span>
+                            <span class="stock ${product.StockQuantity < 10 ? 'low-stock' : ''}">
+                                ${product.StockQuantity} in stock
+                            </span>
+                        </div>
+                    </div>
+                    <button class="select-button" onclick="addToCart(${product.ProductID}, '${product.ProductName.replace(/'/g, "\\'")}', ${product.Price}, ${product.StockQuantity})">
+                        <i class="fas fa-cart-plus"></i> Select
+                    </button>
+                </div>
+                `;
+            }).join('');
+        }
+        // Show loading spinner
+        function showLoading() {
+            document.getElementById('product-list').innerHTML = `
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i> Loading products...
+                </div>
+            `;
+        }
+
+        // Show error message
+        function showError(error) {
+            document.getElementById('product-list').innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load products. ${error.message}</p>
+                    <button class="retry-button" onclick="loadProducts()">Retry</button>
+                </div>
+            `;
+        }
+
+        // Add product to cart
+        function addToCart(productId, productName, price, stock) {
+            // Check if product already in cart
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                if (existingItem.quantity < stock) {
+                    existingItem.quantity += 1;
+                } else {
+                    alert(`No more ${productName} available`);
+                    return;
+                }
+            } else {
+                cart.push({
+                    id: productId,
+                    name: productName,
+                    price: price,
+                    quantity: 1,
+                    stock: stock
                 });
             }
             
-            return {
-                searchQuery,
-                searchResults,
-                cart,
-                totalAmount,
-                searchProducts,
-                addToCart,
-                removeFromCart,
-                completeTransaction
-            };
+            updateCartDisplay();
         }
-    }).mount('#transaction-app');
-});
+
+        // Update cart display
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cart-items');
+            const subtotalElement = document.getElementById('subtotal');
+            const totalElement = document.getElementById('total');
+            const checkoutButton = document.getElementById('checkout-button');
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>No items selected yet</p>
+                    </div>
+                `;
+                subtotalElement.textContent = 'RM0.00';
+                totalElement.textContent = 'RM0.00';
+                checkoutButton.disabled = true;
+                return;
+            }
+            
+            // Calculate totals
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const total = subtotal;
+            
+            // Update totals display
+            subtotalElement.textContent = `RM${subtotal.toFixed(2)}`;
+            totalElement.textContent = `RM${total.toFixed(2)}`;
+            checkoutButton.disabled = false;
+            
+            // Update cart items display
+            cartItems.innerHTML = '';
+            cart.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.name}</h4>
+                        <div class="item-controls">
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" value="${item.quantity}" min="1" max="${item.stock}" 
+                                   onchange="updateQuantityInput(${item.id}, this)">
+                            <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <span class="item-price">RM${(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <button class="remove-item" onclick="removeFromCart(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                cartItems.appendChild(itemElement);
+            });
+        }
+
+        // Update quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            
+            const newQuantity = item.quantity + change;
+            
+            if (newQuantity < 1) {
+                removeFromCart(productId);
+                return;
+            }
+            
+            if (newQuantity > item.stock) {
+                alert(`Only ${item.stock} ${item.name} available`);
+                return;
+            }
+            
+            item.quantity = newQuantity;
+            updateCartDisplay();
+        }
+
+        // Update quantity via input
+        function updateQuantityInput(productId, input) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            
+            let newQuantity = parseInt(input.value);
+            
+            if (isNaN(newQuantity)) {
+                newQuantity = 1;
+            } else if (newQuantity < 1) {
+                newQuantity = 1;
+            }
+            
+            if (newQuantity > item.stock) {
+                alert(`Only ${item.stock} ${item.name} available`);
+                newQuantity = item.stock;
+            }
+            
+            input.value = newQuantity;
+            item.quantity = newQuantity;
+            updateCartDisplay();
+        }
+
+        // Remove item from cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartDisplay();
+        }
+
+        // Process checkout
+        function processCheckout() {
+            // Store cart in sessionStorage before redirecting
+            sessionStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = '/manager/checkout-page';
+        }
+
+        // Toggle QR scanner
+        function toggleScanner() {
+            const scanner = document.getElementById('qr-scanner');
+            const scanButton = document.getElementById('scan-toggle');
+            
+            if (scannerActive) {
+                stopScanner();
+                scanner.style.display = 'none';
+                scanButton.innerHTML = '<i class="fas fa-qrcode"></i> Scan QR';
+            } else {
+                startScanner();
+                scanner.style.display = 'block';
+                scanButton.innerHTML = '<i class="fas fa-times"></i> Cancel Scan';
+            }
+            
+            scannerActive = !scannerActive;
+        }
+
+        // Start QR scanner
+        function startScanner() {
+            const video = document.getElementById('scanner-video');
+            const feedback = document.getElementById('scanner-feedback');
+            
+            feedback.classList.add('scanner-active');
+            
+            // Use the back camera by default
+            const constraints = {
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play()
+                        .then(() => {
+                            console.log("Video playback started");
+                            scanQRCode(video);
+                        })
+                        .catch(err => {
+                            console.error("Error playing video:", err);
+                            alert("Error starting camera: " + err.message);
+                            stopScanner();
+                        });
+                })
+                .catch(function(err) {
+                    console.error("Error accessing camera: ", err);
+                    feedback.classList.remove('scanner-active');
+                    alert("Could not access the camera. Please ensure you have granted camera permissions.\nError: " + err.message);
+                    toggleScanner();
+                });
+        }
+
+        // Stop QR scanner
+        function stopScanner() {
+            const feedback = document.getElementById('scanner-feedback');
+            feedback.classList.remove('scanner-active');
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            const video = document.getElementById('scanner-video');
+            video.srcObject = null;
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+        }
+
+        // Complete scanning
+        function completeScanning() {
+            stopScanner();
+        }
+
+        // Scan for QR codes
+        function scanQRCode(video) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            function scanFrame() {
+                if (!scannerActive) return;
+                
+                try {
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Try to decode QR code
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'attemptBoth',
+                        tryHarder: true
+                    });
+                    
+                    if (code) {
+                        console.log("QR Code Detected:", code.data);
+                        const productId = parseInt(code.data);
+                        
+                        if (!isNaN(productId)) {
+                            console.log("Valid Product ID:", productId);
+                            fetchProduct(productId);
+                            // Pause scanning briefly to prevent duplicates
+                            scannerActive = false;
+                            setTimeout(() => {
+                                scannerActive = true;
+                            }, 1000);
+                        }
+                    }
+                } catch (e) {
+                    console.error("QR scan error:", e);
+                }
+                
+                if (scannerActive) {
+                    requestAnimationFrame(scanFrame);
+                }
+            }
+            
+            scanFrame();
+        }
+
+        // Fetch product by ID
+        function fetchProduct(productId) {
+            console.log("Fetching product:", productId);
+            
+            fetch(`/manager/get-product/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(product => {
+                    if (product.error) {
+                        console.error("Product fetch error:", product.error);
+                        alert(product.error);
+                    } else {
+                        console.log("Product found:", product);
+                        addToCart(product.id, product.name, product.price, product.stock);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching product:', error);
+                    alert(`Error scanning product: ${error.message}`);
+                });
+        }
+
+        // Show logout modal
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+    </script>
 </script>
-{% endblock %}
 {% endblock %}
