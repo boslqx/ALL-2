@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+from flask_bootstrap import Bootstrap
 from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 from routes.login import login_bp
@@ -14,6 +15,7 @@ template_dir = os.path.abspath('templates')
 
 # app setup
 app = Flask(__name__, template_folder=template_dir)
+Bootstrap(app)
 app.secret_key = 'your_secret_key'
 
 # Database 
