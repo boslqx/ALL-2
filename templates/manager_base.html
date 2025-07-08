@@ -29,12 +29,6 @@
                     <span>All Products</span>
                 </a>
             </li>
-            <li class="nav-item {% if active_tab == 'New Transaction' %}active{% endif %}">
-                <a href="{{ url_for('manager.new_transaction') }}" class="nav-link">
-                    <i class="fas fa-cash-register"></i>
-                    <span>New Transaction</span>
-                </a>
-            </li>
             <li class="nav-item {% if active_tab == 'Register' %}active{% endif %}">
                 <a href="{{ url_for('manager.register_page') }}" class="nav-link">
                     <i class="fas fa-clipboard-list"></i>
