@@ -1,7 +1,9 @@
 from flask_mail import Mail
 from functools import wraps
 from flask import abort, session, redirect, url_for, flash, request
+from flask_sqlalchemy import SQLAlchemy
 
+db = SQLAlchemy()
 mail = Mail()
 
 # role-based decorator
