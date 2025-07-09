@@ -68,6 +68,7 @@ class Transaction(db.Model):
     CashierID = db.Column(db.Integer, db.ForeignKey('User.UserID'), nullable=False)
     TotalAmount = db.Column(db.Float, nullable=False)
     Datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    Receipt = db.Column(db.LargeBinary)
 
     # Relationships
     transaction_details = db.relationship('TransactionDetails', backref='transaction', lazy=True)
