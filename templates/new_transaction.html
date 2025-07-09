@@ -297,18 +297,6 @@
         function renderProducts(products) {
             const productList = document.getElementById('product-list');
             
-            // Debug logging
-            console.group("Product Data Debug");
-            products.forEach(product => {
-                console.log("Product:", {
-                    id: product.ProductID,
-                    name: product.ProductName,
-                    image: product.Image,
-                    resolvedUrl: getProductImageUrl(product.Image)
-                });
-            });
-            console.groupEnd();
-
             if (products.length === 0) {
                 productList.innerHTML = `
                     <div class="no-products">
@@ -319,12 +307,21 @@
                 return;
             }
             
-            productList.innerHTML = products.map(product => {
+            // Sort products - low stock first
+            const sortedProducts = [...products].sort((a, b) => {
+                const aLowStock = (a.StockQuantity || 0) <= 5;
+                const bLowStock = (b.StockQuantity || 0) <= 5;
+                if (aLowStock && !bLowStock) return -1;
+                if (!aLowStock && bLowStock) return 1;
+                return 0;
+            });
+
+            productList.innerHTML = sortedProducts.map(product => {
                 const imageUrl = getProductImageUrl(product.Image);
-                console.log(`Rendering ${product.ProductName} with image: ${imageUrl}`);
+                const isLowStock = (product.StockQuantity || 0) <= 5;
                 
                 return `
-                <div class="product-card" data-id="${product.ProductID}">
+                <div class="product-card ${isLowStock ? 'low-stock' : ''}" data-id="${product.ProductID}">
                     <div class="product-image">
                         <img src="${imageUrl}"
                             alt="${product.ProductName}"
@@ -337,8 +334,9 @@
                         </div>
                         <div class="product-details">
                             <span class="price">RM${product.Price.toFixed(2)}</span>
-                            <span class="stock ${product.StockQuantity < 10 ? 'low-stock' : ''}">
+                            <span class="stock ${isLowStock ? 'low-stock-indicator' : ''}">
                                 ${product.StockQuantity} in stock
+                                ${isLowStock ? ' <i class="fas fa-exclamation-circle"></i>' : ''}
                             </span>
                         </div>
                     </div>
@@ -349,6 +347,7 @@
                 `;
             }).join('');
         }
+
         // Show loading spinner
         function showLoading() {
             document.getElementById('product-list').innerHTML = `
@@ -665,6 +664,5 @@
         function showLogoutModal() {
             document.getElementById('logoutModal').style.display = 'flex';
         }
-    </script>
 </script>
 {% endblock %}
