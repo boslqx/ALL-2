@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-from flask_bootstrap import Bootstrap
 from db import db
 from db.models import User, Product, StockAlert, Transaction, TransactionDetails
 from routes.login import login_bp
@@ -15,7 +14,6 @@ template_dir = os.path.abspath('templates')
 
 # app setup
 app = Flask(__name__, template_folder=template_dir)
-Bootstrap(app)
 app.secret_key = 'your_secret_key'
 
 # Database 
@@ -48,7 +46,7 @@ def home():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    app.run(debug=True)
 
 @app.errorhandler(403)
 def forbidden(e):
