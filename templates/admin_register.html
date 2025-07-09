@@ -1,292 +1,292 @@
-{% extends "admin_base.html" %}
-{% block content %}
-<div id="register" class="section">
-    <div class="register-container">
-        <h1 class="register-title">Register New Product</h1>
+    {% extends "admin_base.html" %}
+    {% block content %}
+    <div id="register" class="section">
+        <div class="register-container">
+            <h1 class="register-title">Register New Product</h1>
 
-        <div class="register-card">
-            <!-- Left Column - Image Upload -->
-            <div class="register-column image-column">
-                <div class="upload-container">
-                    <div class="image-preview-container">
-                        <img src="{{ url_for('static', filename='images/placeholder.png') }}" id="preview-img" class="preview-image" alt="Product Preview">
-                        <div class="upload-overlay">
-                            <i class="fas fa-camera"></i>
-                            <span>Click to upload</span>
+            <div class="register-card">
+                <!-- Left Column - Image Upload -->
+                <div class="register-column image-column">
+                    <div class="upload-container">
+                        <div class="image-preview-container">
+                            <img src="{{ url_for('static', filename='images/placeholder.png') }}" id="preview-img" class="preview-image" alt="Product Preview">
+                            <div class="upload-overlay">
+                                <i class="fas fa-camera"></i>
+                                <span>Click to upload</span>
+                            </div>
+                        </div>
+                        <input type="file" id="image-upload" accept="image/*" hidden>
+                    </div>
+                    <div class="image-actions">
+                        <button class="action-button remove-image" disabled>
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Middle Column - Product Details -->
+                <div class="register-column form-column">
+                    <div class="form-header">
+                        <h3>Product Information</h3>
+                        <div class="form-divider"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" class="category-select">
+                            <option value="" disabled selected>Select a category</option>
+                            <option value="Food & Beverages">Food & Beverages</option>
+                            <option value="Health & Personal">Health & Personal</option>
+                            <option value="Home & Living">Home & Living</option>
+                            <option value="Clothing & Accessories">Clothing & Accessories</option>
+                            <option value="Other">Add Category</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group other-category-container" style="display:none;">
+                        <label for="other-category">New Category</label>
+                        <input type="text" id="other-category" placeholder="Enter category name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brand">Brand Name</label>
+                        <input type="text" id="brand" placeholder="e.g. NESTLE, EMBORG">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product">Product Name</label>
+                        <input type="text" id="product" placeholder="e.g. Baby Powder, Cheese">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label for="price">Price (RM)</label>
+                            <div class="input-with-icon">
+                                <span class="currency">RM</span>
+                                <input type="number" id="price" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-group half-width">
+                            <label for="quantity">Stock Quantity</label>
+                            <input type="number" id="quantity" placeholder="0">
                         </div>
                     </div>
-                    <input type="file" id="image-upload" accept="image/*" hidden>
-                </div>
-                <div class="image-actions">
-                    <button class="action-button remove-image" disabled>
-                        <i class="fas fa-trash"></i> Remove
-                    </button>
-                </div>
-            </div>
-
-            <!-- Middle Column - Product Details -->
-            <div class="register-column form-column">
-                <div class="form-header">
-                    <h3>Product Information</h3>
-                    <div class="form-divider"></div>
                 </div>
 
-                <div class="form-group">
-                    <label for="category">Category</label>
-                    <select id="category" class="category-select">
-                        <option value="" disabled selected>Select a category</option>
-                        <option value="Food & Beverages">Food & Beverages</option>
-                        <option value="Health & Personal">Health & Personal</option>
-                        <option value="Home & Living">Home & Living</option>
-                        <option value="Clothing & Accessories">Clothing & Accessories</option>
-                        <option value="Other">Add Category</option>
-                    </select>
-                </div>
+                <!-- Right Column - QR Code -->
+                <div class="register-column qr-column">
+                    <div class="qr-header">
+                        <h3>QR Code</h3>
+                        <div class="form-divider"></div>
+                    </div>
 
-                <div class="form-group other-category-container" style="display:none;">
-                    <label for="other-category">New Category</label>
-                    <input type="text" id="other-category" placeholder="Enter category name">
-                </div>
-
-                <div class="form-group">
-                    <label for="brand">Brand Name</label>
-                    <input type="text" id="brand" placeholder="e.g. NESTLE, EMBORG">
-                </div>
-
-                <div class="form-group">
-                    <label for="product">Product Name</label>
-                    <input type="text" id="product" placeholder="e.g. Baby Powder, Cheese">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group half-width">
-                        <label for="price">Price (RM)</label>
-                        <div class="input-with-icon">
-                            <span class="currency">RM</span>
-                            <input type="number" id="price" step="0.01" placeholder="0.00">
+                    <div class="qr-preview-container">
+                        <div class="qr-placeholder">
+                            <i class="fas fa-qrcode"></i>
+                            <p>QR Code will generate after saving</p>
                         </div>
                     </div>
 
-                    <div class="form-group half-width">
-                        <label for="quantity">Stock Quantity</label>
-                        <input type="number" id="quantity" placeholder="0">
+                    <div class="qr-actions">
+                        <button class="action-button print-qr" disabled>
+                            <i class="fas fa-print"></i> Print QR
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column - QR Code -->
-            <div class="register-column qr-column">
-                <div class="qr-header">
-                    <h3>QR Code</h3>
-                    <div class="form-divider"></div>
-                </div>
-
-                <div class="qr-preview-container">
-                    <div class="qr-placeholder">
-                        <i class="fas fa-qrcode"></i>
-                        <p>QR Code will generate after saving</p>
-                    </div>
-                </div>
-
-                <div class="qr-actions">
-                    <button class="action-button print-qr" disabled>
-                        <i class="fas fa-print"></i> Print QR
-                    </button>
-                </div>
+            <div class="form-actions">
+                <button type="button" class="save-button">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+                <button type="button" class="cancel-button">
+                    <i class="fas fa-broom"></i> Clear
+                </button>
             </div>
-        </div>
-
-        <div class="form-actions">
-            <button type="button" class="save-button">
-                <i class="fas fa-save"></i> Save Product
-            </button>
-            <button type="button" class="cancel-button">
-                <i class="fas fa-broom"></i> Clear
-            </button>
         </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const uploadContainer = document.querySelector('.image-preview-container');
-    const fileInput = document.getElementById('image-upload');
-    const previewImg = document.getElementById('preview-img');
-    const removeBtn = document.querySelector('.remove-image');
-    const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
-    let lastSavedProductId = null;
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const uploadContainer = document.querySelector('.image-preview-container');
+        const fileInput = document.getElementById('image-upload');
+        const previewImg = document.getElementById('preview-img');
+        const removeBtn = document.querySelector('.remove-image');
+        const placeholderImg = '{{ url_for("static", filename="images/placeholder.png") }}';
+        let lastSavedProductId = null;
 
-    uploadContainer.addEventListener('click', function () {
-        fileInput.click();
-    });
+        uploadContainer.addEventListener('click', function () {
+            fileInput.click();
+        });
 
-    fileInput.addEventListener('change', function (e) {
-        if (e.target.files && e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                previewImg.src = event.target.result;
-                removeBtn.disabled = false;
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    });
+        fileInput.addEventListener('change', function (e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImg.src = event.target.result;
+                    removeBtn.disabled = false;
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
 
-    removeBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        fileInput.value = '';
-        previewImg.src = placeholderImg;
-        this.disabled = true;
-    });
+        removeBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            fileInput.value = '';
+            previewImg.src = placeholderImg;
+            this.disabled = true;
+        });
 
-    document.getElementById('category').addEventListener('change', function () {
-        const otherContainer = document.querySelector('.other-category-container');
-        otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
-    });
+        document.getElementById('category').addEventListener('change', function () {
+            const otherContainer = document.querySelector('.other-category-container');
+            otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';
+        });
 
-    document.querySelector('.save-button').addEventListener('click', async function (e) {
-        e.preventDefault();
+        document.querySelector('.save-button').addEventListener('click', async function (e) {
+            e.preventDefault();
 
-        if (!validateForm()) {
-            Swal.fire({
-                title: 'Error!',
-                text: 'Please fill all required fields correctly',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        const formData = new FormData();
-        const category = document.getElementById('category').value;
-        formData.append('category', category);
-        if (category === 'Other') {
-            formData.append('other-category', document.getElementById('other-category').value);
-        }
-
-        formData.append('brand', document.getElementById('brand').value);
-        formData.append('product', document.getElementById('product').value);
-        formData.append('price', document.getElementById('price').value);
-        formData.append('quantity', document.getElementById('quantity').value);
-
-        if (fileInput.files[0]) {
-            formData.append('image', fileInput.files[0]);
-        }
-
-        try {
-            const response = await fetch('/register-container', {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                lastSavedProductId = data.product_id;
-                const qrContainer = document.querySelector('.qr-preview-container');
-                qrContainer.innerHTML = `<img src="${data.qr_image_url}" style="max-width:100%; height:auto;">`;
-                document.querySelector('.print-qr').disabled = false;
-
+            if (!validateForm()) {
                 Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
-                    icon: 'success',
+                    title: 'Error!',
+                    text: 'Please fill all required fields correctly',
+                    icon: 'error',
                     confirmButtonText: 'OK'
                 });
-            } else {
-                throw new Error(data.message);
+                return;
             }
-        } catch (error) {
-            Swal.fire({
-                title: 'Error!',
-                text: error.message,
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
-        }
-    });
 
-    document.querySelector('.cancel-button').addEventListener('click', function (e) {
-        e.preventDefault();
+            const formData = new FormData();
+            const category = document.getElementById('category').value;
+            formData.append('category', category);
+            if (category === 'Other') {
+                formData.append('other-category', document.getElementById('other-category').value);
+            }
 
-        Swal.fire({
-            title: 'Clear All Fields?',
-            text: 'Are you sure you want to discard all input and reset the form?',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#aaa',
-            confirmButtonText: 'Yes, clear it',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Clear all input fields
-                document.getElementById('category').value = '';
-                document.getElementById('brand').value = '';
-                document.getElementById('product').value = '';
-                document.getElementById('price').value = '';
-                document.getElementById('quantity').value = '';
-                document.getElementById('other-category').value = '';
-                document.querySelector('.other-category-container').style.display = 'none';
+            formData.append('brand', document.getElementById('brand').value);
+            formData.append('product', document.getElementById('product').value);
+            formData.append('price', document.getElementById('price').value);
+            formData.append('quantity', document.getElementById('quantity').value);
 
-                // Clear image
-                fileInput.value = '';
-                previewImg.src = placeholderImg;
-                removeBtn.disabled = true;
+            if (fileInput.files[0]) {
+                formData.append('image', fileInput.files[0]);
+            }
 
-                // Clear QR preview
-                const qrContainer = document.querySelector('.qr-preview-container');
-                qrContainer.innerHTML = `
-                    <div class="qr-placeholder">
-                        <i class="fas fa-qrcode"></i>
-                        <p>QR Code will generate after saving</p>
-                    </div>
-                `;
+            try {
+                const response = await fetch('/register-container', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                document.querySelector('.print-qr').disabled = true;
+                const data = await response.json();
+                if (data.success) {
+                    lastSavedProductId = data.product_id;
+                    const qrContainer = document.querySelector('.qr-preview-container');
+                    qrContainer.innerHTML = `<img src="${data.qr_image_url}" style="max-width:100%; height:auto;">`;
+                    document.querySelector('.print-qr').disabled = false;
 
-                document.querySelectorAll('input, select').forEach(el => el.style.borderColor = '#ddd');
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         });
-    });
 
-    document.querySelector('.print-qr').addEventListener('click', function () {
-        if (!lastSavedProductId) {
+        document.querySelector('.cancel-button').addEventListener('click', function (e) {
+            e.preventDefault();
+
             Swal.fire({
-                title: 'Error!',
-                text: 'Please save the product first',
-                icon: 'error',
-                confirmButtonText: 'OK'
+                title: 'Clear All Fields?',
+                text: 'Are you sure you want to discard all input and reset the form?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#aaa',
+                confirmButtonText: 'Yes, clear it',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Clear all input fields
+                    document.getElementById('category').value = '';
+                    document.getElementById('brand').value = '';
+                    document.getElementById('product').value = '';
+                    document.getElementById('price').value = '';
+                    document.getElementById('quantity').value = '';
+                    document.getElementById('other-category').value = '';
+                    document.querySelector('.other-category-container').style.display = 'none';
+
+                    // Clear image
+                    fileInput.value = '';
+                    previewImg.src = placeholderImg;
+                    removeBtn.disabled = true;
+
+                    // Clear QR preview
+                    const qrContainer = document.querySelector('.qr-preview-container');
+                    qrContainer.innerHTML = `
+                        <div class="qr-placeholder">
+                            <i class="fas fa-qrcode"></i>
+                            <p>QR Code will generate after saving</p>
+                        </div>
+                    `;
+
+                    document.querySelector('.print-qr').disabled = true;
+
+                    document.querySelectorAll('input, select').forEach(el => el.style.borderColor = '#ddd');
+                }
             });
-            return;
-        }
-        window.open(`/print-qr/${lastSavedProductId}`, '_blank');
-    });
+        });
 
-    function validateForm() {
-        const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
-        let isValid = true;
-
-        requiredFields.forEach(id => {
-            const field = document.getElementById(id);
-            if (!field.value.trim()) {
-                field.style.borderColor = 'red';
-                isValid = false;
-            } else {
-                field.style.borderColor = '#ddd';
+        document.querySelector('.print-qr').addEventListener('click', function () {
+            if (!lastSavedProductId) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please save the product first',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                return;
             }
+            window.open(`/print-qr/${lastSavedProductId}`, '_blank');
+        });
 
-            if (id === 'category' && field.value === 'Other') {
-                const otherCat = document.getElementById('other-category');
-                if (!otherCat.value.trim()) {
-                    otherCat.style.borderColor = 'red';
+        function validateForm() {
+            const requiredFields = ['category', 'brand', 'product', 'price', 'quantity'];
+            let isValid = true;
+
+            requiredFields.forEach(id => {
+                const field = document.getElementById(id);
+                if (!field.value.trim()) {
+                    field.style.borderColor = 'red';
                     isValid = false;
                 } else {
-                    otherCat.style.borderColor = '#ddd';
+                    field.style.borderColor = '#ddd';
                 }
-            }
-        });
 
-        return isValid;
-    }
-});
-</script>
-{% endblock %}
+                if (id === 'category' && field.value === 'Other') {
+                    const otherCat = document.getElementById('other-category');
+                    if (!otherCat.value.trim()) {
+                        otherCat.style.borderColor = 'red';
+                        isValid = false;
+                    } else {
+                        otherCat.style.borderColor = '#ddd';
+                    }
+                }
+            });
+
+            return isValid;
+        }
+    });
+    </script>
+    {% endblock %}

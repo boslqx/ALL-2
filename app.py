@@ -24,8 +24,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'killerpill585@gmail.com'  # Your Gmail
-app.config['MAIL_PASSWORD'] = 'fsjc efmx pzqm pcfx'  # Use App Password, not regular password
+app.config['MAIL_USERNAME'] = 'killerpill585@gmail.com'
+app.config['MAIL_PASSWORD'] = 'fsjc efmx pzqm pcfx'
 app.config['MAIL_DEFAULT_SENDER'] = 'killerpill585@gmail.com'
 
 # Initialize extensions
@@ -55,3 +55,8 @@ def forbidden(e):
     return render_template('403.html'), 403
 
 
+class Config:
+    TESTING = False
+    WTF_CSRF_ENABLED = True
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = "your-secret-key"
