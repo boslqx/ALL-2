@@ -7,7 +7,6 @@
 }
 
 body {
-    display: flex;
     min-height: 100vh;
     background-color: #f0f0ef;
 }
@@ -83,8 +82,9 @@ body {
 
 /* ===== Main Content ===== */
 .main-content {
-    flex: 1;
     padding: 20px;
+    width: calc(100% - 240px);
+    max-width: 1600px;
     min-height: 100vh;
     margin-left: 240px;
 }
@@ -171,7 +171,7 @@ body {
 /* Dashboard Styles */
 .dashboard-container {
     padding: 20px;
-    max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
 }
 
@@ -532,7 +532,6 @@ body {
 /* ===== Shared Container Styles ===== */
 .products-container{
     width: 100%;
-    max-width: 1200px; 
     margin: 0 auto; 
     padding: 20px;
     background: white;
@@ -1061,7 +1060,6 @@ body {
 /* ===== Register Product Section ===== */
 .register-container {
     width: 100%;
-    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
