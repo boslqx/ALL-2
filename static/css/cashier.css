@@ -877,6 +877,40 @@ body {
     background-color: #3b4e63;
 }
 
+/* Low stock product styling */
+.product-card.low-stock {
+    position: relative;
+    border: 2px solid #ff4444;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.product-card.low-stock::before {
+    content: "LOW STOCK ALERT!";
+    position: absolute;
+    top: 2px;
+    left: 10px;
+    background: #ff4444;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+    z-index: 2;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 68, 68, 0.8); }
+    100% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); }
+}
+
+/* Stock counter styling */
+.text-danger {
+    color: #ff4444;
+    font-weight: bold;
+}
+
 /* Transaction Cart */
 .transaction-cart {
     flex: 1;
