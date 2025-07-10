@@ -510,13 +510,13 @@
                 stopScanner();
                 scanner.style.display = 'none';
                 scanButton.innerHTML = '<i class="fas fa-qrcode"></i> Scan QR';
+                scannerActive = false;
             } else {
-                startScanner();
                 scanner.style.display = 'block';
                 scanButton.innerHTML = '<i class="fas fa-times"></i> Cancel Scan';
+                scannerActive = true;
+                startScanner();
             }
-            
-            scannerActive = !scannerActive;
         }
 
         // Start QR scanner
@@ -613,6 +613,11 @@
                 clearInterval(scanInterval);
                 scanInterval = null;
             }
+            
+            // Clean up global scanning variables
+            currentVideo = null;
+            scanCanvas = null;
+            scanContext = null;
             
             console.log("QR Scanner stopped and cleaned up");
         }
@@ -720,6 +725,84 @@
             return null;
         }
 
+        // Global variables for scanning
+        let currentVideo = null;
+        let scanCanvas = null;
+        let scanContext = null;
+
+        // Start continuous QR scanning loop
+        function startScanningLoop() {
+            if (!currentVideo || !scannerActive || !videoStream) {
+                return;
+            }
+
+            try {
+                // Draw current video frame to canvas
+                scanContext.drawImage(currentVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+                const imageData = scanContext.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                
+                // Try to decode QR code with enhanced options
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'attemptBoth',
+                    tryHarder: true,
+                    locateBarcode: true
+                });
+                
+                if (code && code.data) {
+                    console.log("QR Code Detected:", code.data);
+                    
+                    // Try to extract product ID from various QR code formats
+                    const productId = extractProductId(code.data);
+                    
+                    if (productId && productId > 0) {
+                        console.log("Valid Product ID extracted:", productId);
+                        
+                        // Show success feedback
+                        const feedback = document.getElementById('scanner-feedback');
+                        if (feedback) {
+                            feedback.textContent = `Product ID: ${productId} - Adding to cart...`;
+                            feedback.style.backgroundColor = 'rgba(26, 188, 156, 0.9)';
+                        }
+                        
+                        fetchProduct(productId);
+                        
+                        // Pause scanning briefly to prevent duplicates
+                        scannerActive = false;
+                        setTimeout(() => {
+                            if (feedback) {
+                                feedback.textContent = 'Scanning for QR codes...';
+                                feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                            }
+                            scannerActive = true;
+                            // Restart the scanning loop
+                            startScanningLoop();
+                        }, 2000);
+                        return; // Don't continue scanning immediately
+                    } else {
+                        console.log("Could not extract valid product ID from QR code:", code.data);
+                        
+                        // Show error feedback briefly
+                        const feedback = document.getElementById('scanner-feedback');
+                        if (feedback) {
+                            feedback.textContent = 'No valid product ID found in QR code';
+                            feedback.style.backgroundColor = 'rgba(231, 76, 60, 0.9)';
+                            setTimeout(() => {
+                                feedback.textContent = 'Scanning for QR codes...';
+                                feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                            }, 1500);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("QR scan error:", e);
+            }
+            
+            // Continue scanning
+            if (scannerActive) {
+                requestAnimationFrame(startScanningLoop);
+            }
+        }
+
         // Scan for QR codes
         function scanQRCode(video) {
             if (!video.videoWidth || !video.videoHeight) {
@@ -728,86 +811,19 @@
                 return;
             }
 
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            // Set up global variables
+            currentVideo = video;
+            scanCanvas = document.createElement('canvas');
+            scanContext = scanCanvas.getContext('2d');
             
             // Set canvas size to match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            scanCanvas.width = video.videoWidth;
+            scanCanvas.height = video.videoHeight;
             
-            console.log("Starting QR scan with canvas size:", canvas.width, "x", canvas.height);
-            
-            function scanFrame() {
-                if (!scannerActive || !videoStream) {
-                    return;
-                }
-                
-                try {
-                    // Draw current video frame to canvas
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    
-                    // Try to decode QR code with enhanced options
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: 'attemptBoth',
-                        tryHarder: true,
-                        locateBarcode: true
-                    });
-                    
-                    if (code && code.data) {
-                        console.log("QR Code Detected:", code.data);
-                        
-                        // Try to extract product ID from various QR code formats
-                        const productId = extractProductId(code.data);
-                        
-                        if (productId && productId > 0) {
-                            console.log("Valid Product ID extracted:", productId);
-                            
-                            // Show success feedback
-                            const feedback = document.getElementById('scanner-feedback');
-                            if (feedback) {
-                                feedback.textContent = `Product ID: ${productId} - Adding to cart...`;
-                                feedback.style.backgroundColor = 'rgba(26, 188, 156, 0.9)';
-                            }
-                            
-                            fetchProduct(productId);
-                            
-                            // Pause scanning briefly to prevent duplicates
-                            scannerActive = false;
-                            setTimeout(() => {
-                                if (feedback) {
-                                    feedback.textContent = 'Scanning for QR codes...';
-                                    feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                                }
-                                scannerActive = true;
-                            }, 2000);
-                        } else {
-                            console.log("Could not extract valid product ID from QR code:", code.data);
-                            
-                            // Show error feedback briefly
-                            const feedback = document.getElementById('scanner-feedback');
-                            if (feedback) {
-                                feedback.textContent = 'No valid product ID found in QR code';
-                                feedback.style.backgroundColor = 'rgba(231, 76, 60, 0.9)';
-                                setTimeout(() => {
-                                    feedback.textContent = 'Scanning for QR codes...';
-                                    feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                                }, 1500);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("QR scan error:", e);
-                }
-                
-                // Continue scanning
-                if (scannerActive) {
-                    requestAnimationFrame(scanFrame);
-                }
-            }
+            console.log("Starting QR scan with canvas size:", scanCanvas.width, "x", scanCanvas.height);
             
             // Start the scanning loop
-            scanFrame();
+            startScanningLoop();
         }
 
         // Fetch product by ID
