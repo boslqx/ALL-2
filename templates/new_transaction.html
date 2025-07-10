@@ -636,7 +636,17 @@
             const data = qrData.trim();
             console.log("Attempting to extract product ID from:", data);
             
-            // Method 1: Direct number parsing (exact match - most reliable)
+            // Method 1: Look for "Product ID: X" pattern (most reliable - same as admin_allproducts)
+            const idMatch = data.match(/Product ID: (\d+)/i);
+            if (idMatch && idMatch[1]) {
+                const productId = parseInt(idMatch[1]);
+                if (!isNaN(productId) && productId > 0) {
+                    console.log("Found Product ID pattern:", productId);
+                    return productId;
+                }
+            }
+            
+            // Method 2: Direct number parsing (exact match)
             if (/^\d+$/.test(data)) {
                 const directNumber = parseInt(data);
                 if (!isNaN(directNumber) && directNumber > 0 && directNumber < 10000) { // Reasonable product ID range
@@ -645,7 +655,7 @@
                 }
             }
             
-            // Method 2: Try to parse as JSON
+            // Method 3: Try to parse as JSON
             try {
                 const jsonData = JSON.parse(data);
                 // Look for common product ID field names
@@ -663,7 +673,7 @@
                 // Not JSON, continue with other methods
             }
             
-            // Method 3: Try to parse as URL with query parameters
+            // Method 4: Try to parse as URL with query parameters
             try {
                 const url = new URL(data);
                 const params = url.searchParams;
@@ -681,25 +691,29 @@
                 // Not a valid URL, continue
             }
             
-            // Method 4: Look for key-value pairs (productId=123, id:456, etc.)
-            const keyValuePatterns = [
+            // Method 5: Look for additional ID patterns
+            const additionalPatterns = [
                 /(?:productId|ProductID|product_id)\s*[=:]\s*(\d+)/i,
                 /(?:id|ID)\s*[=:]\s*(\d+)/i,
-                /(?:itemId|item_id)\s*[=:]\s*(\d+)/i
+                /(?:itemId|item_id)\s*[=:]\s*(\d+)/i,
+                /ID:\s*(\d+)/i,  // "ID: 123"
+                /#(\d+)/,        // "#123"
+                /\bID\s*(\d+)/i, // "ID 123"
+                /Item:\s*(\d+)/i // "Item: 123"
             ];
             
-            for (const pattern of keyValuePatterns) {
+            for (const pattern of additionalPatterns) {
                 const match = data.match(pattern);
                 if (match && match[1]) {
                     const productId = parseInt(match[1]);
                     if (productId > 0 && productId < 10000) {
-                        console.log("Found product ID in key-value pattern:", productId);
+                        console.log("Found product ID in additional pattern:", productId);
                         return productId;
                     }
                 }
             }
             
-            // Method 5: Try to extract from common product code formats first
+            // Method 6: Try to extract from common product code formats
             // Format like "PROD-123" or "P123" or "ITEM123"
             const productCodePattern = /(?:PROD|P|ITEM|SKU)[-_]?(\d+)/i;
             const codeMatch = data.match(productCodePattern);
@@ -711,7 +725,7 @@
                 }
             }
             
-            // Method 6: Look for isolated numbers (improved logic)
+            // Method 7: Look for isolated numbers (improved logic)
             // First try to find standalone numbers at the beginning or end
             const standalonePatterns = [
                 /^(\d+)[^\d]/,  // Number at start followed by non-digit
@@ -731,7 +745,7 @@
                 }
             }
             
-            // Method 7: Last resort - extract short numbers (1-4 digits) and prefer smaller ones
+            // Method 8: Last resort - extract short numbers (1-4 digits) and prefer smaller ones
             const shortNumbers = data.match(/\b\d{1,4}\b/g);
             if (shortNumbers && shortNumbers.length > 0) {
                 // Sort by number value to prefer smaller, more likely product IDs
