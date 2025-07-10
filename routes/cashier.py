@@ -15,6 +15,7 @@ cashier_bp = Blueprint('cashier', __name__, template_folder='../templates')
 apply_role_protection(cashier_bp, 'cashier')
 
 
+# Database
 class CashierBaseView:
     @staticmethod
     def get_db_connection():
@@ -42,6 +43,7 @@ class CashierBaseView:
         return cashier_name
 
 
+# Dashboard Display
 class DashboardView(MethodView, CashierBaseView):
     def get(self):
         user_id = session.get('user_id')
@@ -53,6 +55,7 @@ class DashboardView(MethodView, CashierBaseView):
         )
 
 
+# Retrieving Cashier's Data
 class CashierProfileAPIView(MethodView, CashierBaseView):
     decorators = [cashier_required]
     def get(self):
@@ -83,6 +86,7 @@ class CashierProfileAPIView(MethodView, CashierBaseView):
                 conn.close()
 
 
+# Show Today's Transactions & Revenue + Display Low Stock Items & Recent Transactions
 class CashierDashboardStatsAPIView(MethodView, CashierBaseView):
     decorators = [cashier_required]
 
@@ -143,7 +147,8 @@ class CashierDashboardStatsAPIView(MethodView, CashierBaseView):
                 conn.close()
 
 
-
+# new_transaction.html-----------------------------------------------------------------------------
+# New Transaction Page
 class NewTransactionView(MethodView, CashierBaseView):
     def get(self):
         user_id = session.get('user_id')
@@ -166,6 +171,13 @@ class NewTransactionView(MethodView, CashierBaseView):
         )
 
 
+# Display Product Image
+class ServeProductImageView(MethodView):
+    def get(self, filename):
+        return send_from_directory(os.path.join(current_app.static_folder, 'product_image'), filename)
+    
+
+# Fetch Product Based on Filtering
 class SearchProductsView(MethodView, CashierBaseView):
     def get(self):
         query = request.args.get('query', '').lower()
@@ -215,6 +227,7 @@ class SearchProductsView(MethodView, CashierBaseView):
                 conn.close()
 
 
+# Display Product Info
 class GetProductView(MethodView, CashierBaseView):
     def get(self, product_id):
         try:
@@ -236,6 +249,9 @@ class GetProductView(MethodView, CashierBaseView):
                 conn.close()
 
 
+
+# checkout.html--------------------------------------------------------------------
+# Recording Transaction After Checkout
 class CheckoutView(MethodView, CashierBaseView):
     def post(self):
         user_id = session.get('user_id')
@@ -296,6 +312,7 @@ class CheckoutView(MethodView, CashierBaseView):
                 conn.close()
 
 
+# Checkout Page
 class CheckoutPageView(MethodView, CashierBaseView):
     def get(self):
         user_id = session.get('user_id')
@@ -309,6 +326,7 @@ class CheckoutPageView(MethodView, CashierBaseView):
         )
 
 
+# Complete Transaction
 class CompleteTransactionView(MethodView, CashierBaseView):
     def post(self):
         user_id = session.get('user_id')
@@ -388,6 +406,7 @@ class CompleteTransactionView(MethodView, CashierBaseView):
             if 'conn' in locals():
                 conn.close()
 
+    # Receipt Generation
     def generate_receipt(self, transaction_id, transaction_details, cashier_name, total_amount, payment_method):
         try:
             buffer = BytesIO()
@@ -438,14 +457,11 @@ class CompleteTransactionView(MethodView, CashierBaseView):
                     p.showPage()
                     y_position = height - 1 * inch
 
-            # Totals
-            total = subtotal
+            # Total
             p.line(1 * inch, y_position - 0.1 * inch, width - 1 * inch, y_position - 0.1 * inch)
             p.setFont("Helvetica-Bold", 12)
             p.drawString(5 * inch, y_position - 0.3 * inch, "Subtotal:")
             p.drawString(6.5 * inch, y_position - 0.3 * inch, f"RM{subtotal:.2f}")
-            p.drawString(5 * inch, y_position - 0.6 * inch, "Total:")
-            p.drawString(6.5 * inch, y_position - 0.6 * inch, f"RM{total:.2f}")
 
             # Footer
             p.setFont("Helvetica", 10)
@@ -460,32 +476,8 @@ class CompleteTransactionView(MethodView, CashierBaseView):
             raise
 
 
-class ServeProductImageView(MethodView):
-    def get(self, filename):
-        return send_from_directory(os.path.join(current_app.static_folder, 'product_image'), filename)
-
-
-class GetReceiptView(MethodView, CashierBaseView):
-    def get(self, transaction_id):
-        try:
-            conn = self.get_db_connection()
-            cursor = conn.cursor()
-           
-            cursor.execute('SELECT Receipt FROM "Transaction"  WHERE TransactionID = ?', (transaction_id,))
-            receipt_data = cursor.fetchone()
-           
-            if not receipt_data or not receipt_data['Receipt']:
-                return "Receipt not found", 404
-               
-            return Response(receipt_data['Receipt'], mimetype='application/pdf')
-        except Exception as e:
-            current_app.logger.error(f'Error retrieving receipt: {str(e)}')
-            return "Error retrieving receipt", 500
-        finally:
-            if 'conn' in locals():
-                conn.close()
-
-
+# transaction_history.html----------------------------------------------------------------------------------------------
+# Fetch Data for Transaction History
 class TransactionHistoryView(MethodView, CashierBaseView):
     def get(self):
         user_id = session.get('user_id')
@@ -517,6 +509,8 @@ class TransactionHistoryView(MethodView, CashierBaseView):
                 conn.close()
 
 
+
+# Display for Transaction Details
 class TransactionDetailsView(MethodView, CashierBaseView):
     def get(self, transaction_id):
         try:
@@ -567,6 +561,27 @@ class TransactionDetailsView(MethodView, CashierBaseView):
         except Exception as e:
             current_app.logger.error(f'Error fetching transaction details: {str(e)}')
             return jsonify({'error': 'Failed to fetch transaction details'}), 500
+        finally:
+            if 'conn' in locals():
+                conn.close()
+
+# Fetch Receipt
+class GetReceiptView(MethodView, CashierBaseView):
+    def get(self, transaction_id):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+           
+            cursor.execute('SELECT Receipt FROM "Transaction"  WHERE TransactionID = ?', (transaction_id,))
+            receipt_data = cursor.fetchone()
+           
+            if not receipt_data or not receipt_data['Receipt']:
+                return "Receipt not found", 404
+               
+            return Response(receipt_data['Receipt'], mimetype='application/pdf')
+        except Exception as e:
+            current_app.logger.error(f'Error retrieving receipt: {str(e)}')
+            return "Error retrieving receipt", 500
         finally:
             if 'conn' in locals():
                 conn.close()
