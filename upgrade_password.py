@@ -1,7 +1,7 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
 
-db_path = 'instance/site.db'  # adjust if your DB is in a different location
+db_path = 'instance/site.db'  
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 

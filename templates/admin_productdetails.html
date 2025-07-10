@@ -154,11 +154,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadOverlay = document.querySelector('.upload-overlay.edit-mode');
     const imagePreviewContainer = document.querySelector('.image-preview-container');
     
+    // Hide overlay initially
     if (uploadOverlay) {
         uploadOverlay.style.display = 'none'; 
         uploadOverlay.style.cursor = 'pointer';
     }
 
+    // Enable edit mode
     document.getElementById('edit-button').addEventListener('click', function () {
         // Toggle view/edit modes
         document.querySelectorAll('.view-mode').forEach(el => el.style.display = 'none');

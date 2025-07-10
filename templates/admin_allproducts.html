@@ -1,7 +1,9 @@
 {% extends "admin_base.html" %}
 {% block content %}
+<!-- Main Product Section -->
  <div id="products" class="section">
     <div class="products-container">
+        <!-- Seach and Scanner -->
         <div class="products-header">
             <h2 class="products-title">Products</h2>
             <div class="search-container">
@@ -217,12 +219,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loadProducts();
 
+    // Event Trigger
     document.getElementById('apply-filters').addEventListener('click', applyFilters);
     searchButton.addEventListener('click', performSearch);
     searchInput.addEventListener('keyup', e => {
         if (e.key === 'Enter') performSearch();
     });
 
+    // Scanner
     document.getElementById('startScanner').addEventListener('click', startScanner);
     document.getElementById('closeScanner').addEventListener('click', stopScanner);
     document.getElementById('switchCamera').addEventListener('click', switchCamera);
