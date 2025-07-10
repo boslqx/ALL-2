@@ -14,7 +14,7 @@ class TestTransactions(unittest.TestCase):
             session['role'] = 'cashier'
             session['_fresh'] = True
 
-    @patch('db.models.Product')  # ✅ FIXED: patch where Product is really imported
+    @patch('db.models.Product')
     def test_get_product(self, mock_product):
         mock_product_obj = MagicMock()
         mock_product_obj.ProductID = 1
@@ -36,7 +36,7 @@ class TestTransactions(unittest.TestCase):
         self.assertEqual(data['id'], 1)
         self.assertEqual(data['name'], "Chocolate Milk 1L")
 
-    @patch('db.models.Product')  # ✅ FIXED
+    @patch('db.models.Product')
     def test_get_nonexistent_product(self, mock_product):
         mock_product.query.get.return_value = None
 

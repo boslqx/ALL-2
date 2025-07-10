@@ -6,7 +6,7 @@
 <div class="employee-management">
     <h2>Employee Management</h2>
     
-    <!-- Add Employee Button -->
+
     <div class="add-employee-button-container">
         <div class="add-employee-button-align">
             <button id="toggle-employee-form" class="btn-primary">
@@ -16,7 +16,7 @@
     </div>
 
 
-    <!-- Hidden Add Employee Form -->
+
     <div class="add-employee-form" id="employee-form" style="display: none;">
         <h3>Add New Employee</h3>
         <form id="addEmployeeForm">
@@ -47,7 +47,7 @@
         <div id="employeeMessage" class="message"></div>
     </div>
 
-    <!-- Employee List -->
+
     <div class="employee-list-container">
         <h3>Current Employees</h3>
         <div class="employee-list">
@@ -62,7 +62,7 @@
                     </tr>
                 </thead>
                 <tbody id="employeesBody">
-                    <!-- Employees will be loaded here -->
+
                 </tbody>
             </table>
         </div>
@@ -177,7 +177,7 @@ function renderEmployees(employees) {
         tbody.appendChild(row);
     });
 
-    // Add event listeners for remove buttons
+    // event listeners for remove buttons
     document.querySelectorAll('.remove-button').forEach(button => {
         button.addEventListener('click', function() {
             removeEmployee(this.getAttribute('data-id'));

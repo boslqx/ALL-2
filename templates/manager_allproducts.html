@@ -3,7 +3,7 @@
 {% block content %}
  <div id="products" class="section">
     <div class="products-container">
-        <!-- Header with title and search -->
+
         <div class="products-header">
             <h2 class="products-title">Products</h2>
             <div class="search-container">
@@ -13,7 +13,7 @@
                 </button>
             </div>
 
-            <!-- QR Code Scanner Container -->
+
             <div class="scanner-container">
                 <button id="startScanner" class="action-button">
                     <i class="fas fa-qrcode"></i> Scan QR Code
@@ -21,7 +21,7 @@
             </div>
         </div>
 
-        <!-- Filter options -->
+
         <div class="filter-options">
             <div class="filter-group">
                 <label for="category-filter">Category</label>
@@ -60,14 +60,14 @@
             </div>
         </div>
 
-        <!-- Products will be loaded here dynamically -->
+
         <div class="products-grid" id="products-grid">
 
         </div>
     </div>
 </div>
 
-<!-- Restock Modal -->
+
 <div id="restockModal" class="restock-modal">
   <div class="restock-modal-content">
     <h3>Restock Product</h3>
@@ -83,7 +83,7 @@
   </div>
 </div>
 
-<!-- Scanner Modal -->
+
 <div id="scannerModal" class="scanner-modal">
   <div class="scanner-modal-content">
     <div class="scanner-header">
@@ -219,10 +219,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.querySelector('.search-input');
     const searchButton = document.querySelector('.search-button');
 
-    // === INITIAL LOAD ===
+    // INITIAL LOAD
     loadProducts();
 
-    // === FILTERS & SEARCH ===
+    // FILTERS & SEARCH
     document.getElementById('apply-filters').addEventListener('click', applyFilters);
     document.getElementById('startScanner').addEventListener('click', startScanner);
     document.getElementById('closeScanner').addEventListener('click', stopScanner);
@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') performSearch();
     });
 
-    // === RESTOCK MODAL LISTENERS (ONCE ONLY) ===
+    // RESTOCK MODAL LISTENERS (ONCE ONLY)
     document.getElementById('cancelRestock')?.addEventListener('click', () => {
         document.getElementById('restockModal').style.display = 'none';
         document.getElementById('restockQuantity').value = '';
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // === FUNCTIONS ===
+    // FUNCTIONS
 
     function loadProducts() {
         showLoading();
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Sort products - low stock first
+        // Sort products
         const sortedProducts = [...products].sort((a, b) => {
             const aLowStock = (a.StockQuantity || 0) <= 5;
             const bLowStock = (b.StockQuantity || 0) <= 5;
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
         }).join('');
 
-        // Attach buttons
+        // buttons
         document.querySelectorAll('.details-button').forEach(button => {
             button.addEventListener('click', function () {
                 showProductDetails(this.getAttribute('data-id'));
