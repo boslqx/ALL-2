@@ -364,6 +364,11 @@
 
         // Add product to cart
         function addToCart(productId, productName, price, stock) {
+            if (stock <= 0) {
+                alert(`"${productName}" is out of stock and cannot be added to cart`);
+                return; 
+            }
+
             // Check if product already in cart
             const existingItem = cart.find(item => item.id === productId);
             
@@ -371,7 +376,7 @@
                 if (existingItem.quantity < stock) {
                     existingItem.quantity += 1;
                 } else {
-                    alert(`No more ${productName} available`);
+                    alert(`No more "${productName}" available`);
                     return;
                 }
             } else {
