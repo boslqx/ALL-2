@@ -12,6 +12,8 @@
         <h2>Verify Your Email</h2> 
         <p>We've sent a 4-digit code to your email</p>
         <form method="POST" action="{{ url_for('login.verify_code') }}">
+
+            <!-- Four inputs for code -->
             <div class="code-input">
                 <input type="text" name="digit1" maxlength="1" pattern="\d" required>
                 <input type="text" name="digit2" maxlength="1" pattern="\d" required>
@@ -19,7 +21,11 @@
                 <input type="text" name="digit4" maxlength="1" pattern="\d" required>
             </div>
             <input type="hidden" name="verification_code" id="verification_code">
+
+            <!-- Submit button -->
             <button type="submit" class="login-button">Verify Code</button>
+
+            <!-- Resend Code Button -->
             <button type="button" class="secondary-button" onclick="window.location.href='{{ url_for('login.forgot_password') }}'">Resend Code</button>
             
             {% with messages = get_flashed_messages(with_categories=true) %}
@@ -33,6 +39,7 @@
     </div>
 
     <script>
+        // Combine all 4 digit values
         document.querySelector('form').addEventListener('submit', function() {
             const digit1 = document.querySelector('input[name="digit1"]').value;
             const digit2 = document.querySelector('input[name="digit2"]').value;

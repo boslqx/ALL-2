@@ -13,7 +13,7 @@ from datetime import datetime
 from extensions import admin_required, apply_role_protection, role_required
 
 
-
+# Initialize blueprint and role based access
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 apply_role_protection(admin_bp, 'admin')
 
@@ -251,6 +251,7 @@ class RegisterProductView(MethodView):
             if 'conn' in locals():
                 conn.close()
 
+# Generate PDF
 class PrintQRView(MethodView):
     decorators = [role_required('manager')]
     def get(self, product_id):
@@ -301,6 +302,7 @@ class PrintView(MethodView):
         product = get_product_from_db(product_id)
         return render_template('print.html', product=product)
 
+# View Peoduct with filtering options
 class ProductsAPIView(MethodView):
     decorators = [role_required('admin', 'manager')]
     def get(self):
