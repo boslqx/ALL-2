@@ -3,7 +3,7 @@
 {% block content %}
 <div class="section">
     <div class="register-container">
-        <!-- Back Button -->
+
         <a href="{{ url_for('manager.all_products') }}" class="back-button">
             <i class="fas fa-arrow-left"></i> Back to Products
         </a>
@@ -11,7 +11,7 @@
         <h1 class="register-title">Product Details</h1>
         
         <div class="register-card">
-            <!-- Left Column - Image -->
+
             <div class="register-column image-column">
                 <div class="upload-container">
                     <div class="image-preview-container">
@@ -34,20 +34,20 @@
                 </div>
             </div>
             
-            <!-- Middle Column - Product Details -->
+
             <div class="register-column form-column">
                 <div class="form-header">
                     <h3>Product Information</h3>
                     <div class="form-divider"></div>
                 </div>
                 
-                <!-- Category -->
+
                 <div class="form-group">
                     <label>Category</label>
                     <!-- View Mode -->
                     <div class="view-mode">{{ product.Category }}</div>
 
-                    <!-- Edit Mode -->
+
                     <div class="edit-mode" style="display:none;">
                         <select id="category" class="category-select">
                             <option value="" disabled>Select a category</option>
@@ -58,7 +58,7 @@
                             <option value="Other" {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}selected{% endif %}>Other</option>
                         </select>
 
-                        <!-- Custom "Other" Category Input -->
+
                         <div class="other-category-container" style="display: {% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}block{% else %}none{% endif %};">
                             <input type="text" id="other-category" class="category-select" 
                                 value="{% if product.Category not in ['Food & Beverages', 'Health & Personal', 'Home & Living', 'Clothing & Accessories'] %}{{ product.Category }}{% endif %}" 
@@ -67,7 +67,7 @@
                     </div>
                 </div>
                 
-                <!-- Brand Name -->
+
                 <div class="form-group">
                     <label>Brand Name</label>
                     <div class="view-mode">{{ product.ProductBrand }}</div>
@@ -75,7 +75,7 @@
                            value="{{ product.ProductBrand }}">
                 </div>
                 
-                <!-- Product Name -->
+
                 <div class="form-group">
                     <label>Product Name</label>
                     <div class="view-mode">{{ product.ProductName }}</div>
@@ -83,7 +83,7 @@
                            value="{{ product.ProductName }}">
                 </div>
                 
-                <!-- Price and Quantity -->
+
                 <div class="form-row">
                     <div class="form-group half-width">
                         <label>Price (RM)</label>
@@ -103,7 +103,7 @@
                 </div>
             </div>
             
-            <!-- Right Column - QR Code -->
+
             <div class="register-column qr-column">
                 <div class="qr-header">
                     <h3>QR Code</h3>
@@ -129,7 +129,7 @@
             </div>
         </div>
         
-        <!-- Action Buttons -->
+
         <div class="form-actions">
             <button id="edit-button" class="action-button">
                 <i class="fas fa-edit"></i> Edit Product
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const uploadOverlay = document.querySelector('.upload-overlay.edit-mode');
     const imagePreviewContainer = document.querySelector('.image-preview-container');
     
-    // Initialize upload overlay state
+    // upload overlay state
     if (uploadOverlay) {
         uploadOverlay.style.display = 'none'; // Start hidden
         uploadOverlay.style.cursor = 'pointer'; // Clickable when visible
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             imagePreviewContainer.style.pointerEvents = 'auto';
         }
 
-        // Category "Other" toggle logic
+        //"Other" toggle logic
         document.getElementById('category')?.addEventListener('change', function () {
             const otherContainer = document.querySelector('.other-category-container');
             otherContainer.style.display = this.value === 'Other' ? 'block' : 'none';

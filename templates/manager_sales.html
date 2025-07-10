@@ -71,7 +71,7 @@
         <canvas id="monthlySalesChart"></canvas>
     </div>
 
-    <!-- Add Demand Forecasting Section -->
+
     <div class="chart-card">
         <h3>Demand Forecasting</h3>
         <div class="forecast-options">
@@ -468,13 +468,13 @@ function generateForecast() {
         return;
     }
 
-    // Simple forecast methods
+    // forecast methods
     let forecastData = [];
     let projectedRevenue = 0;
     let growthRate = 0;
     let confidenceLevel = "Medium";
 
-    // Calculate simple average of historical data
+    // Calculate average
     const sum = historicalData.reduce((a, b) => a + b, 0);
     const avg = sum / historicalData.length;
 

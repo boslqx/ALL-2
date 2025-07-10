@@ -16,7 +16,7 @@ class TestProductRegistration(unittest.TestCase):
             session['role'] = 'admin'
             session['_fresh'] = True
 
-    @patch('sqlite3.connect')  # ✅ Patch SQLite directly since it's used in the route
+    @patch('sqlite3.connect')
     def test_product_registration(self, mock_sqlite):
         mock_conn = mock_sqlite.return_value
         mock_cursor = mock_conn.cursor.return_value
