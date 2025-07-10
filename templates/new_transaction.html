@@ -510,13 +510,13 @@
                 stopScanner();
                 scanner.style.display = 'none';
                 scanButton.innerHTML = '<i class="fas fa-qrcode"></i> Scan QR';
+                scannerActive = false;
             } else {
-                startScanner();
                 scanner.style.display = 'block';
                 scanButton.innerHTML = '<i class="fas fa-times"></i> Cancel Scan';
+                scannerActive = true;
+                startScanner();
             }
-            
-            scannerActive = !scannerActive;
         }
 
         // Start QR scanner
@@ -614,12 +614,193 @@
                 scanInterval = null;
             }
             
+            // Clean up global scanning variables
+            currentVideo = null;
+            scanCanvas = null;
+            scanContext = null;
+            
             console.log("QR Scanner stopped and cleaned up");
         }
 
         // Complete scanning
         function completeScanning() {
             stopScanner();
+        }
+
+        // Extract product ID from various QR code formats
+        function extractProductId(qrData) {
+            if (!qrData || typeof qrData !== 'string') {
+                return null;
+            }
+            
+            const data = qrData.trim();
+            console.log("Attempting to extract product ID from:", data);
+            
+            // Method 1: Direct number parsing (simplest case)
+            const directNumber = parseInt(data);
+            if (!isNaN(directNumber) && directNumber > 0) {
+                console.log("Found direct number:", directNumber);
+                return directNumber;
+            }
+            
+            // Method 2: Try to parse as JSON
+            try {
+                const jsonData = JSON.parse(data);
+                // Look for common product ID field names
+                const possibleFields = ['productId', 'ProductID', 'product_id', 'id', 'ID', 'itemId', 'item_id'];
+                for (const field of possibleFields) {
+                    if (jsonData[field] && !isNaN(parseInt(jsonData[field]))) {
+                        const productId = parseInt(jsonData[field]);
+                        if (productId > 0) {
+                            console.log(`Found product ID in JSON field "${field}":`, productId);
+                            return productId;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Not JSON, continue with other methods
+            }
+            
+            // Method 3: Try to parse as URL with query parameters
+            try {
+                const url = new URL(data);
+                const params = url.searchParams;
+                const possibleParams = ['productId', 'ProductID', 'product_id', 'id', 'ID', 'itemId', 'item_id'];
+                for (const param of possibleParams) {
+                    if (params.get(param)) {
+                        const productId = parseInt(params.get(param));
+                        if (!isNaN(productId) && productId > 0) {
+                            console.log(`Found product ID in URL parameter "${param}":`, productId);
+                            return productId;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Not a valid URL, continue
+            }
+            
+            // Method 4: Look for key-value pairs (productId=123, id:456, etc.)
+            const keyValuePatterns = [
+                /(?:productId|ProductID|product_id)\s*[=:]\s*(\d+)/i,
+                /(?:id|ID)\s*[=:]\s*(\d+)/i,
+                /(?:itemId|item_id)\s*[=:]\s*(\d+)/i
+            ];
+            
+            for (const pattern of keyValuePatterns) {
+                const match = data.match(pattern);
+                if (match && match[1]) {
+                    const productId = parseInt(match[1]);
+                    if (productId > 0) {
+                        console.log("Found product ID in key-value pattern:", productId);
+                        return productId;
+                    }
+                }
+            }
+            
+            // Method 5: Extract all numbers and try the first valid one
+            const numbers = data.match(/\d+/g);
+            if (numbers && numbers.length > 0) {
+                for (const numStr of numbers) {
+                    const num = parseInt(numStr);
+                    if (num > 0 && num.toString().length >= 1) { // At least 1 digit
+                        console.log("Found potential product ID from number extraction:", num);
+                        return num;
+                    }
+                }
+            }
+            
+            // Method 6: Try to extract from common product code formats
+            // Format like "PROD-123" or "P123" or "ITEM123"
+            const productCodePattern = /(?:PROD|P|ITEM|SKU)[-_]?(\d+)/i;
+            const codeMatch = data.match(productCodePattern);
+            if (codeMatch && codeMatch[1]) {
+                const productId = parseInt(codeMatch[1]);
+                if (productId > 0) {
+                    console.log("Found product ID in product code format:", productId);
+                    return productId;
+                }
+            }
+            
+            console.log("Could not extract product ID from QR data");
+            return null;
+        }
+
+        // Global variables for scanning
+        let currentVideo = null;
+        let scanCanvas = null;
+        let scanContext = null;
+
+        // Start continuous QR scanning loop
+        function startScanningLoop() {
+            if (!currentVideo || !scannerActive || !videoStream) {
+                return;
+            }
+
+            try {
+                // Draw current video frame to canvas
+                scanContext.drawImage(currentVideo, 0, 0, scanCanvas.width, scanCanvas.height);
+                const imageData = scanContext.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+                
+                // Try to decode QR code with enhanced options
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'attemptBoth',
+                    tryHarder: true,
+                    locateBarcode: true
+                });
+                
+                if (code && code.data) {
+                    console.log("QR Code Detected:", code.data);
+                    
+                    // Try to extract product ID from various QR code formats
+                    const productId = extractProductId(code.data);
+                    
+                    if (productId && productId > 0) {
+                        console.log("Valid Product ID extracted:", productId);
+                        
+                        // Show success feedback
+                        const feedback = document.getElementById('scanner-feedback');
+                        if (feedback) {
+                            feedback.textContent = `Product ID: ${productId} - Adding to cart...`;
+                            feedback.style.backgroundColor = 'rgba(26, 188, 156, 0.9)';
+                        }
+                        
+                        fetchProduct(productId);
+                        
+                        // Pause scanning briefly to prevent duplicates
+                        scannerActive = false;
+                        setTimeout(() => {
+                            if (feedback) {
+                                feedback.textContent = 'Scanning for QR codes...';
+                                feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                            }
+                            scannerActive = true;
+                            // Restart the scanning loop
+                            startScanningLoop();
+                        }, 2000);
+                        return; // Don't continue scanning immediately
+                    } else {
+                        console.log("Could not extract valid product ID from QR code:", code.data);
+                        
+                        // Show error feedback briefly
+                        const feedback = document.getElementById('scanner-feedback');
+                        if (feedback) {
+                            feedback.textContent = 'No valid product ID found in QR code';
+                            feedback.style.backgroundColor = 'rgba(231, 76, 60, 0.9)';
+                            setTimeout(() => {
+                                feedback.textContent = 'Scanning for QR codes...';
+                                feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                            }, 1500);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("QR scan error:", e);
+            }
+            
+            // Continue scanning
+            if (scannerActive) {
+                requestAnimationFrame(startScanningLoop);
+            }
         }
 
         // Scan for QR codes
@@ -630,86 +811,19 @@
                 return;
             }
 
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
+            // Set up global variables
+            currentVideo = video;
+            scanCanvas = document.createElement('canvas');
+            scanContext = scanCanvas.getContext('2d');
             
             // Set canvas size to match video
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            scanCanvas.width = video.videoWidth;
+            scanCanvas.height = video.videoHeight;
             
-            console.log("Starting QR scan with canvas size:", canvas.width, "x", canvas.height);
-            
-            function scanFrame() {
-                if (!scannerActive || !videoStream) {
-                    return;
-                }
-                
-                try {
-                    // Draw current video frame to canvas
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    
-                    // Try to decode QR code with enhanced options
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: 'attemptBoth',
-                        tryHarder: true,
-                        locateBarcode: true
-                    });
-                    
-                    if (code && code.data) {
-                        console.log("QR Code Detected:", code.data);
-                        
-                        // Try to parse as product ID (number)
-                        const productId = parseInt(code.data.trim());
-                        
-                        if (!isNaN(productId) && productId > 0) {
-                            console.log("Valid Product ID:", productId);
-                            
-                            // Show success feedback
-                            const feedback = document.getElementById('scanner-feedback');
-                            if (feedback) {
-                                feedback.textContent = `Product ID: ${productId} - Adding to cart...`;
-                                feedback.style.backgroundColor = 'rgba(26, 188, 156, 0.9)';
-                            }
-                            
-                            fetchProduct(productId);
-                            
-                            // Pause scanning briefly to prevent duplicates
-                            scannerActive = false;
-                            setTimeout(() => {
-                                if (feedback) {
-                                    feedback.textContent = 'Scanning for QR codes...';
-                                    feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                                }
-                                scannerActive = true;
-                            }, 2000);
-                        } else {
-                            console.log("Invalid QR code data (not a valid product ID):", code.data);
-                            
-                            // Show error feedback briefly
-                            const feedback = document.getElementById('scanner-feedback');
-                            if (feedback) {
-                                feedback.textContent = 'Invalid QR code - not a product ID';
-                                feedback.style.backgroundColor = 'rgba(231, 76, 60, 0.9)';
-                                setTimeout(() => {
-                                    feedback.textContent = 'Scanning for QR codes...';
-                                    feedback.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                                }, 1500);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("QR scan error:", e);
-                }
-                
-                // Continue scanning
-                if (scannerActive) {
-                    requestAnimationFrame(scanFrame);
-                }
-            }
+            console.log("Starting QR scan with canvas size:", scanCanvas.width, "x", scanCanvas.height);
             
             // Start the scanning loop
-            scanFrame();
+            startScanningLoop();
         }
 
         // Fetch product by ID
