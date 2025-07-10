@@ -636,11 +636,13 @@
             const data = qrData.trim();
             console.log("Attempting to extract product ID from:", data);
             
-            // Method 1: Direct number parsing (simplest case)
-            const directNumber = parseInt(data);
-            if (!isNaN(directNumber) && directNumber > 0) {
-                console.log("Found direct number:", directNumber);
-                return directNumber;
+            // Method 1: Direct number parsing (exact match - most reliable)
+            if (/^\d+$/.test(data)) {
+                const directNumber = parseInt(data);
+                if (!isNaN(directNumber) && directNumber > 0 && directNumber < 10000) { // Reasonable product ID range
+                    console.log("Found direct number:", directNumber);
+                    return directNumber;
+                }
             }
             
             // Method 2: Try to parse as JSON
@@ -651,7 +653,7 @@
                 for (const field of possibleFields) {
                     if (jsonData[field] && !isNaN(parseInt(jsonData[field]))) {
                         const productId = parseInt(jsonData[field]);
-                        if (productId > 0) {
+                        if (productId > 0 && productId < 10000) {
                             console.log(`Found product ID in JSON field "${field}":`, productId);
                             return productId;
                         }
@@ -669,7 +671,7 @@
                 for (const param of possibleParams) {
                     if (params.get(param)) {
                         const productId = parseInt(params.get(param));
-                        if (!isNaN(productId) && productId > 0) {
+                        if (!isNaN(productId) && productId > 0 && productId < 10000) {
                             console.log(`Found product ID in URL parameter "${param}":`, productId);
                             return productId;
                         }
@@ -690,33 +692,57 @@
                 const match = data.match(pattern);
                 if (match && match[1]) {
                     const productId = parseInt(match[1]);
-                    if (productId > 0) {
+                    if (productId > 0 && productId < 10000) {
                         console.log("Found product ID in key-value pattern:", productId);
                         return productId;
                     }
                 }
             }
             
-            // Method 5: Extract all numbers and try the first valid one
-            const numbers = data.match(/\d+/g);
-            if (numbers && numbers.length > 0) {
-                for (const numStr of numbers) {
-                    const num = parseInt(numStr);
-                    if (num > 0 && num.toString().length >= 1) { // At least 1 digit
-                        console.log("Found potential product ID from number extraction:", num);
-                        return num;
-                    }
-                }
-            }
-            
-            // Method 6: Try to extract from common product code formats
+            // Method 5: Try to extract from common product code formats first
             // Format like "PROD-123" or "P123" or "ITEM123"
             const productCodePattern = /(?:PROD|P|ITEM|SKU)[-_]?(\d+)/i;
             const codeMatch = data.match(productCodePattern);
             if (codeMatch && codeMatch[1]) {
                 const productId = parseInt(codeMatch[1]);
-                if (productId > 0) {
+                if (productId > 0 && productId < 10000) {
                     console.log("Found product ID in product code format:", productId);
+                    return productId;
+                }
+            }
+            
+            // Method 6: Look for isolated numbers (improved logic)
+            // First try to find standalone numbers at the beginning or end
+            const standalonePatterns = [
+                /^(\d+)[^\d]/,  // Number at start followed by non-digit
+                /[^\d](\d+)$/,  // Number at end preceded by non-digit
+                /^(\d+)$/,      // Entire string is a number
+                /\b(\d+)\b/     // Word boundary numbers
+            ];
+            
+            for (const pattern of standalonePatterns) {
+                const match = data.match(pattern);
+                if (match && match[1]) {
+                    const productId = parseInt(match[1]);
+                    if (productId > 0 && productId < 10000 && match[1].length <= 4) { // Reasonable product ID
+                        console.log("Found standalone product ID:", productId);
+                        return productId;
+                    }
+                }
+            }
+            
+            // Method 7: Last resort - extract short numbers (1-4 digits) and prefer smaller ones
+            const shortNumbers = data.match(/\b\d{1,4}\b/g);
+            if (shortNumbers && shortNumbers.length > 0) {
+                // Sort by number value to prefer smaller, more likely product IDs
+                const validNumbers = shortNumbers
+                    .map(num => parseInt(num))
+                    .filter(num => num > 0 && num < 10000)
+                    .sort((a, b) => a - b);
+                
+                if (validNumbers.length > 0) {
+                    const productId = validNumbers[0]; // Take the smallest valid number
+                    console.log("Found potential product ID from short numbers:", productId);
                     return productId;
                 }
             }
