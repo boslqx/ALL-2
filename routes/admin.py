@@ -253,7 +253,7 @@ class RegisterProductView(MethodView):
 
 # Generate PDF
 class PrintQRView(MethodView):
-    decorators = [role_required('manager')]
+    decorators = [role_required('manager','admin')]
     def get(self, product_id):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))

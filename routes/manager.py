@@ -162,31 +162,62 @@ class ManagerProfileAPIView(MethodView):
 class ManagerDashboardStatsAPIView(MethodView):
     def get(self):
         try:
-            conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
+            db_path = os.path.join(current_app.instance_path, 'site.db')
+            if not os.path.exists(db_path):
+                current_app.logger.error(f"Database file not found at {db_path}")
+                return jsonify({'error': 'Database not found'}), 500
+
+            conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
 
-            cursor.execute("SELECT COUNT(*) FROM Product")
-            total_products = cursor.fetchone()[0]
+            # Verify tables exist
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = [row[0] for row in cursor.fetchall()]
+            required_tables = {'Product', 'Transaction', 'ActivityLog', 'User'}
+            missing_tables = required_tables - set(tables)
+            if missing_tables:
+                current_app.logger.error(f"Missing tables: {missing_tables}")
+                return jsonify({'error': f'Missing tables: {missing_tables}'}), 500
 
-            cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity <= 5")
-            low_stock_items = cursor.fetchone()[0]
+            # Get stats with error handling for each query
+            try:
+                cursor.execute("SELECT COUNT(*) FROM Product")
+                total_products = cursor.fetchone()[0]
+            except sqlite3.Error as e:
+                current_app.logger.error(f"Error counting products: {str(e)}")
+                total_products = 0
 
-            cursor.execute("""
-                SELECT COUNT(*) FROM "Transaction" 
-                WHERE Datetime >= DATE('now', '-7 days')
-            """)
-            recent_sales = cursor.fetchone()[0]
+            try:
+                cursor.execute("SELECT COUNT(*) FROM Product WHERE StockQuantity <= 5")
+                low_stock_items = cursor.fetchone()[0]
+            except sqlite3.Error as e:
+                current_app.logger.error(f"Error counting low stock items: {str(e)}")
+                low_stock_items = 0
 
-            cursor.execute("""
-                SELECT A.Description, A.ActionType, A.Timestamp, 
-                       COALESCE(U.Name, U.Passcode) AS Passcode
-                FROM ActivityLog A
-                LEFT JOIN User U ON A.UserID = U.UserID
-                WHERE DATE(A.Timestamp) = DATE('now')
-                ORDER BY A.Timestamp DESC
-                LIMIT 5
-            """)
-            recent_activities = [dict(row) for row in cursor.fetchall()]
+            try:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM "Transaction" 
+                    WHERE Datetime >= DATE('now', '-7 days')
+                """)
+                recent_sales = cursor.fetchone()[0]
+            except sqlite3.Error as e:
+                current_app.logger.error(f"Error counting recent sales: {str(e)}")
+                recent_sales = 0
+
+            try:
+                cursor.execute("""
+                    SELECT A.Description, A.ActionType, A.Timestamp, 
+                           COALESCE(U.Name, U.Passcode) AS UserName
+                    FROM ActivityLog A
+                    LEFT JOIN User U ON A.UserID = U.UserID
+                    WHERE DATE(A.Timestamp) = DATE('now')
+                    ORDER BY A.Timestamp DESC
+                    LIMIT 5
+                """)
+                recent_activities = [dict(row) for row in cursor.fetchall()]
+            except sqlite3.Error as e:
+                current_app.logger.error(f"Error fetching activities: {str(e)}")
+                recent_activities = []
 
             return jsonify({
                 'total_products': total_products,
@@ -196,6 +227,7 @@ class ManagerDashboardStatsAPIView(MethodView):
             })
 
         except Exception as e:
+            current_app.logger.error(f"Unexpected error in dashboard stats: {str(e)}", exc_info=True)
             return jsonify({'error': str(e)}), 500
         finally:
             if 'conn' in locals():
