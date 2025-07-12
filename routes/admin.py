@@ -603,7 +603,7 @@ class ActivityLogsAPIView(MethodView):
                 SELECT 
                     A.Timestamp,
                     U.UserID,
-                    COALESCE(U.Name, U.Passcode) AS Passcode,
+                    COALESCE(U.Name, U.Passcode) AS UserName, 
                     A.ActionType,
                     A.Description
                 FROM ActivityLog A
