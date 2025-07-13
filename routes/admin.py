@@ -13,7 +13,7 @@ from datetime import datetime
 from extensions import admin_required, apply_role_protection, role_required
 
 
-
+# Initialize blueprint and role based access
 admin_bp = Blueprint('admin', __name__, template_folder='../templates')
 apply_role_protection(admin_bp, 'admin')
 
@@ -251,8 +251,9 @@ class RegisterProductView(MethodView):
             if 'conn' in locals():
                 conn.close()
 
+# Generate PDF
 class PrintQRView(MethodView):
-    decorators = [role_required('manager')]
+    decorators = [role_required('manager','admin')]
     def get(self, product_id):
         try:
             conn = sqlite3.connect(os.path.join(current_app.instance_path, 'site.db'))
@@ -301,6 +302,7 @@ class PrintView(MethodView):
         product = get_product_from_db(product_id)
         return render_template('print.html', product=product)
 
+# View Peoduct with filtering options
 class ProductsAPIView(MethodView):
     decorators = [role_required('admin', 'manager')]
     def get(self):
@@ -601,7 +603,7 @@ class ActivityLogsAPIView(MethodView):
                 SELECT 
                     A.Timestamp,
                     U.UserID,
-                    COALESCE(U.Name, U.Passcode) AS Passcode,
+                    COALESCE(U.Name, U.Passcode) AS UserName, 
                     A.ActionType,
                     A.Description
                 FROM ActivityLog A

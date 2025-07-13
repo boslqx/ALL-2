@@ -15,7 +15,7 @@ class TestLogin(unittest.TestCase):
         self.test_user.Password = generate_password_hash("correctpass")
         self.test_user.IsActive = True
         self.test_user.Role = "cashier"
-        self.test_user.UserID = 1  # ✅ Required to avoid JSON error
+        self.test_user.UserID = 1  
 
     @patch('routes.login.User')
     def test_successful_login(self, mock_user):

@@ -2,7 +2,8 @@
 {% block content %}
 <div class="activity-logs-container">
     <h2>Inventory Activity Log</h2>
-    <span id="log-status" class="status-message"></span>
+    <span id="log-status" class="status-message"></span> <!-- Message for loading error  --> 
+
     <!-- Activity Log Filters -->
     <div class="activity-filter-options">
         <div class="activity-filter-group">
@@ -16,6 +17,7 @@
             </select>
         </div>
 
+        <!-- User Filter -->
         <div class="activity-filter-group">
             <label for="user-filter">User</label>
             <select class="activity-filter-select" id="user-filter">
@@ -23,6 +25,7 @@
             </select>
         </div>
 
+        <!-- Date Range Filter -->
         <div class="activity-filter-group">
             <label for="date-from">From</label>
             <input type="date" class="activity-filter-select" id="date-from">
@@ -33,6 +36,7 @@
             <input type="date" class="activity-filter-select" id="date-to">
         </div>
 
+        <!-- Filter Buttons -->
         <div class="activity-filter-button-group">
             <button class="activity-action-button" id="apply-filters">
                 <i class="fas fa-filter"></i> Apply
@@ -43,7 +47,7 @@
         </div>
     </div>
 
-
+    <!-- Activity Table -->
     <div class="log-table-container">
         <table id="activity-logs-table">
             <thead>
@@ -88,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Loads activity logs based on filter
     async function loadActivityLogs() {
         const tbody = document.getElementById('logs-body');
         const statusElement = document.getElementById('log-status');

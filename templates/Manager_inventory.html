@@ -63,10 +63,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusElement = document.getElementById('report-status');
 
     // Initialize
-    loadCategories().then(applyFilters); // Changed from generateReport to applyFilters
+    loadCategories().then(applyFilters);
 
     // Event Listeners
-    document.getElementById('apply-filters').addEventListener('click', applyFilters); // Changed from generate-report to apply-filters
+    document.getElementById('apply-filters').addEventListener('click', applyFilters);
     document.getElementById('reset-filters').addEventListener('click', resetFilters);
 
     async function loadCategories() {
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function applyFilters() { // Changed from generateReport to applyFilters
+    async function applyFilters() {
         const tbody = document.getElementById('report-body');
         tbody.innerHTML = `
             <tr class="loading-row">
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetFilters() {
         document.getElementById('category-filter').value = 'all';
         document.getElementById('stock-filter').value = 'all';
-        applyFilters(); // Changed from generateReport to applyFilters
+        applyFilters();
     }
 
     function renderReport(products) {
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${product.ProductName}</td>
                 <td>${product.Category}</td>
                 <td>${product.StockQuantity}</td>
-                <td>$${product.Price.toFixed(2)}</td>
+                <td>RM ${product.Price.toFixed(2)}</td>
                 <td class="${statusClass}">${status}</td>
             `;
 

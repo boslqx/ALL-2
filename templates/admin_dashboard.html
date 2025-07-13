@@ -85,16 +85,19 @@
 </div>
 
 <script>
+// Load profile and stats and activities
 document.addEventListener('DOMContentLoaded', function() {
     fetchDashboardData();
     fetchProfileData();
 });
 
+// Fetch admin stats and recent activities
 async function fetchDashboardData() {
     try {
         const response = await fetch('/admin/api/dashboard-stats');
         const data = await response.json();
         
+         // Set dashboard numbers
         document.getElementById('total-products').textContent = data.total_products;
         document.getElementById('low-stock').textContent = data.low_stock_items;
         document.getElementById('recent-activity').textContent = data.recent_activities_count + ' today';
@@ -102,11 +105,13 @@ async function fetchDashboardData() {
         const activitiesList = document.getElementById('recent-activities-list');
         activitiesList.innerHTML = '';
         
+        // Show message if no activity
         if (data.recent_activities.length === 0) {
             activitiesList.innerHTML = '<div class="no-activities">No recent activities found</div>';
             return;
         }
         
+        // Populate recent activities
         data.recent_activities.forEach(activity => {
             const activityEl = document.createElement('div');
             activityEl.className = 'activity-item';
@@ -132,6 +137,7 @@ async function fetchDashboardData() {
     }
 }
 
+// Ftech user profile into API
 async function fetchProfileData() {
     try {
         const response = await fetch('/admin/api/profile');

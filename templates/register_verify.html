@@ -12,10 +12,14 @@
         <h2>Verify Your Account</h2>
         <p>Please enter the temporary password from your email</p>
         <form method="POST" action="{{ url_for('register.register_with_token', token=token) }}">
+
+             <!-- Display user's email -->
             <div class="input-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" value="{{ session.get('register_email', '') }}" readonly>
             </div>
+
+            <!-- temporary password -->
             <div class="input-group">
                 <label for="temp_password">Temporary Password</label>
                 <div class="password-wrapper">
@@ -23,6 +27,8 @@
                     <i class="fas fa-eye toggle-password" onclick="togglePasswordVisibility('temp_password', this)"></i>
                 </div>
             </div>
+
+            <!-- Submit button -->
             <button type="submit" class="login-button">Verify</button>
             
             {% with messages = get_flashed_messages(with_categories=true) %}

@@ -1,5 +1,3 @@
-# This file is to create database and table
-
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from . import db
@@ -14,9 +12,9 @@ class User(db.Model):
     Role = db.Column(db.String(15), nullable=False)
     Name = db.Column(db.String(50), nullable=False)
     Email = db.Column(db.String(50), unique=True, nullable=False)
-    registration_token = db.Column(db.String(128))  # Add this
-    token_expiry = db.Column(db.DateTime)  # Add this
-    IsActive = db.Column(db.Boolean, default=False)  # Add this
+    registration_token = db.Column(db.String(128))  
+    token_expiry = db.Column(db.DateTime)  
+    IsActive = db.Column(db.Boolean, default=False) 
 
 
     # Relationships
@@ -31,7 +29,7 @@ class User(db.Model):
 class Product(db.Model):
     __tablename__ = 'Product'
 
-    ProductID = db.Column(db.Integer, primary_key=True)  # FIXED: typo was `db.column`
+    ProductID = db.Column(db.Integer, primary_key=True) 
     ProductName = db.Column(db.String(100), nullable=False)
     Category = db.Column(db.String(50), nullable=False)
     Price = db.Column(db.Float, nullable=False)
@@ -82,7 +80,7 @@ class TransactionDetails(db.Model):
     __tablename__ = 'TransactionDetails'
 
     DetailsID = db.Column(db.Integer, primary_key=True)
-    TransactionID = db.Column(db.Integer, db.ForeignKey('Transaction.TransactionID'), nullable=False)  # FIXED typo: TransacationID
+    TransactionID = db.Column(db.Integer, db.ForeignKey('Transaction.TransactionID'), nullable=False)
     ProductID = db.Column(db.Integer, db.ForeignKey('Product.ProductID'), nullable=False)
     Quantity = db.Column(db.Integer, nullable=False)
     Price = db.Column(db.Float, nullable=False)
