@@ -194,13 +194,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
 
-            // Improved user display - show name if available, otherwise username
-            const userDisplay = log.UserName || log.Username || 'System';
-
             row.innerHTML = `
                 <td>${timestamp}</td>
-                <td>${userDisplay}</td>
-                <td>${log.Role || 'Unknown'}</td>
+                <td>${log.UserDisplay}</td>
+                <td>${log.UserRole}</td>
                 <td>${formatActionWithIcon(log.ActionType)}</td>
                 <td>${log.Description || 'No description available'}</td>
             `;

@@ -291,37 +291,44 @@ class ActivityLogsView(MethodView):
 
             query = """
                 SELECT 
-                    ActivityLog.*, 
-                    User.Name as Name,
-                    User.Role as Role,
-                    User.Passcode as Passcode
-                FROM ActivityLog 
-                LEFT JOIN User ON ActivityLog.UserID = User.UserID
+                    A.Timestamp,
+                    A.ActionType,
+                    A.Description,
+                    A.RecordID,
+                    A.TableAffected,
+                    A.UserID,
+                    CASE
+                        WHEN U.UserID IS NULL THEN '[Deleted User]'
+                        ELSE COALESCE(U.Name, U.Passcode, 'System')
+                    END AS UserDisplay,
+                    COALESCE(U.Role, 'Unknown') AS UserRole
+                FROM ActivityLog A
+                LEFT JOIN User U ON A.UserID = U.UserID
                 WHERE 1=1
             """
             params = []
             
             if action_filter != 'all':
-                query += " AND ActionType = ?"
+                query += " AND A.ActionType = ?"
                 params.append(action_filter)
             
             if user_filter != 'all':
-                query += " AND ActivityLog.UserID = ?"
+                query += " AND A.UserID = ?"
                 params.append(user_filter)
             
             if role_filter != 'all':
-                query += " AND User.Role = ?"
+                query += " AND U.Role = ?"
                 params.append(role_filter)
             
             if date_from:
-                query += " AND DATE(ActivityLog.Timestamp) >= ?"
+                query += " AND DATE(A.Timestamp) >= ?"
                 params.append(date_from)
             
             if date_to:
-                query += " AND DATE(ActivityLog.Timestamp) <= ?"
+                query += " AND DATE(A.Timestamp) <= ?"
                 params.append(date_to)
 
-            query += " ORDER BY ActivityLog.Timestamp DESC LIMIT 100"
+            query += " ORDER BY A.Timestamp DESC LIMIT 100"
             cursor.execute(query, params)
             logs = [dict(log) for log in cursor.fetchall()]
             return jsonify(logs)
